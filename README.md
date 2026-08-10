@@ -1,2 +1,2 @@
 # Test
-testing claudr n stuff
+testing claude n making a project
