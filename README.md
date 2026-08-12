@@ -17,6 +17,12 @@ derived data that rebuilds in seconds, and binary blobs bloat git history
 permanently. The script always fetches the latest build, so re-running it is how
 you update.
 
+### Claude skill
+
+`.claude/skills/eve-sde/SKILL.md` documents the schema, the query gotchas, and
+worked examples. Claude loads it on demand when a question involves EVE data,
+in this repo or anywhere the skill folder is copied (e.g. `~/.claude/skills/`).
+
 ### Requires network access to
 
 | Host | Purpose |
