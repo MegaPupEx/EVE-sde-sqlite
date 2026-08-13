@@ -32,11 +32,55 @@ def log(msg):
     print(msg, flush=True)
 
 
-def fetch(url, dest):
+def fetch(url, dest, attempts=8):
+    """Download to a .part file with resume, verify it, then rename into place.
+
+    Transfers of this size are routinely truncated part-way through, so a
+    single-shot download is not reliable. The server advertises
+    'accept-ranges: bytes', so each retry resumes from what is already on disk
+    via a Range request rather than starting over. The file is only renamed to
+    its final name once the byte count matches and the archive opens, so a
+    partial transfer can never be cached and reused -- that would turn one bad
+    download into a permanently failing build.
+    """
     log(f"  GET {url}")
-    with urllib.request.urlopen(url, timeout=600) as r, open(dest, "wb") as f:
-        shutil.copyfileobj(r, f)
-    return dest
+    tmp = dest + ".part"
+    expected = None
+    for attempt in range(1, attempts + 1):
+        have = os.path.getsize(tmp) if os.path.exists(tmp) else 0
+        req = urllib.request.Request(url)
+        if have:
+            req.add_header("Range", f"bytes={have}-")
+        try:
+            with urllib.request.urlopen(req, timeout=600) as r:
+                # On a 206 the Content-Length is only the remaining bytes;
+                # Content-Range carries the true total.
+                if r.status == 206:
+                    crange = r.headers.get("Content-Range", "")
+                    if "/" in crange:
+                        expected = int(crange.rsplit("/", 1)[1])
+                    mode = "ab"
+                else:
+                    cl = r.headers.get("Content-Length")
+                    expected = int(cl) if cl else expected
+                    mode, have = "wb", 0
+                with open(tmp, mode) as f:
+                    shutil.copyfileobj(r, f)
+        except Exception as e:
+            log(f"  ! attempt {attempt}/{attempts}: {e}")
+
+        got = os.path.getsize(tmp) if os.path.exists(tmp) else 0
+        if expected and got == expected and zipfile.is_zipfile(tmp):
+            os.replace(tmp, dest)
+            log(f"  downloaded {got/1e6:.0f} MB")
+            return dest
+        if got <= have and attempt < attempts:
+            time.sleep(min(2 ** attempt, 30))  # no progress; back off
+        if expected:
+            log(f"  resuming at {got/1e6:.0f}/{expected/1e6:.0f} MB")
+
+    raise IOError(f"could not download {url} after {attempts} attempts "
+                  f"({got:,} of {expected or 0:,} bytes)")
 
 
 def latest_build():
@@ -51,11 +95,19 @@ def download_sde(workdir):
     zpath = os.path.join(workdir, f"sde-{build}.zip")
     raw = os.path.join(workdir, f"sde-{build}")
     if not os.path.isdir(raw):
+        if os.path.exists(zpath) and not zipfile.is_zipfile(zpath):
+            log("  cached archive is corrupt, discarding it")
+            os.remove(zpath)
         if not os.path.exists(zpath):
             fetch(f"{BASE}/eve-online-static-data-{build}-jsonl.zip", zpath)
         log(f"  extracting {os.path.getsize(zpath)/1e6:.0f} MB ...")
-        with zipfile.ZipFile(zpath) as z:
-            z.extractall(raw)
+        try:
+            with zipfile.ZipFile(zpath) as z:
+                z.extractall(raw)
+        except zipfile.BadZipFile:
+            shutil.rmtree(raw, ignore_errors=True)
+            os.remove(zpath)
+            raise SystemExit("Archive was corrupt and has been removed; re-run to retry.")
     else:
         log("  reusing already-extracted data")
     return raw, build, released
