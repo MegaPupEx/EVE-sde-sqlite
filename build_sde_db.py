@@ -168,7 +168,7 @@ CREATE TABLE constellations(constellationID INT PRIMARY KEY, name TEXT, regionID
 CREATE TABLE systems(
   solarSystemID INT PRIMARY KEY, name TEXT, constellationID INT, regionID INT,
   security REAL, securityClass TEXT, luminosity REAL, radius REAL,
-  border INT, hub INT, regional INT, starID INT);
+  border INT, hub INT, regional INT, starID INT, space TEXT);
 CREATE TABLE planets(
   planetID INT PRIMARY KEY, solarSystemID INT, celestialIndex INT, typeID INT, radius REAL,
   density REAL, surfaceGravity REAL, escapeVelocity REAL, temperature REAL, pressure REAL,
@@ -201,6 +201,7 @@ CREATE INDEX i_bps           ON bp_skills(blueprintTypeID);
 CREATE INDEX i_tm            ON type_materials(typeID);
 CREATE INDEX i_sys_name      ON systems(name);
 CREATE INDEX i_sys_region    ON systems(regionID);
+CREATE INDEX i_sys_space     ON systems(space);
 CREATE INDEX i_const_region  ON constellations(regionID);
 CREATE INDEX i_planet_sys    ON planets(solarSystemID);
 CREATE INDEX i_moon_sys      ON moons(solarSystemID);
@@ -304,11 +305,16 @@ def build(raw, dbpath, build_no, released):
     ins("INSERT INTO constellations VALUES (?,?,?,?)",
         ((r["_key"], en(r.get("name")), r.get("regionID"), r.get("factionID"))
          for r in rows(raw, "mapConstellations")))
-    ins("INSERT INTO systems VALUES (%s)" % ",".join("?" * 12),
+    # Every system outside known space carries securityStatus -0.99, so security
+    # alone cannot separate nullsec from wormhole/abyssal/void. The regionID
+    # band is what actually distinguishes them.
+    SPACE = {10: "kspace", 11: "wormhole", 12: "abyssal", 14: "void"}
+    ins("INSERT INTO systems VALUES (%s)" % ",".join("?" * 13),
         ((r["_key"], en(r.get("name")), r.get("constellationID"), r.get("regionID"),
           r.get("securityStatus"), r.get("securityClass"), r.get("luminosity"), r.get("radius"),
           int(bool(r.get("border"))), int(bool(r.get("hub"))), int(bool(r.get("regional"))),
-          r.get("starID")) for r in rows(raw, "mapSolarSystems")))
+          r.get("starID"), SPACE.get((r.get("regionID") or 0) // 1000000, "other"))
+         for r in rows(raw, "mapSolarSystems")))
 
     def planet_row(r):
         s = r.get("statistics") or {}

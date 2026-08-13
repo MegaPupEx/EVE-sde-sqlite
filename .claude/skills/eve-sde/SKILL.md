@@ -115,7 +115,7 @@ Universe:
 | --- | --- |
 | `regions` | `regionID`, `name` |
 | `constellations` | `constellationID`, `name`, `regionID` |
-| `systems` | `solarSystemID`, `name`, `regionID`, `constellationID`, `security`, `securityClass` |
+| `systems` | `solarSystemID`, `name`, `regionID`, `constellationID`, `security`, `securityClass`, `space` (`kspace`/`wormhole`/`abyssal`/`void`) |
 | `planets` | `planetID`, `solarSystemID`, `celestialIndex`, `typeID`, `radius`, `surfaceGravity`, `temperature`, `pressure`, `density`, `orbitRadius`, `orbitPeriod`, `eccentricity`, `moons`, `belts` |
 | `moons` | `moonID`, `solarSystemID`, `planetID`, `orbitIndex`, `radius` |
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
@@ -137,27 +137,72 @@ Common `attributeID`s: 9 hp (structure), 263 shieldCapacity, 265 armorHP,
 70 agility, 600 warpSpeedMultiplier.
 
 Prefer joining on `dogma_attributes.name` over hardcoding IDs — it is clearer
-and survives schema drift.
+and survives schema drift. Two attribute names (`902`, `cynoJammerActivationDelay`)
+are shared by two IDs each, so add `AND published = 1` or resolve to an ID when a
+query must return exactly one row.
 
 ## Gotchas
 
-These cause silently wrong answers, so check them before trusting a result:
+These cause silently wrong answers -- plausible numbers, not errors -- so check
+them before trusting a result. Verified against build 3466501.
 
-- **Filter `published = 1`.** Only 26,992 of 52,848 types are published; the
-  rest are test items, unreleased content, and dev leftovers that will pollute
+**Wrong-answer traps (highest priority):**
+
+- **Resonance is not resistance; it is inverted.** `armorEmDamageResonance =
+  0.4` means **60% resist**, not 40%. Resist % is `(1 - value) * 100`. Every
+  `*DamageResonance` attribute works this way.
+- **`security` alone cannot identify nullsec.** Wormhole, abyssal and void
+  systems all carry `security = -0.99`, so `WHERE security <= 0` sweeps in 3,004
+  systems that are not nullsec. Filter `space = 'kspace'` first. Counts in known
+  space (5,485 total): 1,246 high, 687 low, 3,552 null.
+- **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
+  `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
+  `bp_skills` is what a *blueprint activity* needs -- a different question.
+  The Rifter needs `requiredSkill1 = 3329` (Minmatar Frigate) at level 1.
+- **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
+  published types. It is an internal seed value. For real prices use ESI; the
+  SDE has none.
+
+**Filtering and units:**
+
+- **Filter `published = 1`.** Only 26,992 of 52,863 types are published; the
+  rest are test items, unreleased content and dev leftovers that pollute
   aggregates and name searches.
 - **`portionSize` governs reprocessing.** `type_materials` quantities are per
   `portionSize` units, not per unit. Veldspar yields 400 Tritanium per **100**
   units. Divide by `portionSize` for per-unit figures.
-- **`systems.security` is unrounded.** Jita is 0.9459, displayed in-game as 0.9.
+- **`systems.security` is unrounded.** Jita is 0.9459, shown in-game as 0.9.
   High-sec is `security >= 0.45` (which rounds to 0.5), not `>= 0.5`.
+- Blueprint `time` values are seconds.
+
+**Joins that silently multiply or drop rows:**
+
 - **Use `stargates.destSystemID`**, not `destStargateID`. The latter is the peer
-  *gate*; joining it against `solarSystemID` silently returns zero rows.
-- **`planets.celestialIndex`** is the in-game roman numeral — planet II is
-  `celestialIndex = 2`. `planetID` is unrelated to ordering.
+  *gate*; joining it against `solarSystemID` returns zero rows.
+- **Names are not unique.** 12 published type names, 6 group names and 2
+  attribute names are shared by more than one ID. Joining on name can duplicate
+  rows -- resolve to an ID first when a query must return exactly one thing.
+- **4 products are made by more than one blueprint** ('Firewall' Signal
+  Amplifier has 5). `bp_products -> blueprints` is not one-to-one.
 - **Blueprint lookups start from the product**, not the blueprint name. Join
   `bp_products` to find which blueprint makes a thing.
 - **`groups_` has a trailing underscore** (`group` is reserved in SQL).
+
+**Coverage gaps -- absence is not evidence:**
+
+- 18,915 published types have **no** `type_materials` row: not reprocessable,
+  rather than reprocessing to nothing.
+- 960 published types have `volume` NULL; `metaGroupID` and `techLevel` are
+  populated for only ~26% and ~19% of types.
+- **3,222 systems have no stargates** (all wormhole/abyssal/void, plus 217 in
+  known space). The gate graph is disconnected -- routing between components is
+  impossible, so a BFS must handle "no path" rather than hang or error.
+- **21 blueprint rows reference typeIDs that do not exist** (20 products, 1
+  material) -- removed content whose blueprints remain. This is upstream data,
+  not a build error; use inner joins so they drop out.
+- Region `19000001` (GPMR-01) is a dev region whose single system GPMS-01 has
+  `security = 1.0`, above any real system. Exclude it from "highest security"
+  style queries -- `space = 'kspace'` already does.
 - Names are English-only; the builder discards other locales.
 
 ## Examples
@@ -212,15 +257,30 @@ JOIN groups_ g ON g.groupID = t.groupID
 WHERE g.name = 'Battleship' AND t.published = 1
 ORDER BY t.name;
 
--- every system in a region, by security band
-SELECT s.name, s.security,
-       CASE WHEN s.security >= 0.45 THEN 'high'
-            WHEN s.security >  0.0  THEN 'low'
-            ELSE 'null' END AS band
-FROM systems s
-JOIN regions r ON r.regionID = s.regionID
-WHERE r.name = 'Insmother'
-ORDER BY s.security DESC;
+-- security bands across known space (note the space filter)
+SELECT CASE WHEN security >= 0.45 THEN 'high'
+            WHEN security >  0.0  THEN 'low'
+            ELSE 'null' END AS band, COUNT(*)
+FROM systems WHERE space = 'kspace'
+GROUP BY band;
+
+-- resistances, converting resonance to the percentage shown in game
+SELECT a.name, ROUND((1 - d.value) * 100, 1) AS resist_pct
+FROM type_dogma d
+JOIN dogma_attributes a ON a.attributeID = d.attributeID
+JOIN types t ON t.typeID = d.typeID
+WHERE t.name = 'Rifter' AND a.name LIKE '%DamageResonance';
+
+-- what skills a ship requires (dogma, not bp_skills)
+SELECT sk.name, lvl.value AS level
+FROM type_dogma req
+JOIN dogma_attributes ra ON ra.attributeID = req.attributeID AND ra.name LIKE 'requiredSkill_'
+JOIN types t   ON t.typeID = req.typeID
+JOIN types sk  ON sk.typeID = CAST(req.value AS INT)
+JOIN type_dogma lvl ON lvl.typeID = t.typeID
+JOIN dogma_attributes la ON la.attributeID = lvl.attributeID
+     AND la.name = ra.name || 'Level'
+WHERE t.name = 'Rifter';
 ```
 
 ## Routing
@@ -237,4 +297,6 @@ for a, b in db.execute("SELECT solarSystemID, destSystemID FROM stargates"):
     adj[a].append(b)
 ```
 
-Filter the edge list by `systems.security` first for high-sec-only routing.
+Filter the edge list by `systems.security` for high-sec-only routing. The graph
+is **disconnected** -- 3,222 systems have no gates at all -- so always handle the
+"no path exists" case rather than assuming a route can be found.

@@ -1,0 +1,116 @@
+name: Publish SDE database
+
+# CCP does not push notifications, so this polls. The check is cheap: the build
+# manifest is ~80 bytes, and the 99 MB archive is only fetched when the build
+# number has actually changed. Most runs exit in seconds having downloaded
+# nothing.
+on:
+  schedule:
+    - cron: "20 */3 * * *"   # every 3 hours at :20 (avoids the on-the-hour rush)
+  workflow_dispatch:          # "Run workflow" button
+    inputs:
+      force:
+        description: "Rebuild even if the SDE build number has not changed"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write             # needed to commit the marker and publish releases
+
+concurrency:
+  group: sde-release          # never let two builds race
+  cancel-in-progress: false
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check CCP's current build number
+        id: check
+        run: |
+          set -euo pipefail
+          latest=$(curl -sSf --retry 3 --retry-delay 5 \
+            https://developers.eveonline.com/static-data/tranquility/latest.jsonl)
+          echo "manifest: $latest"
+          build=$(printf '%s' "$latest" | python3 -c 'import json,sys; print(json.load(sys.stdin)["buildNumber"])')
+          released=$(printf '%s' "$latest" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("releaseDate",""))')
+
+          known=""
+          [ -f sde-build.json ] && known=$(python3 -c 'import json;print(json.load(open("sde-build.json"))["buildNumber"])')
+
+          echo "build=$build"       >> "$GITHUB_OUTPUT"
+          echo "released=$released" >> "$GITHUB_OUTPUT"
+
+          if [ "$build" = "$known" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Build $build already published; nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::New SDE build $build (was ${known:-none}) - rebuilding."
+          fi
+
+      - name: Build the database
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          python3 build_sde_db.py --db eve-sde-full.sqlite --compress xz
+          ls -l eve-sde-full.sqlite.xz
+
+      - name: Verify the archive round-trips
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import lzma, shutil, sqlite3, os, sys
+          with lzma.open("eve-sde-full.sqlite.xz") as f, open("rt.sqlite", "wb") as o:
+              shutil.copyfileobj(f, o)
+          db = sqlite3.connect("rt.sqlite")
+          assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok", "integrity check failed"
+          n = db.execute("SELECT COUNT(*) FROM types").fetchone()[0]
+          s = db.execute("SELECT COUNT(*) FROM systems").fetchone()[0]
+          assert n > 40000 and s > 8000, f"suspiciously small: {n} types, {s} systems"
+          print(f"verified: {n:,} types, {s:,} systems, "
+                f"{os.path.getsize('rt.sqlite')/1e6:.0f} MB uncompressed")
+          os.remove("rt.sqlite")
+          PY
+
+      - name: Record the build number
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          cat > sde-build.json <<EOF
+          {
+            "buildNumber": ${{ steps.check.outputs.build }},
+            "releaseDate": "${{ steps.check.outputs.released }}",
+            "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sde-build.json
+          # Committing also counts as repository activity, which keeps GitHub
+          # from auto-disabling this schedule after 60 days of inactivity.
+          git commit -m "SDE build ${{ steps.check.outputs.build }}" || echo "nothing to commit"
+          git push
+
+      - name: Publish the release
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="sde-${{ steps.check.outputs.build }}"
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" eve-sde-full.sqlite.xz \
+            --title "SDE build ${{ steps.check.outputs.build }}" \
+            --notes "EVE Online SDE build \`${{ steps.check.outputs.build }}\`, released by CCP on \`${{ steps.check.outputs.released }}\`.
+
+          \`eve-sde-full.sqlite.xz\` is the complete SDE as an indexed SQLite database (~14 MB compressed, ~93 MB expanded). Small enough to upload to claude.ai, which caps files at 30 MB.
+
+          \`\`\`bash
+          xz -d eve-sde-full.sqlite.xz
+          \`\`\`
+
+          Built by \`build_sde_db.py\`; schema and query notes are in \`.claude/skills/eve-sde/SKILL.md\`."
