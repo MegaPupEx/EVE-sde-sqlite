@@ -5,10 +5,17 @@ database — small enough to upload anywhere — plus a Claude skill documenting
 schema and the traps in the data.
 
 ```bash
-python3 build_sde_db.py                    # -> sde.sqlite   (~20s, 93 MB)
-python3 build_sde_db.py --compress xz      # -> +.xz          (~14 MB)
-python3 build_sde_db.py --portable         # smaller, drops descriptions/moons
+python3 build_sde_db.py                    # curated: 26 tables, 93 MB   (~20s)
+python3 build_sde_db.py --complete         # everything: 107 tables, 148 MB
+python3 build_sde_db.py --compress xz      # + .xz for upload  (14 MB / 27 MB)
+python3 build_sde_db.py --portable         # smaller still, drops descriptions
 ```
+
+`--complete` adds moon statistics as real columns plus 81 further tables —
+missions, dungeons, NPC agents and corporations, ship trait bonuses,
+certificates, planetary schematics, stars, skins. Those extra tables are
+generic-ingested, so nested fields are JSON: query them with `json_extract()`.
+The curated 26 tables are hand-shaped either way.
 
 Standard library only. The script reads CCP's build manifest at runtime, so it
 always fetches the current build. Needs `developers.eveonline.com`.
@@ -71,8 +78,8 @@ exactly on everything both contain.
 | Size | 93 MB / **14 MB** compressed | 497 MB / 162 MB |
 | Tables | 26, purpose-built | 176, full classic schema |
 | Formats | SQLite | SQLite, MySQL, PostgreSQL, MSSQL, CSV |
-| Extras | `space` column, documented traps, Claude skill | agents, certificates, ship traits, historical builds |
+| Extras | `space` column, documented traps, Claude skill | historical builds |
 
-Use Fuzzwork if you need agents, certificates, ship traits, planetary
-schematics, or a non-SQLite format — this build omits them. Use this one if the
-database has to be small enough to upload, or you want the traps written down.
+With `--complete` this covers the same ground in 148 MB against Fuzzwork's
+497 MB, because text is English-only rather than eight languages. Fuzzwork
+still wins on non-SQLite formats and its archive of past builds.

@@ -138,6 +138,30 @@ def en(v, default=None):
     return v if v is not None else default
 
 
+LOCALES = {"de", "en", "es", "fr", "it", "ja", "ko", "ru", "zh"}
+
+
+def strip_locales(v):
+    """Recursively reduce every localised block to English.
+
+    Localised text is not only at the top level -- mission `messages`, for
+    instance, is a list of dicts each carrying eight languages. Keeping all of
+    them makes that one table 53 MB instead of about 6 MB.
+    """
+    if isinstance(v, dict):
+        if "en" in v and set(v) <= LOCALES:
+            return v["en"]
+        # Localised blocks are sometimes tagged with an identifier alongside the
+        # languages (mission messages carry a _key). Keep the tag, drop the
+        # other eight translations.
+        if "en" in v and set(v) - {"_key"} <= LOCALES:
+            return {"_key": v.get("_key"), "text": v["en"]}
+        return {k: strip_locales(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [strip_locales(x) for x in v]
+    return v
+
+
 SCHEMA = """
 PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF;
 
@@ -399,12 +423,89 @@ def compress(path, fmt):
     return out
 
 
+# Files the curated schema already covers; --complete ingests everything else.
+CURATED = {
+    "categories", "groups", "types", "dogmaAttributes", "dogmaEffects", "typeDogma",
+    "blueprints", "typeMaterials", "marketGroups", "metaGroups", "factions", "races",
+    "mapRegions", "mapConstellations", "mapSolarSystems", "mapPlanets", "mapMoons",
+    "mapAsteroidBelts", "mapStargates", "npcStations",
+}
+
+MOON_STATS = ["density", "surfaceGravity", "escapeVelocity", "orbitRadius",
+              "orbitPeriod", "rotationRate", "eccentricity", "massDust", "massGas",
+              "temperature", "pressure", "fragmented", "locked"]
+
+
+def add_moon_statistics(raw, db):
+    """Promote each moon's statistics blob to real columns."""
+    log("Adding moon statistics ...")
+    for c in MOON_STATS:
+        typ = "INT" if c in ("fragmented", "locked") else "REAL"
+        db.execute(f"ALTER TABLE moons ADD COLUMN {c} {typ}")
+    sets = ",".join(f"{c}=?" for c in MOON_STATS)
+
+    def vals(r):
+        s = r.get("statistics") or {}
+        out = []
+        for c in MOON_STATS:
+            v = s.get(c)
+            out.append(int(bool(v)) if c in ("fragmented", "locked") and v is not None else v)
+        return out + [r["_key"]]
+
+    db.executemany(f"UPDATE moons SET {sets} WHERE moonID=?",
+                   (vals(r) for r in rows(raw, "mapMoons")))
+    db.execute("CREATE INDEX i_moon_grav ON moons(surfaceGravity)")
+
+
+def ingest_remaining(raw, db):
+    """Generic-ingest every SDE file the curated schema does not cover.
+
+    Nested structures are stored as compact JSON (query with json_extract);
+    localised text is reduced to English first.
+    """
+    log("Ingesting remaining SDE files ...")
+    import re
+    files = sorted(f[:-6] for f in os.listdir(raw)
+                   if f.endswith(".jsonl") and f[:-6] not in CURATED and not f.startswith("_"))
+    made = 0
+    for name in files:
+        recs, keys = [], {}
+        for r in rows(raw, name):
+            r = {k: strip_locales(v) for k, v in r.items()}
+            recs.append(r)
+            keys.update(dict.fromkeys(r))
+        if not recs:
+            continue
+        tbl = re.sub(r"\W", "_", name)
+        cols = list(keys)
+        db.execute("CREATE TABLE \"%s\" (%s)" % (
+            tbl, ", ".join('"%s"' % re.sub(r"\W", "_", c) for c in cols)))
+
+        def cell(v):
+            if isinstance(v, (dict, list)):
+                return json.dumps(v, separators=(",", ":"), ensure_ascii=False)
+            return v
+
+        db.executemany('INSERT INTO "%s" VALUES (%s)' % (tbl, ",".join("?" * len(cols))),
+                       ([cell(r.get(c)) for c in cols] for r in recs))
+        for c in cols:
+            if c == "_key" or c.endswith("ID"):
+                try:
+                    db.execute('CREATE INDEX "i_%s_%s" ON "%s"("%s")' % (tbl, c, tbl, c))
+                except sqlite3.OperationalError:
+                    pass
+        made += 1
+    log(f"  added {made} tables")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", default="sde.sqlite", help="output database path")
     ap.add_argument("--workdir", default=".sde-cache", help="download/extract cache")
     ap.add_argument("--keep-raw", action="store_true", help="keep extracted JSONL")
+    ap.add_argument("--complete", action="store_true",
+                    help="also ingest every remaining SDE file and moon statistics")
     ap.add_argument("--portable", action="store_true",
                     help="drop descriptions, unpublished types and moons (~31 MB)")
     ap.add_argument("--compress", choices=["gz", "xz", "bz2"],
@@ -416,6 +517,17 @@ def main():
     t0 = time.time()
     raw, build_no, released = download_sde(a.workdir)
     build(raw, a.db, build_no, released)
+    if a.complete:
+        db = sqlite3.connect(a.db)
+        db.executescript("PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF;")
+        add_moon_statistics(raw, db)
+        ingest_remaining(raw, db)
+        db.execute("INSERT OR REPLACE INTO meta VALUES ('complete','1')")
+        db.commit()
+        db.execute("VACUUM")
+        n = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
+        db.close()
+        log(f"Complete build: {n} tables, {os.path.getsize(a.db)/1e6:.0f} MB")
     if a.portable:
         make_portable(a.db)
     fmt = a.compress or ("gz" if a.gzip else None)
