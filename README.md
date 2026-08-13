@@ -28,11 +28,12 @@ always fetches the current build. Needs `developers.eveonline.com`.
 
 ## Prebuilt downloads
 
-[**Releases**](../../releases/latest) carries `eve-sde-full.sqlite.xz`, rebuilt
-automatically within hours of each CCP release. Skip the build entirely:
+[**Releases**](../../releases/latest) carries `eve-sde-full.sqlite.xz` — the
+complete 107-table build, ~27 MB — rebuilt automatically within hours of each
+CCP release. Skip the build entirely:
 
 ```bash
-curl -sSLo sde.xz https://github.com/MegaPupEx/Test/releases/latest/download/eve-sde-full.sqlite.xz
+curl -sSLo sde.xz https://github.com/MegaPupEx/EVE-sde-sqlite/releases/latest/download/eve-sde-full.sqlite.xz
 xz -d sde.xz
 ```
 

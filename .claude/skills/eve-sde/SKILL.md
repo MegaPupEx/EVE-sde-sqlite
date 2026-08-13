@@ -26,12 +26,12 @@ SELECT * FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, source
 below. This is the only option in a sandbox with no outbound access, and it
 costs nothing to check first.
 
-**3. Prebuilt release** — fastest when reachable (~14 MB, already integrity
-checked, no build step):
+**3. Prebuilt release** — fastest when reachable (~27 MB, the complete build,
+already integrity checked, no build step):
 
 ```bash
 curl -sSLo eve-sde-full.sqlite.xz \
-  https://github.com/MegaPupEx/Test/releases/latest/download/eve-sde-full.sqlite.xz
+  https://github.com/MegaPupEx/EVE-sde-sqlite/releases/latest/download/eve-sde-full.sqlite.xz
 xz -d eve-sde-full.sqlite.xz && mv eve-sde-full.sqlite sde.sqlite
 ```
 
@@ -46,7 +46,7 @@ the release is gone.
 `developers.eveonline.com`:
 
 ```bash
-python3 build_sde_db.py          # stdlib only, writes ./sde.sqlite (~93 MB)
+python3 build_sde_db.py --complete   # stdlib only, ~147 MB, all 107 tables
 ```
 
 **5. Fuzzwork's prebuilt dump** — last resort. Same data, but a **different
