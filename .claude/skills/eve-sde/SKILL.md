@@ -13,27 +13,48 @@ Those are live data — use ESI (`https://esi.evetech.net`) instead.
 
 ## Get a database
 
-If `sde.sqlite` is not already present, build it:
+Work down this list and stop at the first that succeeds. Environments differ in
+what they can reach, so do not assume any one of them works.
 
-```bash
-python3 build_sde_db.py          # ~16s, stdlib only, writes ./sde.sqlite (~89 MB)
-```
-
-The script reads CCP's `latest.jsonl` at runtime, so it always fetches the
-current build. Needs network access to `developers.eveonline.com`.
-
-If that host is blocked, use Fuzzwork's prebuilt dump instead — same data,
-different schema (classic `invTypes` / `mapSolarSystems` naming, not the schema
-below):
-
-```bash
-curl -sO https://www.fuzzwork.co.uk/dump/latest-sqlite.db.gz && gunzip latest-sqlite.db.gz
-```
-
-Check which build a database came from:
+**1. Already present.** If `sde.sqlite` exists, use it. Check it is current:
 
 ```sql
 SELECT * FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, source
+```
+
+**2. Uploaded to the conversation.** See "When the sandbox has no network"
+below. This is the only option in a sandbox with no outbound access, and it
+costs nothing to check first.
+
+**3. Prebuilt release** — fastest when reachable (~14 MB, already integrity
+checked, no build step):
+
+```bash
+curl -sSLo eve-sde-full.sqlite.xz \
+  https://github.com/MegaPupEx/Test/releases/latest/download/eve-sde-full.sqlite.xz
+xz -d eve-sde-full.sqlite.xz && mv eve-sde-full.sqlite sde.sqlite
+```
+
+The `latest` in that URL always resolves to the newest release; a workflow
+republishes within hours of each CCP build. **A 404 here does not mean the file
+is missing** — GitHub returns 404 rather than 403 for private repositories, so
+if this repo is private an unauthenticated fetch fails exactly as though the
+release did not exist. Treat 404 as "cannot reach it, move on", not as evidence
+the release is gone.
+
+**4. Build from CCP** — authoritative, ~20 s, downloads ~99 MB. Needs
+`developers.eveonline.com`:
+
+```bash
+python3 build_sde_db.py          # stdlib only, writes ./sde.sqlite (~93 MB)
+```
+
+**5. Fuzzwork's prebuilt dump** — last resort. Same data, but a **different
+schema** (classic `invTypes` / `mapSolarSystems` naming), so none of the table
+and column names below apply:
+
+```bash
+curl -sO https://www.fuzzwork.co.uk/dump/latest-sqlite.db.gz && gunzip latest-sqlite.db.gz
 ```
 
 ### When the sandbox has no network
