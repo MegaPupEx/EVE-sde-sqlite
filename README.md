@@ -9,14 +9,19 @@ and flattens it into a queryable SQLite database.
 
 ```bash
 python3 build_sde_db.py                                  # -> sde.sqlite (~20s, ~93 MB)
-python3 build_sde_db.py --portable --gzip                # -> +.gz (~13 MB, uploadable)
+python3 build_sde_db.py --compress xz                    # -> +.xz (~14 MB, complete)
+python3 build_sde_db.py --portable --compress xz         # -> smaller still (~6 MB)
 python3 build_sde_db.py --db eve.sqlite --keep-raw
 ```
 
-`--portable` drops description text, unpublished types, and the moon table,
-producing a ~31 MB database (13 MB gzipped) small enough to upload into an
-environment that cannot download the SDE itself. It sets `meta.portable = '1'`
-so consumers can tell.
+`--compress xz` takes the full ~93 MB database to ~14 MB, which fits the 30 MB
+per-file upload limit on claude.ai with room to spare -- so an environment that
+cannot download the SDE can still have the complete dataset handed to it. Prefer
+it over gzip, which only reaches ~29 MB and leaves no headroom.
+
+`--portable` additionally drops description text, unpublished types, and the
+moon table (~31 MB raw) for tighter limits. It sets `meta.portable = '1'` so
+consumers can detect the reduced coverage.
 
 Standard library only — no dependencies. The database is *not* committed: it is
 derived data that rebuilds in seconds, and binary blobs bloat git history

@@ -373,10 +373,21 @@ def make_portable(dbpath):
     log(f"  {os.path.getsize(dbpath)/1e6:.0f} MB after slimming")
 
 
-def gzip_file(path):
-    import gzip as _gzip
-    out = path + ".gz"
-    with open(path, "rb") as f, _gzip.open(out, "wb", compresslevel=9) as g:
+def compress(path, fmt):
+    """Compress the database for upload into environments that cannot download it.
+
+    xz is the useful one: it takes the full ~92 MB database to ~13 MB, which is
+    comfortably under the 30 MB per-file limit on claude.ai, so nothing has to
+    be stripped out to make it fit. Python decompresses all three from the
+    standard library (gzip / lzma / bz2).
+    """
+    import gzip as _gzip, lzma as _lzma, bz2 as _bz2
+    opener, ext = {"gz": (lambda p: _gzip.open(p, "wb", compresslevel=9), ".gz"),
+                   "xz": (lambda p: _lzma.open(p, "wb", preset=9), ".xz"),
+                   "bz2": (lambda p: _bz2.open(p, "wb", compresslevel=9), ".bz2")}[fmt]
+    out = path + ext
+    log(f"Compressing with {fmt} (this takes a minute) ...")
+    with open(path, "rb") as f, opener(out) as g:
         shutil.copyfileobj(f, g)
     log(f"Wrote {out} ({os.path.getsize(out)/1e6:.1f} MB)")
     return out
@@ -390,7 +401,9 @@ def main():
     ap.add_argument("--keep-raw", action="store_true", help="keep extracted JSONL")
     ap.add_argument("--portable", action="store_true",
                     help="drop descriptions, unpublished types and moons (~31 MB)")
-    ap.add_argument("--gzip", action="store_true", help="also write a .gz alongside the database")
+    ap.add_argument("--compress", choices=["gz", "xz", "bz2"],
+                    help="also write a compressed copy; xz takes the full DB to ~13 MB")
+    ap.add_argument("--gzip", action="store_true", help=argparse.SUPPRESS)  # back-compat
     a = ap.parse_args()
 
     os.makedirs(a.workdir, exist_ok=True)
@@ -399,8 +412,9 @@ def main():
     build(raw, a.db, build_no, released)
     if a.portable:
         make_portable(a.db)
-    if a.gzip:
-        gzip_file(a.db)
+    fmt = a.compress or ("gz" if a.gzip else None)
+    if fmt:
+        compress(a.db, fmt)
     if not a.keep_raw:
         shutil.rmtree(raw, ignore_errors=True)
         log("Removed extracted JSONL (use --keep-raw to keep it)")

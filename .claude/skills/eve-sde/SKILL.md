@@ -44,28 +44,35 @@ conversation** rather than built. Look for an attached `.sqlite` or
 `.sqlite.gz` before assuming a build is possible:
 
 ```python
-import gzip, shutil, sqlite3, pathlib
-src = pathlib.Path("eve-sde-portable.sqlite.gz")      # adjust to the upload path
-if src.exists():
-    with gzip.open(src) as f, open("sde.sqlite", "wb") as o:
-        shutil.copyfileobj(f, o)
+import gzip, lzma, bz2, shutil, sqlite3, pathlib
+
+OPENERS = {".xz": lzma.open, ".gz": gzip.open, ".bz2": bz2.open}
+for src in pathlib.Path(".").glob("*.sqlite*"):        # adjust to the upload path
+    if src.suffix in OPENERS:
+        with OPENERS[src.suffix](src) as f, open("sde.sqlite", "wb") as o:
+            shutil.copyfileobj(f, o)
+        break
+    if src.suffix == ".sqlite":
+        shutil.copy(src, "sde.sqlite")
+        break
 db = sqlite3.connect("sde.sqlite")
 ```
 
 Produce that upload file with:
 
 ```bash
-python3 build_sde_db.py --db eve-sde-portable.sqlite --portable --gzip   # 13 MB
+python3 build_sde_db.py --db eve-sde-full.sqlite --compress xz   # ~14 MB, complete
 ```
 
-A portable database has `meta.portable = '1'` and omits three things: item
-description text, unpublished types, and the `moons` table. So on a portable
-database, do **not** filter on `published` (everything present is published),
-do not promise moon data, and do not quote item descriptions. Everything else
--- dogma attributes, blueprints, reprocessing, systems, planets, stargates,
-stations -- is complete.
+**Use xz, not gzip.** It takes the full ~93 MB database to ~14 MB, comfortably
+under the 30 MB per-file limit on claude.ai, so nothing has to be stripped to
+make it fit. `--portable` exists for tighter limits, but is rarely needed.
 
-Check before answering:
+If a database *was* built with `--portable` it sets `meta.portable = '1'` and
+omits item descriptions, unpublished types, and the `moons` table. On such a
+database do **not** filter on `published` (everything present is published),
+do not promise moon data, and do not quote descriptions. Check first, so
+reduced coverage is never reported as fact:
 
 ```sql
 SELECT value FROM meta WHERE key = 'portable';   -- '1' means slimmed
