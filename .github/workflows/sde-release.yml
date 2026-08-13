@@ -55,7 +55,7 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         run: |
           set -euo pipefail
-          python3 build_sde_db.py --db eve-sde-full.sqlite --compress xz
+          python3 build_sde_db.py --db eve-sde-full.sqlite --complete --compress xz
           ls -l eve-sde-full.sqlite.xz
 
       - name: Verify the archive round-trips
@@ -70,9 +70,16 @@ jobs:
           assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok", "integrity check failed"
           n = db.execute("SELECT COUNT(*) FROM types").fetchone()[0]
           s = db.execute("SELECT COUNT(*) FROM systems").fetchone()[0]
+          m = db.execute("SELECT COUNT(*) FROM moons").fetchone()[0]
+          t = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
           assert n > 40000 and s > 8000, f"suspiciously small: {n} types, {s} systems"
-          print(f"verified: {n:,} types, {s:,} systems, "
-                f"{os.path.getsize('rt.sqlite')/1e6:.0f} MB uncompressed")
+          assert t >= 100, f"complete build should have ~107 tables, got {t}"
+          assert db.execute("SELECT value FROM meta WHERE key='complete'").fetchone(), "not a complete build"
+          size = os.path.getsize("eve-sde-full.sqlite.xz")
+          assert size < 30_000_000, f"archive is {size/1e6:.1f} MB, over the 30 MB upload limit"
+          print(f"verified: {t} tables, {n:,} types, {s:,} systems, {m:,} moons, "
+                f"{os.path.getsize('rt.sqlite')/1e6:.0f} MB uncompressed, "
+                f"{size/1e6:.1f} MB compressed")
           os.remove("rt.sqlite")
           PY
 
@@ -107,7 +114,7 @@ jobs:
             --title "SDE build ${{ steps.check.outputs.build }}" \
             --notes "EVE Online SDE build \`${{ steps.check.outputs.build }}\`, released by CCP on \`${{ steps.check.outputs.released }}\`.
 
-          \`eve-sde-full.sqlite.xz\` is the complete SDE as an indexed SQLite database (~14 MB compressed, ~93 MB expanded). Small enough to upload to claude.ai, which caps files at 30 MB.
+          \`eve-sde-full.sqlite.xz\` is the **complete** SDE as an indexed SQLite database — 107 tables, ~27 MB compressed, ~147 MB expanded. Fits the 30 MB per-file upload limit on claude.ai.
 
           \`\`\`bash
           xz -d eve-sde-full.sqlite.xz

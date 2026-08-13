@@ -514,12 +514,111 @@ def ingest_remaining(raw, db):
     log(f"  added {made} tables")
 
 
+# Domain groups for --split. Each file stands alone, and SQLite can ATTACH
+# several and join across them, so splitting costs nothing at query time.
+# Tables not listed here land in "misc".
+GROUPS = {
+    "items": ["types", "groups_", "categories", "market_groups", "meta_groups",
+              "dogma_attributes", "dogma_effects", "type_dogma", "type_effects",
+              "type_materials", "typeBonus", "typeLists", "typeElements",
+              "dynamicItemAttributes", "metaGroups", "compressibleTypes",
+              "contrabandTypes", "dogmaUnits", "dogmaAttributeCategories"],
+    "universe": ["regions", "constellations", "systems", "planets", "moons",
+                 "asteroid_belts", "stargates", "npc_stations", "mapStars",
+                 "mapSecondarySuns", "landmarks", "planetResources",
+                 "sovereigntyUpgrades", "systemWideEffects", "systemDbuffEmitters"],
+    "industry": ["blueprints", "bp_activity", "bp_materials", "bp_products",
+                 "bp_skills", "planetSchematics", "industryActivities",
+                 "industryAssemblyLines", "industryModifierSources",
+                 "industryInstallationTypes", "industryTargetFilters",
+                 "controlTowerResources", "metenoxMoonDrill"],
+    "world": ["factions", "races", "missions", "dungeons", "npcCharacters",
+              "npcCorporations", "npcCorporationDivisions", "agentTypes",
+              "agentsInSpace", "certificates", "masteries", "epicArcs",
+              "bloodlines", "ancestries", "schools", "schoolMap", "archetypes",
+              "characterAttributes", "characterTitles", "cloneGrades",
+              "corporationActivities", "corporationRoles", "corporationRoleGroups",
+              "stationOperations", "stationServices", "stationStandingsRestrictions",
+              "militaryCampaigns", "militaryCampaignObjectives",
+              "mercenaryTacticalOperations", "freelanceJobSchemas",
+              "expertSystems", "skillPlans", "shipTreeElements", "shipTreeGroups",
+              "shipTreeFactions", "accountingEntryTypes", "notificationTypes",
+              "translationLanguages"],
+    "cosmetic": ["graphics", "icons", "graphicMaterialSets", "skins", "skinLicenses",
+                 "skinMaterials", "skinrComponents", "skinrSlots",
+                 "skinrSlotConfigurations", "skinrSlotNames", "skinrSlotCategories",
+                 "skinrComponentPointValues", "skinrComponentRarities",
+                 "skinrComponentCategories", "skinrTierThresholds",
+                 "skinrSlotsToMaterials", "linkWithShip"],
+}
+
+
+def split_db(dbpath, fmt=None):
+    """Emit one database per domain group, each independently usable.
+
+    The 30 MB upload cap is per file, so several small files beat one large
+    one -- and a consumer that only cares about the universe never has to
+    fetch missions or skins. `meta` is copied into every part.
+    """
+    src = sqlite3.connect(dbpath)
+    all_tables = {r[0] for r in src.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    assigned = {t for ts in GROUPS.values() for t in ts}
+    groups = dict(GROUPS)
+    misc = sorted(all_tables - assigned - {"meta"})
+    if misc:
+        groups["misc"] = misc
+
+    base = dbpath[:-7] if dbpath.endswith(".sqlite") else dbpath
+    outputs = []
+    for group, tables in groups.items():
+        tables = [t for t in tables if t in all_tables]
+        if not tables:
+            continue
+        out = f"{base}-{group}.sqlite"
+        if os.path.exists(out):
+            os.remove(out)
+        dst = sqlite3.connect(out)
+        dst.executescript("PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF;")
+        dst.execute("ATTACH DATABASE ? AS src", (dbpath,))
+        for t in ["meta"] + tables:
+            ddl = src.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (t,)).fetchone()
+            if not ddl or not ddl[0]:
+                continue
+            dst.execute(ddl[0])
+            dst.execute('INSERT INTO "%s" SELECT * FROM src."%s"' % (t, t))
+            for (isql,) in src.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? "
+                    "AND sql IS NOT NULL", (t,)).fetchall():
+                try:
+                    dst.execute(isql)
+                except sqlite3.OperationalError:
+                    pass
+        dst.execute("INSERT OR REPLACE INTO meta VALUES ('splitGroup', ?)", (group,))
+        dst.commit()
+        dst.execute("DETACH DATABASE src")
+        dst.execute("VACUUM")
+        dst.close()
+        size = os.path.getsize(out)
+        line = f"  {group:<10} {len(tables):>3} tables  {size/1e6:>6.1f} MB"
+        if fmt:
+            c = compress(out, fmt)
+            line += f"  ->  {os.path.getsize(c)/1e6:.1f} MB {fmt}"
+        log(line)
+        outputs.append(out)
+    src.close()
+    return outputs
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", default="sde.sqlite", help="output database path")
     ap.add_argument("--workdir", default=".sde-cache", help="download/extract cache")
     ap.add_argument("--keep-raw", action="store_true", help="keep extracted JSONL")
+    ap.add_argument("--split", action="store_true",
+                    help="also emit one database per domain group (items, universe, ...)")
     ap.add_argument("--complete", action="store_true",
                     help="also ingest every remaining SDE file and moon statistics")
     ap.add_argument("--portable", action="store_true",
@@ -547,6 +646,9 @@ def main():
     if a.portable:
         make_portable(a.db)
     fmt = a.compress or ("gz" if a.gzip else None)
+    if a.split:
+        log("Splitting by domain group ...")
+        split_db(a.db, fmt)
     if fmt:
         compress(a.db, fmt)
     if not a.keep_raw:

@@ -85,6 +85,24 @@ Produce that upload file with:
 python3 build_sde_db.py --db eve-sde-full.sqlite --compress xz   # ~14 MB, complete
 ```
 
+### Split databases
+
+A build may arrive split by domain: `-items`, `-universe`, `-industry`,
+`-world`, `-cosmetic`, `-misc`. Each is a normal database; `meta.splitGroup`
+names the part. ATTACH the ones you need and join across them normally:
+
+```python
+db = sqlite3.connect(":memory:")
+for g in ("items", "universe"):
+    db.execute(f"ATTACH DATABASE 'eve-sde-{g}.sqlite' AS {g}")
+db.execute("SELECT t.name FROM universe.planets p JOIN items.types t ON t.typeID=p.typeID ...")
+```
+
+Only fetch the parts a question needs: `universe` covers systems, planets,
+moons and stargates; `items` covers types, dogma and reprocessing; `industry`
+covers blueprints and schematics; `world` covers missions, dungeons, agents and
+certificates.
+
 **Use xz, not gzip.** It takes the full ~93 MB database to ~14 MB, comfortably
 under the 30 MB per-file limit on claude.ai, so nothing has to be stripped to
 make it fit. `--portable` exists for tighter limits, but is rarely needed.

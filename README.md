@@ -8,6 +8,7 @@ schema and the traps in the data.
 python3 build_sde_db.py                    # curated: 26 tables, 93 MB   (~20s)
 python3 build_sde_db.py --complete         # everything: 107 tables, 148 MB
 python3 build_sde_db.py --compress xz      # + .xz for upload  (14 MB / 27 MB)
+python3 build_sde_db.py --complete --split # one file per domain (largest 18 MB)
 python3 build_sde_db.py --portable         # smaller still, drops descriptions
 ```
 
@@ -16,6 +17,11 @@ missions, dungeons, NPC agents and corporations, ship trait bonuses,
 certificates, planetary schematics, stars, skins. Those extra tables are
 generic-ingested, so nested fields are JSON: query them with `json_extract()`.
 The curated 26 tables are hand-shaped either way.
+
+`--split` emits one database per domain — items, universe, industry, world,
+cosmetic, misc. Each stands alone, and SQLite can `ATTACH` several and join
+across them, so splitting costs nothing at query time. Since the 30 MB upload
+cap is per *file*, this removes the ceiling: the largest part is 18 MB.
 
 Standard library only. The script reads CCP's build manifest at runtime, so it
 always fetches the current build. Needs `developers.eveonline.com`.
