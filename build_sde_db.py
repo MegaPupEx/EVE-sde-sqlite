@@ -131,6 +131,18 @@ def rows(raw, name):
                 yield json.loads(line)
 
 
+def num(v):
+    """Store whole numbers as integers.
+
+    A REAL-affinity column forces every value into an 8-byte float, even 1.0.
+    NUMERIC affinity keeps integers as 1-2 byte integers, which is roughly 7%
+    off the compressed size across a database this float-heavy.
+    """
+    if isinstance(v, float) and v.is_integer() and abs(v) < 2**53:
+        return int(v)
+    return v
+
+
 def en(v, default=None):
     """SDE localises many strings as {'en': ..., 'de': ...}."""
     if isinstance(v, dict):
@@ -170,19 +182,19 @@ CREATE TABLE categories(categoryID INT PRIMARY KEY, name TEXT, published INT);
 CREATE TABLE groups_(groupID INT PRIMARY KEY, name TEXT, categoryID INT, published INT);
 CREATE TABLE types(
   typeID INT PRIMARY KEY, name TEXT, description TEXT, groupID INT, categoryID INT,
-  mass REAL, volume REAL, capacity REAL, radius REAL, basePrice REAL, published INT,
+  mass NUMERIC, volume NUMERIC, capacity NUMERIC, radius NUMERIC, basePrice NUMERIC, published INT,
   marketGroupID INT, portionSize INT, raceID INT, factionID INT,
   metaGroupID INT, metaLevel INT, techLevel INT, variationParentTypeID INT);
 CREATE TABLE dogma_attributes(
   attributeID INT PRIMARY KEY, name TEXT, description TEXT,
-  defaultValue REAL, highIsGood INT, stackable INT, published INT);
+  defaultValue NUMERIC, highIsGood INT, stackable INT, published INT);
 CREATE TABLE dogma_effects(effectID INT PRIMARY KEY, name TEXT);
-CREATE TABLE type_dogma(typeID INT, attributeID INT, value REAL);
+CREATE TABLE type_dogma(typeID INT, attributeID INT, value NUMERIC);
 CREATE TABLE type_effects(typeID INT, effectID INT, isDefault INT);
 CREATE TABLE blueprints(blueprintTypeID INT PRIMARY KEY, maxProductionLimit INT);
 CREATE TABLE bp_activity(blueprintTypeID INT, activity TEXT, time INT);
 CREATE TABLE bp_materials(blueprintTypeID INT, activity TEXT, typeID INT, quantity INT);
-CREATE TABLE bp_products(blueprintTypeID INT, activity TEXT, typeID INT, quantity INT, probability REAL);
+CREATE TABLE bp_products(blueprintTypeID INT, activity TEXT, typeID INT, quantity INT, probability NUMERIC);
 CREATE TABLE bp_skills(blueprintTypeID INT, activity TEXT, typeID INT, level INT);
 CREATE TABLE type_materials(typeID INT, materialTypeID INT, quantity INT);
 CREATE TABLE market_groups(marketGroupID INT PRIMARY KEY, parentGroupID INT, name TEXT, hasTypes INT);
@@ -191,21 +203,21 @@ CREATE TABLE regions(regionID INT PRIMARY KEY, name TEXT, factionID INT, wormhol
 CREATE TABLE constellations(constellationID INT PRIMARY KEY, name TEXT, regionID INT, factionID INT);
 CREATE TABLE systems(
   solarSystemID INT PRIMARY KEY, name TEXT, constellationID INT, regionID INT,
-  security REAL, securityClass TEXT, luminosity REAL, radius REAL,
+  security NUMERIC, securityClass TEXT, luminosity NUMERIC, radius NUMERIC,
   border INT, hub INT, regional INT, starID INT, space TEXT);
 CREATE TABLE planets(
-  planetID INT PRIMARY KEY, solarSystemID INT, celestialIndex INT, typeID INT, radius REAL,
-  density REAL, surfaceGravity REAL, escapeVelocity REAL, temperature REAL, pressure REAL,
-  orbitRadius REAL, orbitPeriod REAL, rotationRate REAL, eccentricity REAL,
-  massDust REAL, massGas REAL, locked INT, moons INT, belts INT);
+  planetID INT PRIMARY KEY, solarSystemID INT, celestialIndex INT, typeID INT, radius NUMERIC,
+  density NUMERIC, surfaceGravity NUMERIC, escapeVelocity NUMERIC, temperature NUMERIC, pressure NUMERIC,
+  orbitRadius NUMERIC, orbitPeriod NUMERIC, rotationRate NUMERIC, eccentricity NUMERIC,
+  massDust NUMERIC, massGas NUMERIC, locked INT, moons INT, belts INT);
 CREATE TABLE moons(moonID INT PRIMARY KEY, solarSystemID INT, planetID INT,
-  celestialIndex INT, orbitIndex INT, typeID INT, radius REAL);
+  celestialIndex INT, orbitIndex INT, typeID INT, radius NUMERIC);
 CREATE TABLE asteroid_belts(beltID INT PRIMARY KEY, solarSystemID INT, planetID INT,
   celestialIndex INT, orbitIndex INT, typeID INT);
 CREATE TABLE stargates(stargateID INT PRIMARY KEY, solarSystemID INT,
   destStargateID INT, destSystemID INT, typeID INT);
 CREATE TABLE npc_stations(stationID INT PRIMARY KEY, solarSystemID INT, ownerID INT,
-  typeID INT, operationID INT, reprocessingEfficiency REAL);
+  typeID INT, operationID INT, reprocessingEfficiency NUMERIC);
 CREATE TABLE factions(factionID INT PRIMARY KEY, name TEXT, description TEXT,
   corporationID INT, militiaCorporationID INT, solarSystemID INT);
 CREATE TABLE races(raceID INT PRIMARY KEY, name TEXT);
@@ -413,7 +425,7 @@ def compress(path, fmt):
     """
     import gzip as _gzip, lzma as _lzma, bz2 as _bz2
     opener, ext = {"gz": (lambda p: _gzip.open(p, "wb", compresslevel=9), ".gz"),
-                   "xz": (lambda p: _lzma.open(p, "wb", preset=9), ".xz"),
+                   "xz": (lambda p: _lzma.open(p, "wb", preset=9 | _lzma.PRESET_EXTREME), ".xz"),
                    "bz2": (lambda p: _bz2.open(p, "wb", compresslevel=9), ".bz2")}[fmt]
     out = path + ext
     log(f"Compressing with {fmt} (this takes a minute) ...")
@@ -440,7 +452,7 @@ def add_moon_statistics(raw, db):
     """Promote each moon's statistics blob to real columns."""
     log("Adding moon statistics ...")
     for c in MOON_STATS:
-        typ = "INT" if c in ("fragmented", "locked") else "REAL"
+        typ = "INT" if c in ("fragmented", "locked") else "NUMERIC"
         db.execute(f"ALTER TABLE moons ADD COLUMN {c} {typ}")
     sets = ",".join(f"{c}=?" for c in MOON_STATS)
 
@@ -449,7 +461,7 @@ def add_moon_statistics(raw, db):
         out = []
         for c in MOON_STATS:
             v = s.get(c)
-            out.append(int(bool(v)) if c in ("fragmented", "locked") and v is not None else v)
+            out.append(int(bool(v)) if c in ("fragmented", "locked") and v is not None else num(v))
         return out + [r["_key"]]
 
     db.executemany(f"UPDATE moons SET {sets} WHERE moonID=?",
@@ -484,16 +496,20 @@ def ingest_remaining(raw, db):
         def cell(v):
             if isinstance(v, (dict, list)):
                 return json.dumps(v, separators=(",", ":"), ensure_ascii=False)
-            return v
+            return num(v)
 
         db.executemany('INSERT INTO "%s" VALUES (%s)' % (tbl, ",".join("?" * len(cols))),
                        ([cell(r.get(c)) for c in cols] for r in recs))
-        for c in cols:
-            if c == "_key" or c.endswith("ID"):
-                try:
-                    db.execute('CREATE INDEX "i_%s_%s" ON "%s"("%s")' % (tbl, c, tbl, c))
-                except sqlite3.OperationalError:
-                    pass
+        # Only index tables big enough for it to matter. Most of the long tail
+        # is a few hundred rows, where a scan is instant and the index costs
+        # more compressed size than it saves time.
+        if len(recs) >= 5000:
+            for c in cols:
+                if c == "_key" or c.endswith("ID"):
+                    try:
+                        db.execute('CREATE INDEX "i_%s_%s" ON "%s"("%s")' % (tbl, c, tbl, c))
+                    except sqlite3.OperationalError:
+                        pass
         made += 1
     log(f"  added {made} tables")
 
