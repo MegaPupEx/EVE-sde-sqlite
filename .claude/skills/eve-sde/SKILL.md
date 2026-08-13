@@ -36,6 +36,41 @@ Check which build a database came from:
 SELECT * FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, source
 ```
 
+### When the sandbox has no network
+
+Some environments (notably the Claude apps code sandbox) cannot reach CCP to
+download anything. In that case the database must be **uploaded to the
+conversation** rather than built. Look for an attached `.sqlite` or
+`.sqlite.gz` before assuming a build is possible:
+
+```python
+import gzip, shutil, sqlite3, pathlib
+src = pathlib.Path("eve-sde-portable.sqlite.gz")      # adjust to the upload path
+if src.exists():
+    with gzip.open(src) as f, open("sde.sqlite", "wb") as o:
+        shutil.copyfileobj(f, o)
+db = sqlite3.connect("sde.sqlite")
+```
+
+Produce that upload file with:
+
+```bash
+python3 build_sde_db.py --db eve-sde-portable.sqlite --portable --gzip   # 13 MB
+```
+
+A portable database has `meta.portable = '1'` and omits three things: item
+description text, unpublished types, and the `moons` table. So on a portable
+database, do **not** filter on `published` (everything present is published),
+do not promise moon data, and do not quote item descriptions. Everything else
+-- dogma attributes, blueprints, reprocessing, systems, planets, stargates,
+stations -- is complete.
+
+Check before answering:
+
+```sql
+SELECT value FROM meta WHERE key = 'portable';   -- '1' means slimmed
+```
+
 ## Schema
 
 Items and classification:

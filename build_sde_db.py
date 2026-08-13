@@ -347,18 +347,60 @@ def build(raw, dbpath, build_no, released):
     log(f"\nWrote {dbpath} ({os.path.getsize(dbpath)/1e6:.0f} MB), SDE build {build_no}")
 
 
+# Trades completeness for a file small enough to upload anywhere. Drops the
+# long description text, unpublished types (roughly half of all types: test
+# items and unreleased content), and the 344k-row moon table.
+PORTABLE = [
+    "UPDATE types SET description = NULL",
+    "UPDATE dogma_attributes SET description = NULL",
+    "UPDATE factions SET description = NULL",
+    "DELETE FROM moons",
+    "DELETE FROM type_dogma   WHERE typeID NOT IN (SELECT typeID FROM types WHERE published=1)",
+    "DELETE FROM type_effects WHERE typeID NOT IN (SELECT typeID FROM types WHERE published=1)",
+    "DELETE FROM types WHERE published = 0",
+]
+
+
+def make_portable(dbpath):
+    log("Slimming for portability ...")
+    db = sqlite3.connect(dbpath)
+    for stmt in PORTABLE:
+        db.execute(stmt)
+    db.execute("INSERT OR REPLACE INTO meta VALUES ('portable','1')")
+    db.commit()
+    db.execute("VACUUM")
+    db.close()
+    log(f"  {os.path.getsize(dbpath)/1e6:.0f} MB after slimming")
+
+
+def gzip_file(path):
+    import gzip as _gzip
+    out = path + ".gz"
+    with open(path, "rb") as f, _gzip.open(out, "wb", compresslevel=9) as g:
+        shutil.copyfileobj(f, g)
+    log(f"Wrote {out} ({os.path.getsize(out)/1e6:.1f} MB)")
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", default="sde.sqlite", help="output database path")
     ap.add_argument("--workdir", default=".sde-cache", help="download/extract cache")
     ap.add_argument("--keep-raw", action="store_true", help="keep extracted JSONL")
+    ap.add_argument("--portable", action="store_true",
+                    help="drop descriptions, unpublished types and moons (~31 MB)")
+    ap.add_argument("--gzip", action="store_true", help="also write a .gz alongside the database")
     a = ap.parse_args()
 
     os.makedirs(a.workdir, exist_ok=True)
     t0 = time.time()
     raw, build_no, released = download_sde(a.workdir)
     build(raw, a.db, build_no, released)
+    if a.portable:
+        make_portable(a.db)
+    if a.gzip:
+        gzip_file(a.db)
     if not a.keep_raw:
         shutil.rmtree(raw, ignore_errors=True)
         log("Removed extracted JSONL (use --keep-raw to keep it)")

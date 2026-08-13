@@ -8,9 +8,15 @@ testing claude n making a project
 and flattens it into a queryable SQLite database.
 
 ```bash
-python3 build_sde_db.py            # -> sde.sqlite  (~16s, ~93 MB)
+python3 build_sde_db.py                                  # -> sde.sqlite (~20s, ~93 MB)
+python3 build_sde_db.py --portable --gzip                # -> +.gz (~13 MB, uploadable)
 python3 build_sde_db.py --db eve.sqlite --keep-raw
 ```
+
+`--portable` drops description text, unpublished types, and the moon table,
+producing a ~31 MB database (13 MB gzipped) small enough to upload into an
+environment that cannot download the SDE itself. It sets `meta.portable = '1'`
+so consumers can tell.
 
 Standard library only — no dependencies. The database is *not* committed: it is
 derived data that rebuilds in seconds, and binary blobs bloat git history
