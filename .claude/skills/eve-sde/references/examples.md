@@ -13,6 +13,9 @@ is not open, not that the query is wrong.
 
 ```sql
 -- ship fitting stats                              [needs: items]
+-- Safe to match on name here ONLY because these nine are isolated scalars.
+-- Do not extend this template to resistances, resonances, sensor strength or
+-- tech level -- those are families where the name lies. Use attributeIDs.
 SELECT a.name, d.value
 FROM type_dogma d
 JOIN dogma_attributes a ON a.attributeID = d.attributeID
