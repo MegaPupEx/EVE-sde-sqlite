@@ -107,14 +107,22 @@ rather than quoting.
   eight).
 
   But `metaGroupID = 2` is not the same as "a ship a player can fly". **7 of the
-  121 published T2 hulls are Alliance Tournament and CONCORD special editions** --
-  Chameleon, Enforcer, Hydra, Marshal, Pacifier, Tiamat, Whiptail. They are
-  genuinely `metaGroupID = 2`, so "the fastest-aligning T2 frigate" answers
-  *Hydra* (4.148 s), a tournament prize almost nobody owns. The right answer is
-  the **Nergal at 4.193 s** -- not the Ares, which is third at 4.544 s and is
-  only the answer if the question is restricted to Interceptors. Their
-  market group path runs through **`Special Edition Ships`** where a normal T2
-  runs through `Frigates > Advanced Frigates`, so walk the tree to exclude them:
+  121 published T2 hulls are special editions** -- and they split into two kinds
+  that deserve different treatment. **Four are Alliance Tournament prizes**
+  (Chameleon, Hydra, Tiamat, Whiptail): a handful exist, so exclude them from
+  any "best X I can actually get" answer. **Three are the CONCORD line**
+  (Pacifier, Enforcer, Marshal): ordinary purchasable ships -- keep them in
+  obtainable-hull answers, they are just not part of a standard T2 line. The
+  distinction matters because the AT four are what break rankings:
+  "the fastest-aligning T2 frigate" answers *Hydra* (4.148 s) unless the AT
+  prizes are dropped; the right obtainable answer is the **Nergal at 4.193 s**
+  -- not the Ares, which is third at 4.544 s and is only the answer if the
+  question is restricted to Interceptors. (The CONCORD three change nothing
+  here -- the Pacifier aligns at 6.99 s -- but on other stats they can lead, so
+  do not blanket-exclude them.) All seven share a market group path through
+  **`Special Edition Ships`** where a normal T2 runs through
+  `Frigates > Advanced Frigates`, so walk the tree to *identify* them, then
+  decide which of the two kinds to drop:
 
   ```sql
   WITH RECURSIVE up(typeID, mg) AS (

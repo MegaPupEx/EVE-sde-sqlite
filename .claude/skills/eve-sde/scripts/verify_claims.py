@@ -649,6 +649,8 @@ CHECKS = [
       fn=fn_special_edition),
     C("gotchas-types.md", "T2 frigate aligns: Nergal 4.193, Hydra 4.148, Ares 4.544",
       "items", (4.193, 4.148, 4.544), fn=fn_align_t2),
+    C("gotchas-types.md", "the Pacifier aligns at 6.99 s (CONCORD, obtainable)",
+      "items", 6.99, fn=lambda conn: align(conn, "Pacifier", 2)),
     C("gotchas-types.md", "duplicate names: 12 types, 6 groups, 2 attributes",
       "items", (12, 6, 2), sql="""
       SELECT (SELECT COUNT(*) FROM (SELECT name FROM types WHERE published = 1

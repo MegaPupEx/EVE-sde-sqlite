@@ -162,8 +162,12 @@ rather than quoting.
   | Gamma | 1 | 50 only |
   | Dark | **0** | absent entirely |
 
-  So quoting the single row you find as "the" penalty is wrong for Exotic,
-  Firestorm and Gamma, and the tier -> strength roll is not in the SDE at all.
+  **Answer tier questions with the roll, not the row.** The correct shape is
+  "a Tier 4 Firestorm rolls **-50% or -70%** thermal; the SDE carries only the
+  -70 row" -- leading with the lone row's value as "the" penalty is the
+  single most-repeated mistake sessions make with this table, and it reads as
+  authoritative precisely because the row is real. The tier -> strength roll is
+  not in the SDE at all, so the roll numbers above are the only source.
   Separately, the 15 **`[HF] Weather Effect - *`** rows are a different,
   non-abyssal system at -10/-20/-30% with a +20% bonus -- do not mix them in.
   Magnitude signs do not encode direction: a resistance *penalty* is stored
