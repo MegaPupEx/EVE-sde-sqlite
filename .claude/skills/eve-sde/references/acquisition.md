@@ -33,6 +33,11 @@ needed — but it is a single personal repo, so treat a failure here as "cannot
 reach it, move on" and fall through. GitHub answers 404 rather than 403 for
 anything it will not serve, so a failure never proves the release is gone.
 
+Because `latest` tracks CCP, a fresh download is usually a **newer build than
+the one this skill's counts were verified against**. That is fine — run
+`scripts/verify_claims.py --parts .` and it prints which documented figures
+moved, if any (see "Check the build first" in SKILL.md).
+
 **Sizes are the compressed `.xz` download at the preset the builder uses**
 (`preset=9|PRESET_EXTREME`). This matters for `moons`, the only part near the
 30 MB cap: 20.5 MB at 9e but **24.0 MB at xz's default preset 6**, so

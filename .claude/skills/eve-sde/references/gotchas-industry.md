@@ -64,7 +64,10 @@ rather than quoting.
   blueprint copy carries 20 runs, so dividing 6 datacores by it yields a
   confident, meaningless "0.3 datacores per subsystem". Cost per attempt is the
   material list as-is; expected cost per item also needs `probability` (0.26 for
-  Intact, 0.21 Malfunctioning, 0.14 Wrecked).
+  Intact, 0.21 Malfunctioning, 0.14 Wrecked -- for every **published** product.
+  A naive `DISTINCT probability` over relic invention returns six values, because
+  48 rows invent unpublished `OLD * Electronics` legacy blueprints at
+  0.34/0.30/0.22; filter on the product's `published` before quoting the chance).
 - **Tech III invention has no T1 blueprint.** Of 1,361 invention products, 978
   are Tech II and **216 rows are Tech III** (72 distinct blueprints, each invented from three relic grades) -- and the T3 rows are invented from
   **Ancient Relics** (`categoryID = 34`: Intact/Malfunctioning/Wrecked Hull

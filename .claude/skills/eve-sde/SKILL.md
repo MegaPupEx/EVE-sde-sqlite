@@ -179,9 +179,13 @@ SELECT key, value FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, sourc
 **Qualify it as `universe.meta` if you have ATTACHed several parts** — every
 part has its own `meta` and an unqualified read silently picks one.
 
-If `sdeBuildNumber` differs from 3466501, **re-derive counts rather than quoting
-them**. The *shapes* — which column lies, which join silently drops rows — are
-stable across builds; the numbers are not.
+If `sdeBuildNumber` differs from 3466501, **run
+`scripts/verify_claims.py --parts <dir>`** (or `--db <file>`): every hard number
+in these docs is encoded there as a query, and it prints exactly which
+documented figures moved on the newer build, so you re-derive three numbers
+instead of all of them. Without it, re-derive anything you quote. The *shapes* —
+which column lies, which join silently drops rows — are stable across builds;
+the numbers are not.
 
 Published parts carry `complete = '1'`, `positions = '1'` and no `portable` key.
 Anything else is a hand-built database: `positions` other than `'1'` means verify

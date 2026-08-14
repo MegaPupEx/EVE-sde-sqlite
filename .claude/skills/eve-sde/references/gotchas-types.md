@@ -106,10 +106,11 @@ rather than quoting.
   `techLevel` column that flatly contradicts their dogma. 19 published hulls are
   `techLevel = 2` but `metaGroupID = 4` (Faction) -- Utu, Freki, Malice -- with
   no invention path at all. **`metaGroupID = 2` is the one to trust** for "is
-  this T2". Tech III is **`metaGroupID = 14`**, not 3. And the column is sparse
-  where you would least expect it: of the 8 published titans three are `1`, four
-  are `4`, and the **Ragnarok is NULL** -- so `metaGroupID = 1` silently drops a
-  Tech I titan.
+  this T2". Tech III is **`metaGroupID = 14`**, not 3. And `metaGroupID` itself
+  is sparse where you would least expect it: of the 8 published titans three are
+  `1`, four are `4` (Faction), and the **Ragnarok is NULL** -- so
+  `metaGroupID = 1` silently drops a Tech I titan (`techLevel` is 1 on all
+  eight).
 
   But `metaGroupID = 2` is not the same as "a ship a player can fly". **7 of the
   121 published T2 hulls are Alliance Tournament and CONCORD special editions** --
