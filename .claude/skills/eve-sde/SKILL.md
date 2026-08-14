@@ -198,6 +198,21 @@ them before trusting a result. Verified against build 3466501.
 - **Resonance is not resistance; it is inverted.** `armorEmDamageResonance =
   0.4` means **60% resist**, not 40%. Resist % is `(1 - value) * 100`. Every
   `*DamageResonance` attribute works this way.
+- **Wormhole class is on the constellation and region, not the system.**
+  `systems.wormholeClassID` is NULL for most of J-space -- only 692 of 2,604
+  wormhole systems carry it, while 1,127 constellations and 108 regions do.
+  Join upward or a C2 hole reads as "unknown":
+
+  ```sql
+  SELECT s.name, COALESCE(s.wormholeClassID, c.wormholeClassID, r.wormholeClassID) AS class
+  FROM systems s
+  JOIN constellations c ON c.constellationID = s.constellationID
+  JOIN regions r       ON r.regionID = s.regionID
+  WHERE s.name = 'J124611';        -- class 2
+  ```
+
+  Classes 1-6 are the familiar wormhole classes; 13 is shattered/frigate holes
+  and 12 is Thera.
 - **`security` alone cannot identify nullsec.** Wormhole, abyssal and void
   systems all carry `security = -0.99`, so `WHERE security <= 0` sweeps in 3,004
   systems that are not nullsec. Filter `space = 'kspace'` first. Counts in known
