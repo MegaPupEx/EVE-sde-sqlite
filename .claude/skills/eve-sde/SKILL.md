@@ -154,7 +154,7 @@ Items and classification:
 
 | Table | Key columns |
 | --- | --- |
-| `types` | `typeID`, `name`, `groupID`, `categoryID`, `mass`, `volume`, `capacity`, `basePrice`, `portionSize`, `published`, `metaLevel`, `techLevel` |
+| `types` | `typeID`, `name`, `groupID`, `categoryID`, `mass`, `volume`, `packagedVolume`, `capacity`, `basePrice`, `portionSize`, `published`, `metaLevel`, `techLevel`, `metaGroupID`, `raceID`, `factionID` |
 | `groups_` | `groupID`, `name`, `categoryID` (note the trailing underscore) |
 | `categories` | `categoryID`, `name` |
 | `market_groups` | `marketGroupID`, `parentGroupID`, `name` |
@@ -253,6 +253,44 @@ reliable either: level 10 appears as both "Critical" and "Deadly". Dungeon names
 also repeat -- 1,409 rows, 1,014 distinct names -- so counting by name and by
 key give different answers.
 
+## Units: read `unitID`, not the name
+
+`dogma_attributes.unitID` decides what a value means, and the `dogmaUnits` table
+names each one. Attribute *names* are not a reliable guide -- this is the single
+richest source of confidently wrong answers in the dataset.
+
+| unitID | Meaning | Trap |
+| --- | --- | --- |
+| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes, 69,032 rows.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
+| **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes, 40,522 rows.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
+| 3, 123 | Actual seconds | Sits beside unitID 101 with nothing in the schema to distinguish them |
+| 109 | Modifier percent: `1.1` = +10%, `0.9` = -10% | `0.75` means **-25%**, not 75% |
+| 105 / 121 / 124 / 127 | Four more percent conventions | `-50` = -50%, `5` = 5%, `0.5` = 50% -- all display as `%` |
+
+Worked example -- "which ship resists webs best?":
+
+```sql
+-- WRONG: names suggest higher is better
+SELECT t.name, d.value FROM type_dogma d JOIN types t ON t.typeID = d.typeID
+WHERE d.attributeID = 2115 AND t.published = 1 AND t.categoryID = 6
+ORDER BY d.value DESC;              -- Bantam, Condor, Griffin at 1.0
+
+-- RIGHT: unitID 108 is inverted
+SELECT t.name, ROUND((1 - d.value) * 100, 1) AS pct FROM type_dogma d
+JOIN types t ON t.typeID = d.typeID
+WHERE d.attributeID = 2115 AND t.published = 1 AND t.categoryID = 6
+ORDER BY d.value ASC;               -- Erebus, Leviathan, Avatar at 80%
+```
+
+The naive answer names T1 frigates as the best web-resisters. They are the
+**worst**, at 0%. `highIsGood` does not save you -- `remoteRepairImpedance` is
+inverted and flagged `highIsGood = 1`.
+
+Two more name traps: **`agility` (70) is the Inertia Modifier**, so "most agile"
+by either sort direction is wrong -- align time is
+`ln(4) * inertia * mass / 1e6`. And **attribute 51 is named `speed` but means
+rate of fire**, in milliseconds; ship velocity is `maxVelocity` (37).
+
 ## Gotchas
 
 These cause silently wrong answers -- plausible numbers, not errors -- so check
@@ -261,8 +299,9 @@ them before trusting a result. Verified against build 3466501.
 **Wrong-answer traps (highest priority):**
 
 - **Resonance is not resistance; it is inverted.** `armorEmDamageResonance =
-  0.4` means **60% resist**, not 40%. Resist % is `(1 - value) * 100`. Every
-  `*DamageResonance` attribute works this way.
+  0.4` means **60% resist**, not 40%. Resist % is `(1 - value) * 100`. The rule
+  is **`unitID = 108`**, not the name -- see "Units" above; 34 inverted
+  attributes are not named "resonance" at all.
 - **Four families of resonance attribute exist, and two of them disagree.**
   Always anchor the layer prefix -- `armor%`, `shield%`, `hull%` -- because a
   bare `LIKE '%DamageResonance'` returns 16 rows for one ship. Worse, structure
@@ -291,11 +330,15 @@ them before trusting a result. Verified against build 3466501.
   FROM systems s
   JOIN constellations c ON c.constellationID = s.constellationID
   JOIN regions r       ON r.regionID = s.regionID
-  WHERE s.name = 'J124611';        -- class 2
+  WHERE s.space = 'wormhole'       -- REQUIRED
+    AND s.name = 'J124611';        -- class 2
   ```
 
-  Classes 1-6 are the familiar wormhole classes; 13 is shattered/frigate holes
-  and 12 is Thera.
+  **The `space` filter is not optional.** k-space constellations carry classes
+  7, 8 and 9 (high/low/null designations), so without it the same query answers
+  "Jita is class 7" and "1DQ1-A is class 9". Classes 1-6 are the familiar
+  wormhole classes, 12 is Thera, 13 shattered/frigate holes, 14-18 Drifter,
+  19-25 abyssal/void/Pochven.
 - **`security` alone cannot identify nullsec.** Wormhole, abyssal and void
   systems all carry `security = -0.99`, so `WHERE security <= 0` sweeps in 3,004
   systems that are not nullsec. Filter `space = 'kspace'` first. Counts in known
@@ -326,16 +369,28 @@ them before trusting a result. Verified against build 3466501.
   Effects, Bonus, Placeables, Abstract). Joining `planets` to `types` with
   `published = 1` returns **zero rows**, silently. Scope the filter to the
   question.
+- **`volume` is the assembled volume; `packagedVolume` is what you haul.** A
+  Rifter is 27,289 m3 assembled and **2,500 m3 packaged** -- 685 published types
+  differ. Every "how many X fit in a Y" answer is ~10x wrong on the assembled
+  figure.
+- **Manufacturing output per run is `bp_products.quantity`.** Antimatter Charge
+  S consumes 204 Tritanium *per run of 100 charges* -- 2.04 each. 368
+  manufacturing blueprints produce more than one per run and reactions reach
+  10,000, so per-unit costs are off by up to four orders of magnitude if you
+  read `bp_materials.quantity` directly.
 - **`portionSize` governs reprocessing, and nothing else.** `type_materials`
   quantities are per `portionSize` units: Veldspar yields 400 Tritanium per
   **100** units. It is **not** the manufacturing batch size -- that is
   `bp_products.quantity`. The two coincide for most ammo, which is what makes
   the mistake easy, but 30 published types disagree: XL torpedoes have
   `portionSize = 100` while a run makes 5,000, a 50x error.
-- **`techLevel = 2` is not Tech II.** 19 published hulls have `techLevel = 2`
-  but `metaGroupID = 4` (Faction) -- Utu, Freki, Malice, Adrestia and the like.
-  They have no invention path, so a "T2 ship" query built on `techLevel` finds
-  ships that cannot be invented. Filter `metaGroupID = 2`.
+- **Tech level has three sources that disagree.** "How many published Tech II
+  items are there?" answers 2,537 from `types.techLevel`, 2,434 from dogma
+  attribute 422, and 1,892 from `metaGroupID = 2` -- and 43 types have a
+  `techLevel` column that flatly contradicts their dogma. 19 published hulls are
+  `techLevel = 2` but `metaGroupID = 4` (Faction) -- Utu, Freki, Malice -- with
+  no invention path at all. **`metaGroupID = 2` is the one to trust** for "is
+  this T2".
 - **`bp_skills` mixes activities.** The Dominix blueprint has 1 manufacturing
   skill and 3 invention skills; without `AND activity = '...'` you get both and
   report the wrong set.
@@ -390,6 +445,14 @@ them before trusting a result. Verified against build 3466501.
 - Region `19000001` (GPMR-01) is a dev region; its one system GPMS-01 also has
   `security = 1.0`. It carries `space = 'other'`, so a `space = 'kspace'` filter
   excludes it -- but that filter does **not** save you from the Exordium tie.
+- **Three unused regions are `space = 'kspace'` with ordinary nullsec security**
+  and inflate every nullsec count: `UUA-F4` (107 systems), `J7HZ-F` (77) and
+  `A821-A` (46) -- 230 in all. Two have no stargates and the third forms an
+  island unreachable from Jita. "How many nullsec systems does EVE have" is
+  3,552 with them and **3,322** without.
+- **Some gate-connected systems are still unreachable from Jita** -- 27 Pochven
+  plus 13 in `UUA-F4`. "3,222 systems have no gates" is not the whole
+  disconnection story; a BFS must handle no-route between connected components.
 - **`space` has five values**, not four: `kspace`, `wormhole`, `abyssal`, `void`
   and `other` (GPMS-01 alone). `WHERE space != 'kspace'` to mean "j-space and
   friends" quietly includes the dev system.
