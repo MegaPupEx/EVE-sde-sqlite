@@ -31,8 +31,11 @@ differs.
 
 - **`published = 1` applies to market items, not everything.** It is right for
   ships, modules, charges and ore -- 26,992 of 52,863 types are published, the
-  rest being test and unreleased content. But **every celestial type is
-  `published = 0`**: all ten planet types, plus whole categories (Station,
+  rest being test and unreleased content. But **every type the map actually references is
+  `published = 0`** -- all 10 planet typeIDs, the 1 belt type, 29 stargate types,
+  44 station types and 38 star types, without exception (the `Celestial`
+  *category* does contain 225 published rows, but they are containers, wrecks and
+  beacons, not map furniture): all ten planet types, plus whole categories (Station,
   Effects, Bonus, Placeables, Abstract). Joining `planets` to `types` with
   `published = 1` returns **zero rows**, silently. Scope the filter to the
   question.

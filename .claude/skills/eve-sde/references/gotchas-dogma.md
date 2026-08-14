@@ -174,8 +174,12 @@ literal `1.386294`.
   ORDER BY pct DESC LIMIT 10;
   ```
 
-  Report the ties as ties, and say whether faction and tournament hulls were in
-  the set.
+  Report the ties as ties. Two limits of that query: `meta_groups.name` separates
+  `Faction`, but the **7 Alliance Tournament and CONCORD hulls are genuinely
+  `Tech II`** and are indistinguishable here -- exclude them with the
+  `Special Edition Ships` market-group walk in `gotchas-types.md` if the question
+  implies obtainable hulls. And it hard-codes the **shield** role bonus
+  (`1829`); for armor (267-270) swap it to **`1825`**.
 - **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
   `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
   `bp_skills` is what a *blueprint activity* needs -- a different question.
@@ -186,11 +190,16 @@ literal `1.386294`.
   for a T1 frigate, several for T2 -- a single query under-reports.
 - **Four families of resonance attribute exist.** Always anchor the layer --
   by attributeID, per the table above -- because a bare
-  `LIKE '%DamageResonance'` returns 16 rows for one ship. There is also a
-  `passive*DamageResonance` family (1418-1429) whose display names differ from
-  the active ones only in capitalisation; note that its four **`passiveHull*`
-  members (1426-1429) are `unitID = 127`, not 108**, so the inversion rule does
-  not apply to them. For resistances, select the attributeID family
+  `LIKE '%DamageResonance'` returns **12** rows for a typical ship and **16** for
+  the 9 that also carry `hull*` -- so the count itself varies by hull. There is also a
+  `passive*DamageResonance` family (1418-1429). For armor and shield its display
+  names differ from the active ones only in capitalisation -- but for structure
+  they are **byte-identical**: `Structure EM Damage Resistance` is the
+  `displayName` of **three** different attributes (113, 974 and 1426), and the
+  same holds for the other three damage types. Twelve attributes share four
+  display names, so `displayName` cannot identify a structure attribute at all.
+  Note also that the four **`passiveHull*` members (1426-1429) are
+  `unitID = 127`, not 108**, so the inversion rule does not apply to them. For resistances, select the attributeID family
   deliberately rather than joining on name.
 - **Every ship value in the SDE is pre-skill.** Confirmed exactly against a
   fitting tool with all skills at 0: a Rifter reads 250 GJ capacitor, 125 s
