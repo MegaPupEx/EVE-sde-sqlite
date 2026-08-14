@@ -34,7 +34,7 @@ do with each other. Read the table below as unit numbers, not attribute numbers.
 | **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes (55 published), 40,522 rows across all types -- 8,186 on published ones.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
 | 3, 123 | Actual seconds | Sits beside unitID 101 with nothing in the schema to distinguish them |
 | 109 | Modifier percent: `1.1` = +10%, `0.9` = -10% | `0.75` means **-25%**, not 75% |
-| 9 / 128 | m3 and Mbit/sec | `droneCapacity` (9) is a volume, `droneBandwidth` (1271) is unitID **128** = Mbit/sec -- a Vexor's 125 m3 bay holds 12 Hammerhead IIs but its 75 Mbit/s only fields 7 |
+| 9 / 128 | m3 and Mbit/sec | `droneCapacity` (9) is a volume, `droneBandwidth` (1271) is unitID **128** = Mbit/sec -- a Vexor's 125 m3 bay holds 12 Hammerhead IIs and its 75 Mbit/s allows 7 by bandwidth -- but the character's Drones skill caps you at **5 active**, which is in neither number (see the drone-cap bullet below) |
 | 105 / 121 / 124 / 127 | Four more percent conventions | `-50` = -50%, `5` = 5%, `0.5` = 50% -- all display as `%` |
 
 Worked example -- "which ship resists webs best?":

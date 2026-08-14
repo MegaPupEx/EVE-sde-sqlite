@@ -70,7 +70,7 @@ anyway:
 | --- | --- |
 | Market prices (`basePrice` is a dead seed value) | ESI, or the in-game market |
 | Population, traffic, kills, sovereignty | ESI |
-| **What ore is in which asteroid belt** | game knowledge — every belt row is `typeID = 15` |
+| **What ore is in which asteroid belt or moon** | game knowledge — every belt row is `typeID = 15` and 344,456 of 344,457 moons are `typeID = 14` |
 | NPC spawns, rat difficulty, site contents | game knowledge |
 | Character skills, implants, boosters | the player's own character |
 | Whether a thing is *good* | judgement |
@@ -222,7 +222,9 @@ needs:
   column**. Naming one, or listing its services or owner, needs `items.types`
   (structure type), `world.stationOperations` / `world.stationServices` and
   `world.npcCorporations`.
-- A specific moon's gravity, radius or orbit — `universe` + `moons`.
+- A specific moon's **physical stats** — gravity, radius, orbit — `moons` alone;
+  add `universe` only to name the system it is in. Moon *composition* is not in
+  the SDE at all.
 - Ship and module stats — `items` alone.
 - Build costs — `items` + `industry`.
 - Planet **types** (`Planet (Temperate)`) — `items` + `universe`; planets live in

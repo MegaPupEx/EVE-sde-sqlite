@@ -93,6 +93,12 @@ rather than quoting.
   part. Note 46,618 is the k-space figure; there are **68,407** planets in
   total, the other **21,789** all in wormhole space -- abyssal and void systems have no
   planets at all.
+- **`moons` says nothing about what is in a moon either.** 344,456 of the
+  344,457 rows carry `typeID = 14` (the lone exception is Jita IV - Moon 4), and
+  no table anywhere links a moon to its ore. The 23 columns are physical stats
+  only. Ranking moons by `surfaceGravity` or `radius` produces a fluent,
+  well-sourced and completely useless answer to "which moon should we mine" --
+  moon composition comes from an in-game survey, not the SDE.
 - **`asteroid_belts` says nothing about what is in a belt.** All **40,928** rows
   carry `typeID = 15` ("Asteroid Belt") -- the column exists but never varies, so
   belt *composition* is simply not in the SDE. Which ores spawn where is game
