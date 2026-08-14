@@ -19,6 +19,17 @@ differs. The shapes stay true across builds, the numbers do not.
   EVE has no O or B stars at all -- only A, F, G, K and M. The type name is an
   art asset label, so "how many blue giants" answered from `types.name` is
   confidently wrong.
+- **A wormhole effect's "resistance bonus" reduces your resists.** The beacon
+  behind `mapSecondarySuns.effectBeaconTypeID` carries
+  `shieldEmDamageResistanceBonus = 50` with `highIsGood = 1` and `unitID = 105`
+  (a plain percent) -- every signal says "+50% resist". But effects 4135-4138
+  apply it with `operation 6` (postPercent) onto attributes 271-274, which are
+  **inverted resonances**: resonance x 1.5, so a 50% shield resist becomes 25%.
+  A Class 6 Wolf-Rayet is the well-known **-50% shield resists**, not +50%.
+  `signatureRadiusMultiplier = 0.5` is the same shape -- `highIsGood = 1` on a
+  value where lower is the good direction. Whenever an effect writes onto a
+  `unitID = 108` attribute, read the sign through the inversion, not off
+  `highIsGood`.
 - **`universe.systemWideEffects` is not the wormhole effect**, despite keying on
   the same beacon typeID. Its `dbuffs` are Sisters-of-EVE event bonuses scoped
   to a single ship, and those `_key`s are **`misc.dbuffCollections` IDs, not

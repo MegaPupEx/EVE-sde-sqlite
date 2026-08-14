@@ -53,6 +53,14 @@ differs. The shapes stay true across builds, the numbers do not.
 - 18,915 published types have **no** `type_materials` row: not reprocessable,
   rather than reprocessing to nothing.
 
+- **The legacy `Batch Compressed *` line is stale and contradicts itself.** The
+  `Compressed Arkonor Blueprint` consumes **1,000 Arkonor** to make **1 Batch
+  Compressed Arkonor**, but that one unit reprocesses to exactly what **100**
+  Arkonor gives -- a 10x loss of matter. It is dead pre-2021 content whose
+  blueprints survive, and it is the only compression *ratio* anywhere in the
+  SDE, so it is exactly what someone reaches for. Use `items.compressibleTypes`
+  and the `types.volume` difference instead; modern compression is 1 unit to
+  1 unit.
 - **21 blueprint rows reference typeIDs that do not exist** (20 products, 1
   material) -- removed content whose blueprints remain. This is upstream data,
   not a build error; use inner joins so they drop out.

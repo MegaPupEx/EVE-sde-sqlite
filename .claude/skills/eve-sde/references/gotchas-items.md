@@ -234,7 +234,9 @@ literal `1.386294`.
   121 published T2 hulls are Alliance Tournament and CONCORD special editions** --
   Chameleon, Enforcer, Hydra, Marshal, Pacifier, Tiamat, Whiptail. They are
   genuinely `metaGroupID = 2`, so "the fastest-aligning T2 frigate" answers
-  *Hydra*, a tournament prize almost nobody owns, instead of the Ares. Their
+  *Hydra* (4.148 s), a tournament prize almost nobody owns. The right answer is
+  the **Nergal at 4.193 s** -- not the Ares, which is third at 4.544 s and is
+  only the answer if the question is restricted to Interceptors. Their
   market group path runs through **`Special Edition Ships`** where a normal T2
   runs through `Frigates > Advanced Frigates`, so walk the tree to exclude them:
 

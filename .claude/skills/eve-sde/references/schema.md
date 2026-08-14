@@ -107,18 +107,18 @@ Table names do not match the casual descriptions:
 
 | You want | Table | Notes |
 | --- | --- | --- |
-| NPC agents | `npcCharacters` | **no `agents` table.** Agents are rows where the `agent` column is non-null: `{agentTypeID, divisionID, isLocator, level}`. 10,966 of them. `locationID` joins `universe.npc_stations.stationID` |
+| NPC agents | `npcCharacters` | **no `agents` table.** Agents are rows where the `agent` column is non-null: `{agentTypeID, divisionID, isLocator, level}`. 10,966 of them. `locationID` joins `universe.npc_stations.stationID`. **Filter `agentTypeID = 2`** (`BasicAgent`) for the mission agents a player means -- of 180 level-5 agents, 143 are `agentTypeID = 8` EventMissionAgent and only **37** are real. `agentTypes` (`_key`, `name`) names all 13 kinds |
 | NPC corporations | `npcCorporations` | not `corporations` |
 | Missions | `missions` | `messages` is an array of `{_key: slot, text}`; the briefing slot is `messages.mission.briefing`. `killMission` / `courierMission` are `{dungeonID, objectiveQuantity}` and mutually exclusive |
 | Combat sites | `dungeons` | `description` holds the DED rating as prose |
 | Certificates | `certificates` | `skillTypes` is an array of `{_key: skillTypeID, basic, standard, improved, advanced, elite}`; `recommendedFor` is a bare int array -- inconsistent shapes in one table |
 | Factions, races | `factions`, `races` | here, not in `universe` |
 | Ship traits / role bonuses | `items.typeBonus` | the in-game Traits panel, not derivable from dogma. Keyed on **`_key` = typeID**. `types` is `[{_key: skillTypeID, _value: [{bonus, bonusText, unitID}]}]` (per level of that skill); `roleBonuses` is the flat role bonus; `miscBonuses` is prose only. All 423 published ships have a row. `bonusText` carries raw `&lt;a href=showinfo:N&gt;` HTML |
-| Wormhole system effects | `universe.mapSecondarySuns` | 1,038 of 2,604 J-space systems have one. `typeID` names it (the exact names are `Wolf-Rayet Star`, `Magnetar`, `Pulsar`, `Black Hole`, `Red Giant`, `Cataclysmic Variable`); `effectBeaconTypeID` -> `items.type_dogma` gives the magnitudes |
+| Wormhole system effects | `universe.mapSecondarySuns` | 1,038 of 2,604 J-space systems have one. `typeID` names it (the exact star names are `Wolf-Rayet Star`, `Magnetar`, `Pulsar`, `Black Hole`, `Red Giant`, `Cataclysmic Variable`). **The beacon is spelled differently from the star**: `Class 6 Wolf Rayet Effects` is unhyphenated, so `LIKE '%Wolf-Rayet%'` matches the star and returns *zero* beacons; `effectBeaconTypeID` -> `items.type_dogma` gives the magnitudes |
 | Star class, temperature, luminosity | `universe.mapStars` | one row per real system (8,089); `statistics` is JSON with `spectralClass`, `temperature`, `luminosity`, `age` |
 | PI production chains | `industry.planetSchematics` | 68 rows, P1-P4 only -- there are no P0 rows, so P1 inputs dangle by design. **`_key` is a schematicID, not a typeID**; the product is the single `types` entry with `isInput = false` |
 | Mutaplasmid roll ranges | `items.dynamicItemAttributes` | `_key` = mutaplasmid typeID; `attributeIDs` is `[{_key: attributeID, min, max}]` as multipliers on the base module |
-| Ore/ice compression | `items.compressibleTypes` | `_key` -> `compressedTypeID`, strictly 1:1. Ore compresses **100x**, ice and gas only **10x**. Compressed and uncompressed reprocess identically |
+| Ore/ice compression | `items.compressibleTypes` | `_key` -> `compressedTypeID`, strictly 1:1. **The 100x (ore) and 10x (ice/gas) figures are volume ratios, not unit ratios** -- 1 unit compresses to 1 unit, and Arkonor goes 16 m3 -> 0.16 m3. Compressed and uncompressed reprocess identically, same `portionSize`, so compressing loses nothing. The table holds no ratio; derive it from `types.volume` |
 
 **Mission dungeon references are almost all dangling.** Only **3 of 1,662**
 kill missions have a `dungeonID` that exists in `dungeons`; `agentsInSpace`
