@@ -30,9 +30,17 @@ costs nothing to check first.
 already integrity checked, no build step):
 
 ```bash
-curl -sSLo eve-sde-full.sqlite.xz \
-  https://github.com/MegaPupEx/EVE-sde-sqlite/releases/latest/download/eve-sde-full.sqlite.xz
+BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
+curl -sSLo eve-sde-full.sqlite.xz $BASE/eve-sde-full.sqlite.xz     # whole thing, ~27 MB
 xz -d eve-sde-full.sqlite.xz && mv eve-sde-full.sqlite sde.sqlite
+```
+
+Or fetch only the domains a question needs -- `items`, `universe`, `industry`,
+`world`, `cosmetic`, `misc` -- and ATTACH them (see "Split databases" below):
+
+```bash
+curl -sSLo universe.xz $BASE/eve-sde-full-universe.sqlite.xz       # ~18 MB
+curl -sSLo items.xz    $BASE/eve-sde-full-items.sqlite.xz          # ~6 MB
 ```
 
 The `latest` in that URL always resolves to the newest release; a workflow

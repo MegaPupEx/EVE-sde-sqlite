@@ -55,8 +55,9 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         run: |
           set -euo pipefail
-          python3 build_sde_db.py --db eve-sde-full.sqlite --complete --compress xz
-          ls -l eve-sde-full.sqlite.xz
+          python3 build_sde_db.py --db eve-sde-full.sqlite --complete --split --compress xz
+          rm -f eve-sde-full*.sqlite          # keep only the compressed copies
+          ls -l eve-sde-full*.xz
 
       - name: Verify the archive round-trips
         if: steps.check.outputs.changed == 'true'
@@ -81,6 +82,23 @@ jobs:
                 f"{os.path.getsize('rt.sqlite')/1e6:.0f} MB uncompressed, "
                 f"{size/1e6:.1f} MB compressed")
           os.remove("rt.sqlite")
+
+          # every split part must also open, and fit the upload limit on its own
+          import glob
+          parts = sorted(glob.glob("eve-sde-full-*.sqlite.xz"))
+          assert len(parts) >= 5, f"expected the split parts, found {len(parts)}"
+          for p in parts:
+              psize = os.path.getsize(p)
+              assert psize < 30_000_000, f"{p} is {psize/1e6:.1f} MB, over the limit"
+              with lzma.open(p) as f, open("pt.sqlite", "wb") as o:
+                  shutil.copyfileobj(f, o)
+              pdb = sqlite3.connect("pt.sqlite")
+              assert pdb.execute("PRAGMA integrity_check").fetchone()[0] == "ok", f"{p} corrupt"
+              grp = pdb.execute("SELECT value FROM meta WHERE key='splitGroup'").fetchone()
+              assert grp, f"{p} has no splitGroup marker"
+              pdb.close()
+              print(f"  part {grp[0]:<10} {psize/1e6:>5.1f} MB  ok")
+              os.remove("pt.sqlite")
           PY
 
       - name: Record the build number
@@ -110,7 +128,7 @@ jobs:
           set -euo pipefail
           tag="sde-${{ steps.check.outputs.build }}"
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" eve-sde-full.sqlite.xz \
+          gh release create "$tag" eve-sde-full*.sqlite.xz \
             --title "SDE build ${{ steps.check.outputs.build }}" \
             --notes "EVE Online SDE build \`${{ steps.check.outputs.build }}\`, released by CCP on \`${{ steps.check.outputs.released }}\`.
 
@@ -119,5 +137,7 @@ jobs:
           \`\`\`bash
           xz -d eve-sde-full.sqlite.xz
           \`\`\`
+
+          Also split by domain — \`items\`, \`universe\`, \`industry\`, \`world\`, \`cosmetic\`, \`misc\` — for when one file is inconvenient. Each part is a complete database; SQLite can \`ATTACH\` several and join across them. The largest, \`universe\`, is ~18 MB.
 
           Built by \`build_sde_db.py\`; schema and query notes are in \`.claude/skills/eve-sde/SKILL.md\`."
