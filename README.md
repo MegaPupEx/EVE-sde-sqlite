@@ -43,9 +43,9 @@ everything fits with room to spare. Build one locally with
 ## Build
 
 ```bash
-python3 build_sde_db.py --complete                        # 107 tables, 147 MB
-python3 build_sde_db.py --complete --compress xz          # + 27 MB archive
-python3 build_sde_db.py --complete --split --compress xz  # one file per domain
+python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete                        # 107 tables, 147 MB
+python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete --compress xz          # + 27 MB archive
+python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete --split --compress xz  # one file per domain
 ```
 
 Standard library only. Reads CCP's build manifest at runtime, so it always

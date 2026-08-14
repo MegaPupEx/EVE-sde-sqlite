@@ -55,7 +55,7 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         run: |
           set -euo pipefail
-          python3 build_sde_db.py --db eve-sde.sqlite --complete --positions --split --parts-only --compress xz
+          python3 .claude/skills/eve-sde/scripts/build_sde_db.py --db eve-sde.sqlite --complete --positions --split --parts-only --compress xz
           rm -f eve-sde*.sqlite               # keep only the compressed copies
           ls -l eve-sde*.xz
 
