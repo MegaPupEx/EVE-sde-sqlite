@@ -33,6 +33,13 @@ rather than quoting.
 - **`bp_skills` mixes activities.** The Dominix blueprint has 1 manufacturing
   skill and 3 invention skills; without `AND activity = '...'` you get both and
   report the wrong set.
+- **For invention, `bp_products.quantity` is BPC *runs*, not items.** The
+  divide-by-quantity rule that gives per-unit manufacturing cost silently
+  changes meaning here: an Intact relic's `quantity = 20` means the invented
+  blueprint copy carries 20 runs, so dividing 6 datacores by it yields a
+  confident, meaningless "0.3 datacores per subsystem". Cost per attempt is the
+  material list as-is; expected cost per item also needs `probability` (0.26 for
+  Intact, 0.21 Malfunctioning, 0.14 Wrecked).
 - **Tech III invention has no T1 blueprint.** Of 1,361 invention products, 978
   are Tech II and **216 are Tech III** -- and the T3 rows are invented from
   **Ancient Relics** (`categoryID = 34`: Intact/Malfunctioning/Wrecked Hull

@@ -103,6 +103,23 @@ LEFT JOIN type_dogma rb ON rb.typeID = t.typeID       -- always-on role bonus
 WHERE t.name = 'Onyx'
 ORDER BY CASE l.layer WHEN 'Shield' THEN 1 WHEN 'Armor' THEN 2 ELSE 3 END, l.ord;
 
+-- what an invention attempt costs and produces      [needs: industry + items]
+-- `bp_products.quantity` here is BPC RUNS, not items -- the divide-by-quantity
+-- rule that gives per-unit manufacturing cost does NOT apply. Cost per attempt
+-- is the material list as-is; per item also needs `probability`.
+-- Tech III starts from an Ancient Relic (categoryID 34), not a T1 blueprint.
+SELECT rel.name AS source, prod.name AS product,
+       p.quantity AS bpc_runs, p.probability,
+       mt.name AS material, m.quantity
+FROM bp_products p
+JOIN types rel  ON rel.typeID  = p.blueprintTypeID
+JOIN types prod ON prod.typeID = p.typeID
+JOIN bp_materials m ON m.blueprintTypeID = p.blueprintTypeID AND m.activity = p.activity
+JOIN types mt ON mt.typeID = m.typeID
+WHERE p.activity = 'invention' AND rel.name = 'Intact Power Cores'
+-- returns 20 runs at probability 0.26, 3 datacores of each of two kinds
+ORDER BY prod.name, mt.name;
+
 -- what skills a ship requires (dogma, not bp_skills)  [needs: items]
 -- ONE HOP ONLY. Skills have their own requiredSkill* attributes, so this
 -- under-reports: on a Drake it returns "Caldari Battlecruiser I" and misses

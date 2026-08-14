@@ -65,7 +65,11 @@ rather than quoting.
   a faction hull at the top unless you also filter `metaGroupID = 2`. Curate the
   groups *and* the meta group;
   frigate-sized T2 is Assault Frigate + Covert Ops + Electronic Attack Ship +
-  Expedition Frigate + Interceptor + Logistics Frigate + Stealth Bomber. Say
+  Expedition Frigate + Interceptor + Logistics Frigate + Stealth Bomber. The
+  haulers are `Hauler`, `Deep Space Transport`, `Blockade Runner`, `Freighter`,
+  `Jump Freighter`, `Industrial Command Ship` and `Capital Industrial Ship` --
+  there is **no group named `Industrial` or `Transport Ship`**, the two obvious
+  guesses, and both return zero rows. Say
   which groups you used -- two correct answers can differ on whether Marauders
   count as battleships.
 - **Tech level has three sources that disagree.** "How many published Tech II
@@ -74,7 +78,10 @@ rather than quoting.
   `techLevel` column that flatly contradicts their dogma. 19 published hulls are
   `techLevel = 2` but `metaGroupID = 4` (Faction) -- Utu, Freki, Malice -- with
   no invention path at all. **`metaGroupID = 2` is the one to trust** for "is
-  this T2".
+  this T2". Tech III is **`metaGroupID = 14`**, not 3. And the column is sparse
+  where you would least expect it: of the 8 published titans three are `1`, four
+  are `4`, and the **Ragnarok is NULL** -- so `metaGroupID = 1` silently drops a
+  Tech I titan.
 
   But `metaGroupID = 2` is not the same as "a ship a player can fly". **7 of the
   121 published T2 hulls are Alliance Tournament and CONCORD special editions** --

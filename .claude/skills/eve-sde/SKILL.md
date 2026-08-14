@@ -97,7 +97,9 @@ treatment in the `gotchas-*` files.
 - Join gates on `stargates.destSystemID`, never `destStargateID` (the peer
   *gate*). Note `destStargateID` comes **first** in the table, so `SELECT *` with
   positional unpacking builds the graph on the wrong column.
-- Hauling uses `packagedVolume`, not `volume` (assembled, ~11x larger).
+- Hauling uses `packagedVolume`, not `volume`. They are **equal for 25,347
+  published types** and differ for 685, by anything from 2x to 200x — never
+  assume a ratio, read both columns.
 - Manufacturing cost per unit is `bp_materials.quantity / bp_products.quantity` —
   a run can make 1 or 5,000 (10,000 for reactions), so reading materials alone is
   off by nearly four orders of magnitude.
