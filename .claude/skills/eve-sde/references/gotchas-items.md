@@ -125,13 +125,14 @@ literal `1.386294`.
   | 1829 shield | Onyx, Broadsword, Fiend, Laelaps | Taipan | Ibis |
   | 1825 armor | Devoter, Phobos, Gold Magnate, Silver Magnate | -- | Impairor (and the unpublished AIR Civilian Astero) |
 
-  **Neither attribute is discoverable from the schema.** Both are
-  `published = 0` with `displayName`, `unitID` and description all NULL, and
-  `highIsGood = 1` on an attribute where negative is the good direction. None of
-  the usual navigation -- join on name, read `unitID`, trust `displayName` --
-  will surface them. The only routes are parsing `modifierInfo` or reading this
-  list, so re-derive it from `type_dogma` rather than trusting the names above
-  if the build has moved on.
+  **Both attributes are near-invisible to the usual navigation.** They are
+  `published = 0` with `displayName` and `unitID` NULL, and `highIsGood = 1` on
+  an attribute where negative is the good direction -- so reading `unitID` or
+  trusting `displayName` finds nothing. They *are* findable by name or
+  description (`rookieArmorResistanceBonus` / "Bonus to armor resistances",
+  `rookieShieldResistBonus` / "Shield resistance bonus"), which is how to
+  re-derive the list from `type_dogma` if the build has moved on -- do that
+  rather than trusting the names above.
 
   The general rule, which covers more than resistances: **`typeBonus.roleBonuses`
   is always on and is already reflected in what the client shows; the per-skill
@@ -144,9 +145,11 @@ literal `1.386294`.
 
   Reading `roleBonuses` in prose is the quickest check -- the Onyx's says "20.0
   bonus to all shield resistances", the Damnation's does not mention resists --
-  but two cautions. **Match case-insensitively**: both Magnates say "bonus to
-  all Armor Resistances" in title case while the other nine are lower case, so a
-  case-sensitive `LIKE` misses two real bonuses. And **`roleBonuses` is NULL for
+  but two cautions. **The prose is not consistently cased** -- both Magnates say
+  "bonus to all Armor Resistances" in title case while the other nine are lower
+  case. SQLite's `LIKE` is case-insensitive for ASCII, so it catches all 11; but
+  `GLOB` is case-sensitive and returns only 9, as does any matching you do in
+  Python. And **`roleBonuses` is NULL for
   50 of the 423 ships**, the Rifter among them -- every published ship has a
   `typeBonus` row, but a row is not a value, so handle NULL rather than assuming
   the column is populated.
@@ -215,6 +218,9 @@ literal `1.386294`.
   the `published` mistake, and planetary-industry questions hit it constantly.
   The ten values are `Planet (Barren)`, `(Gas)`, `(Ice)`, `(Lava)`, `(Oceanic)`,
   `(Plasma)`, `(Shattered)`, `(Storm)`, `(Temperate)` and `(Scorched Barren)`.
+  Those ten names span **17 rows** in `types` -- seven are duplicated across
+  typeIDs -- so joining planets to their type *by name* multiplies rows. `planets`
+  references exactly 10 typeIDs; join on `typeID`.
 
 - **Tech level has three sources that disagree.** "How many published Tech II
   items are there?" answers 2,537 from `types.techLevel`, 2,434 from dogma

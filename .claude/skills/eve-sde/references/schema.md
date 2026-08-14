@@ -6,7 +6,7 @@ tables here name the ones you will reach for.
 
 Names are English-only; the builder discards other locales.
 
-## Schema
+## Hand-shaped tables
 
 Items and classification:
 
@@ -27,9 +27,6 @@ Attributes (all ship/module stats live here):
 | `dogmaUnits` | `_key` (**this is the unitID**), `name`, `displayName`, `description` |
 | `type_effects` | `typeID`, `effectID`, `isDefault` |
 | `dogma_effects` | `effectID`, `name`, `displayName`, `effectCategoryID`, `isOffensive`, `isAssistance`, `durationAttributeID`, `rangeAttributeID`, `falloffAttributeID`, `modifierInfo` (JSON) |
-
-`PRAGMA table_info(<table>)` lists every column; the tables here name the ones
-you will reach for, not the full set.
 
 Industry:
 
@@ -53,7 +50,7 @@ Universe:
 | `moons` | `moonID`, `solarSystemID`, `planetID`, `celestialIndex`, `orbitIndex`, `typeID`, `radius`, `density`, `surfaceGravity`, `escapeVelocity`, `orbitRadius`, `orbitPeriod`, `rotationRate`, `eccentricity`, `massDust`, `massGas`, `temperature`, `pressure`, `fragmented`, `locked`, `x`, `y`, `z` — same physical statistics as `planets` |
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
 | `stargates` | `stargateID`, `solarSystemID`, `destSystemID`, `destStargateID` |
-| `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `reprocessingEfficiency` |
+| `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `typeID`, `operationID`, `reprocessingEfficiency`, `reprocessingStationsTake`, `useOperationName`, `orbitID`, `celestialIndex`, `x`, `y`, `z` — **no name column**: the station's name is built from `items.types.name` (the structure type) plus `world.stationOperations.operationName` |
 
 `factions` and `races` are in the **`world`** part, not `universe` -- resolving
 `systems.factionID` or `types.raceID` to a name needs `world` attached. They are
@@ -117,7 +114,7 @@ Table names do not match the casual descriptions:
 | Certificates | `certificates` | `skillTypes` is an array of `{_key: skillTypeID, basic, standard, improved, advanced, elite}`; `recommendedFor` is a bare int array -- inconsistent shapes in one table |
 | Factions, races | `factions`, `races` | here, not in `universe` |
 | Ship traits / role bonuses | `items.typeBonus` | the in-game Traits panel, not derivable from dogma. Keyed on **`_key` = typeID**. `types` is `[{_key: skillTypeID, _value: [{bonus, bonusText, unitID}]}]` (per level of that skill); `roleBonuses` is the flat role bonus; `miscBonuses` is prose only. All 423 published ships have a row. `bonusText` carries raw `&lt;a href=showinfo:N&gt;` HTML |
-| Wormhole system effects | `universe.mapSecondarySuns` | 1,038 of 2,604 J-space systems have one. `typeID` names it (Wolf-Rayet, Magnetar, Pulsar, Black Hole, Red Giant, Cataclysmic Variable); `effectBeaconTypeID` -> `items.type_dogma` gives the magnitudes |
+| Wormhole system effects | `universe.mapSecondarySuns` | 1,038 of 2,604 J-space systems have one. `typeID` names it (the exact names are `Wolf-Rayet Star`, `Magnetar`, `Pulsar`, `Black Hole`, `Red Giant`, `Cataclysmic Variable`); `effectBeaconTypeID` -> `items.type_dogma` gives the magnitudes |
 | Star class, temperature, luminosity | `universe.mapStars` | one row per real system (8,089); `statistics` is JSON with `spectralClass`, `temperature`, `luminosity`, `age` |
 | PI production chains | `industry.planetSchematics` | 68 rows, P1-P4 only -- there are no P0 rows, so P1 inputs dangle by design. **`_key` is a schematicID, not a typeID**; the product is the single `types` entry with `isInput = false` |
 | Mutaplasmid roll ranges | `items.dynamicItemAttributes` | `_key` = mutaplasmid typeID; `attributeIDs` is `[{_key: attributeID, min, max}]` as multipliers on the base module |

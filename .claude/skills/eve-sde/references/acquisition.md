@@ -16,7 +16,7 @@ curl -sSLO $BASE/eve-sde-items.sqlite.xz    && xz -d eve-sde-items.sqlite.xz
 | Part | Size | Covers |
 | --- | --- | --- |
 | `universe` | ~8 MB | systems, planets, belts, stargates, stations, 3D coordinates |
-| `moons` | ~20 MB | all 344k moons with physical statistics |
+| `moons` | ~24 MB | all 344k moons with physical statistics |
 | `items` | ~7 MB | types, dogma attributes and effects, reprocessing, market groups |
 | `world` | ~1.4 MB | missions, dungeons, NPC agents and corporations, certificates, **factions**, **races** |
 | `industry` | ~0.5 MB | blueprints, schematics, assembly lines |

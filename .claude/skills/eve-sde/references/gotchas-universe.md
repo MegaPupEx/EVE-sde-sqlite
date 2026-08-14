@@ -22,7 +22,7 @@ differs. The shapes stay true across builds, the numbers do not.
 - **`universe.systemWideEffects` is not the wormhole effect**, despite keying on
   the same beacon typeID. Its `dbuffs` are Sisters-of-EVE event bonuses scoped
   to a single ship, and those `_key`s are **`misc.dbuffCollections` IDs, not
-  attributeIDs** -- the two ID spaces overlap completely, so a join to
+  attributeIDs** -- 229 of 276 dbuff keys collide with a real attributeID (83%), so a join to
   `dogma_attributes` succeeds and returns nonsense. Use `mapSecondarySuns` ->
   `items.type_dogma` on the beacon type instead.
 - **Wormhole class is on the constellation and region, not the system.**

@@ -53,6 +53,9 @@ treatment in the `gotchas-*` files.
   peer *gate*, and the join returns zero rows).
 - Hauling uses `packagedVolume`, not `volume` (assembled, ~11x larger).
 - `groups_` has a trailing underscore.
+- **Every ship value is pre-skill.** A Rifter's 365 m/s and 4.73 s align are the
+  untrained hull; a player reading their own ship sees different numbers. Say
+  "base hull". Resistances are the exception — they are skill-independent.
 
 ## Table names and keys
 
@@ -94,6 +97,9 @@ any figure from the reference files, check what you actually have:
 SELECT key, value FROM meta;   -- (key, value): sdeBuildNumber, positions, portable, splitGroup
 ```
 
+If you have ATTACHed several parts, **qualify this** — `universe.meta` — because
+every part has its own `meta` and an unqualified read silently picks one.
+
 If `sdeBuildNumber` differs from 3466501, **re-derive counts rather than quoting
 them**. The *shapes* — which column lies, which join silently drops rows, which ID
 space overlaps another — are stable across builds; the numbers are not.
@@ -112,7 +118,10 @@ SELECT x FROM systems WHERE name = 'Jita';   -- NULL = no coordinates in this bu
 
 A `--portable` database omits item descriptions, unpublished types and the
 `moons` table. On one, do **not** filter on `published` (everything present is
-published), do not promise moon data, and do not quote descriptions.
+published), do not promise moon data, and do not quote descriptions. Note that
+dropping unpublished types removes **every planet type** — all ten are
+`published = 0` — so planet-type questions cannot be answered from a portable
+build at all. Published releases are never portable.
 
 ## Get a database
 
@@ -152,7 +161,10 @@ The published parts are `universe`, `moons`, `items`, `world`, `industry`,
 `cosmetic` and `misc` — each a complete database. Fetch only what the question
 needs:
 
-- Planets, routes, security, stations — `universe` alone.
+- Planets, routes, security — `universe` alone.
+- Stations — `universe` for where they are, but **`npc_stations` has no name
+  column**: naming one needs `items.types` (the station type) and
+  `world.stationOperations` (the operation name).
 - A specific moon's gravity, radius or orbit — `universe` + `moons`.
 - Ship and module stats — `items` alone.
 - Build costs — `items` + `industry`.
@@ -192,9 +204,17 @@ failure then surfaces as `no such table: items.types` on the next query, which
 points at the schema when the real fault is the filename. Check the path exists
 first, or a typo costs you a long detour.
 
-Examples in `references/` are written **unqualified** (`types`, `type_dogma`),
-which works when a part is opened directly. If you attached parts under names,
-prefix every table — `items.types`, `universe.systems`.
+**Unqualified table names resolve across attached databases**, in attach order,
+so `SELECT * FROM types` works even when `types` lives in an attached part. The
+examples in `references/` are written unqualified for that reason and need no
+rewriting. Prefixing is still clearer in a cross-part join, and is *required* in
+one case:
+
+**`meta` exists in all seven parts.** An unqualified `SELECT ... FROM meta`
+silently returns whichever part attached first — so a build check can report the
+wrong `splitGroup`, or read `positions` from a part that has coordinates while
+the one you are querying does not. Always qualify it: `SELECT key, value FROM
+universe.meta`.
 
 There is no `sqlite3` CLI on many systems; Python's built-in `sqlite3` module
 needs no install.
