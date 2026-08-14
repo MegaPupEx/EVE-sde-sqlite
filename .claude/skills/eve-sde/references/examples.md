@@ -120,7 +120,5 @@ here, to avoid a copy drifting out of sync:
 
 - **Shortest-route BFS over the stargate graph** — `gotchas-universe.md`, beside
   the warning that the graph is disconnected and a route may not exist.
-- **Resolving `systems.factionID` / `types.raceID` to a name** — `schema.md`,
-  beside the note that `factions` and `races` are in the `world` part and are the
-  only two tables not keyed on `_key`.
+- **Resolving `systems.factionID` / `types.raceID` to a name** — `schema.md`.
 

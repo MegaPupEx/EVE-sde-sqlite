@@ -22,12 +22,13 @@ looks odd.
 
 | File | Read it when |
 | --- | --- |
-| `references/gotchas-items.md` | any ship or module stat, resistance, dogma attribute, tech level, volume or hauling question |
+| `references/gotchas-dogma.md` | what a ship or module **value means** — resistances, units, capacitor, speed, sensors, skill requirements |
+| `references/gotchas-types.md` | **which rows belong** — `published`, tech level, volume vs `packagedVolume`, `basePrice`, planet type names, duplicate names |
 | `references/gotchas-universe.md` | any system, planet, moon, star, security, region or routing question |
 | `references/gotchas-industry.md` | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
 | `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the 13 generic tables worth knowing, out of 81 |
 | `references/schema.md` (world section) | missions, agents, NPC corporations, dungeons, DED ratings, certificates, factions or races — the traps there are severe and live nowhere else |
-| `references/examples.md` | a resistance, blueprint-material, reprocessing, ship-skill, planet, gate or security-band query — adapt one rather than composing from scratch |
+| `references/examples.md` | **try this first for any straightforward stat, blueprint, reprocessing, planet, gate or security query** — its first example covers most plain "what is X's Y" questions in 600 bytes and names the columns, which usually removes the need to open `schema.md` at all |
 | `references/acquisition.md` | no database is present and none was uploaded — how to fetch or build one |
 
 The three `gotchas-*` files map onto the download parts, so it is one decision:
@@ -80,13 +81,10 @@ Two conventions, and guessing wrong costs a turn every time:
   `groups_.name`, `systems.name`, `regions.name`.
 - **The other 81** were ingested generically, keep CCP's camelCase name, and
   is keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
-  `planetSchematics._key`, `mapStars._key`. Counting domain tables (excluding
-  `meta`, which every part has): 8 of 18 in `items`, 8 of 13 in `industry`,
-  7 of 14 in `universe`, 36 of 38 in `world`, 17 of 17 in `cosmetic`. So it is
-  nearly everything in `world` and `cosmetic` but a minority in the three parts
-  most questions touch — **check, do not assume either way**.
-  `JOIN typeBonus tb ON tb.typeID = t.typeID` fails with `no such column`; the
-  join is `ON tb._key = t.typeID`.
+  `planetSchematics._key`, `mapStars._key`. It is nearly every table in `world`
+  and `cosmetic` but a minority in `items`, `universe` and `industry` — **check,
+  do not assume either way**. `JOIN typeBonus tb ON tb.typeID = t.typeID` fails
+  with `no such column`; the join is `ON tb._key = t.typeID`.
 
   Two exceptions: **`factions` and `races` have no `_key`** — they use
   `factionID` and `raceID`.
@@ -102,6 +100,25 @@ db.execute("PRAGMA table_info(typeBonus)").fetchall()
 ```
 
 Full column reference is in `references/schema.md`.
+
+## IDs you will need constantly
+
+```
+categoryID   6 Ship · 7 Module · 8 Charge · 9 Blueprint · 16 Skill
+             17 Commodity · 18 Drone · 20 Implant · 25 Asteroid · 4 Material
+attributeID  9 hp (structure) · 263 shieldCapacity · 265 armorHP · 37 maxVelocity
+             482 capacitorCapacity · 55 rechargeRate · 479 shieldRechargeRate
+             48 cpuOutput · 11 powerOutput · 14/13/12 hi/med/lowSlots · 1137 rigSlots
+             102 turretSlotsLeft · 101 launcherSlotsLeft · 552 signatureRadius
+             564 scanResolution · 76 maxTargetRange · 283 droneCapacity
+             1271 droneBandwidth · 70 agility (inertia!) · 600 warpSpeedMultiplier
+resistances  shield 271/274/273/272 · armor 267/270/269/268 · structure 113/110/109/111
+             (EM/Thermal/Kinetic/Explosive — the client's order, not the ID order)
+```
+
+**Anchor on attributeIDs, not names**, for anything in a family — resistances,
+sensor strength, tech level. Names in those families lie; see
+`references/gotchas-dogma.md`.
 
 ## Check the build first
 
@@ -131,12 +148,8 @@ SELECT x FROM systems WHERE name = 'Jita';   -- NULL = no coordinates in this bu
 `portable = '1'` marks a slimmed build (see below). Published parts carry
 `complete = '1'` and no `portable` key at all.
 
-A `--portable` database omits item descriptions, unpublished types and the
-`moons` table. On one, do **not** filter on `published` (everything present is
-published), do not promise moon data, and do not quote descriptions. Note that
-dropping unpublished types removes **every planet type** — all ten are
-`published = 0` — so planet-type questions cannot be answered from a portable
-build at all. Published releases are never portable.
+`portable = '1'` marks a hand-built slimmed database; see `acquisition.md`.
+Published releases are never portable.
 
 ## Get a database
 
@@ -146,22 +159,10 @@ what they can reach, so do not assume any one of them works.
 **1. Already present.** If a `.sqlite` is on disk, use it. Check `meta` as above.
 
 **2. Uploaded to the conversation.** The only option in a sandbox with no
-outbound access, and it costs nothing to check first:
-
-```python
-import gzip, lzma, bz2, shutil, sqlite3, pathlib
-
-OPENERS = {".xz": lzma.open, ".gz": gzip.open, ".bz2": bz2.open}
-for src in pathlib.Path(".").glob("*.sqlite*"):        # adjust to the upload path
-    if src.suffix in OPENERS:                          # eve-sde-items.sqlite.xz
-        with OPENERS[src.suffix](src) as f, open(src.stem, "wb") as o:
-            shutil.copyfileobj(f, o)                   # -> eve-sde-items.sqlite
-```
-
-**Decompress every part and keep its published name.** Several are usually
-uploaded together, and everything downstream expects `eve-sde-<group>.sqlite`.
-Renaming one to `sde.sqlite` is the same failure as a mistyped path, described
-under "Attaching several parts" below.
+outbound access, and it costs nothing to check first. Decompress every
+`.sqlite.xz` you were given and **keep its published name** —
+`eve-sde-<group>.sqlite`, which is what everything downstream expects.
+`references/acquisition.md` has the loop if you want it.
 
 **3-5. Fetch or build one.** If neither of the above worked and the sandbox has
 outbound network, read `references/acquisition.md`: it covers the prebuilt
@@ -185,7 +186,7 @@ needs:
 - Planet **types** (`Planet (Temperate)`) — `items` + `universe`; planets live in
   one and their type names in the other. **Do not add `published = 1` to that
   join**: every celestial type is `published = 0`, so it returns zero rows
-  silently. Full note in `gotchas-items.md`.
+  silently. Full note in `gotchas-types.md`.
 - Reprocessing and ore yields — `items` for `type_materials`, plus `universe`
   if you want a realistic yield (station rates are on `npc_stations`).
   `type_materials` is **not** in `industry`.
@@ -201,9 +202,6 @@ needs:
 against the moon rows. Anything about a *specific* moon does, and without it the
 query raises `no such table: moons` — it fails loudly rather than answering
 wrongly.
-
-There is no single combined download: one file only fits the upload limit by
-dropping 3D coordinates, so the parts are the published form.
 
 ## Attaching several parts
 

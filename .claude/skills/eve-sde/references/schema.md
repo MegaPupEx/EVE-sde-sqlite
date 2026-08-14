@@ -13,7 +13,7 @@ Items and classification:
 | Table | Key columns |
 | --- | --- |
 | `types` | `typeID`, `name`, `groupID`, `categoryID`, `mass`, `volume` (assembled), `packagedVolume` (what it takes up in a hold), `capacity` (its own cargo space), `basePrice`, `portionSize`, `published`, `metaLevel`, `techLevel`, `metaGroupID`, `raceID`, `factionID` |
-| `groups_` | `groupID`, `name`, `categoryID` (note the trailing underscore) |
+| `groups_` | `groupID`, `name`, `categoryID` |
 | `categories` | `categoryID`, `name` |
 | `market_groups` | `marketGroupID`, `parentGroupID`, `name` |
 | `meta_groups` | `metaGroupID`, `name` (Tech I/II, Faction, Officer …) |
@@ -23,7 +23,7 @@ Attributes (all ship/module stats live here):
 | Table | Key columns |
 | --- | --- |
 | `type_dogma` | `typeID`, `attributeID`, `value` |
-| `dogma_attributes` | `attributeID`, `name`, `displayName`, `description`, `defaultValue` (**use it -- a missing `type_dogma` row means "default", not "no value"**), `highIsGood` (unreliable), `stackable`, `published`, `unitID` (**decides what the number means -- see "Units" in `gotchas-items.md`, and note it is a different ID space from `attributeID`**), `attributeCategoryID`, `dataType`, `minAttributeID`, `maxAttributeID`, `tooltipTitle`, `tooltipDescription` |
+| `dogma_attributes` | `attributeID`, `name`, `displayName`, `description`, `defaultValue` (**use it -- a missing `type_dogma` row means "default", not "no value"**), `highIsGood` (unreliable), `stackable`, `published`, `unitID` (**decides what the number means -- see "Units" in `gotchas-dogma.md`, and note it is a different ID space from `attributeID`**), `attributeCategoryID`, `dataType`, `minAttributeID`, `maxAttributeID`, `tooltipTitle`, `tooltipDescription` |
 | `dogmaUnits` | `_key` (**this is the unitID**), `name`, `displayName`, `description` — listed here because dogma queries need it, but it is a *generic* table: camelCase, `_key`-keyed |
 | `type_effects` | `typeID`, `effectID`, `isDefault` |
 | `dogma_effects` | `effectID`, `name`, `displayName`, `effectCategoryID`, `isOffensive`, `isAssistance`, `durationAttributeID`, `rangeAttributeID`, `falloffAttributeID`, `modifierInfo` (JSON) |
@@ -83,18 +83,11 @@ WHERE s.space = 'kspace' GROUP BY 1 ORDER BY 2 DESC;
 `activity` values: `manufacturing`, `copying`, `invention`,
 `research_material`, `research_time`, `reaction`.
 
-Useful category IDs: 6 Ship, 7 Module, 8 Charge, 9 Blueprint, 16 Skill,
-17 Commodity, 18 Drone, 20 Implant, 25 Asteroid, 4 Material.
-
-Common `attributeID`s: 9 hp (structure), 263 shieldCapacity, 265 armorHP,
-37 maxVelocity, 48 cpuOutput, 11 powerOutput, 482 capacitorCapacity,
-55 rechargeRate, 14 hiSlots, 13 medSlots, 12 lowSlots, 1137 rigSlots,
-102 turretSlotsLeft, 101 launcherSlotsLeft, 552 signatureRadius,
-564 scanResolution, 76 maxTargetRange, 283 droneCapacity, 1271 droneBandwidth,
-70 agility, 600 warpSpeedMultiplier.
+Category IDs and the commonly used attributeIDs are in SKILL.md's
+"IDs you will need constantly" block.
 
 **Do not reach for these by name.** Attribute names are the single richest
-source of confidently wrong answers in this dataset — see `gotchas-items.md`.
+source of confidently wrong answers in this dataset — see `gotchas-dogma.md`.
 Anchor on the attributeID for anything in a family: resistances, resonances,
 the four sensor-strength attributes, the three tech-level sources. Name joins
 are safe only for isolated scalars like `maxVelocity`, and even then two
@@ -117,9 +110,6 @@ the 106 domain tables. Two
 consequences: the primary key is **`_key`** rather than a domain-specific name
 (not `missionID`, `dungeonID`, etc.), and nested fields are JSON -- use
 `json_extract()` and `json_each()`.
-
-Two exceptions: **`factions` and `races` have no `_key`** -- they use
-`factionID` and `raceID`. They are the only two of 38 `world` tables that do.
 
 Table names do not match the casual descriptions:
 

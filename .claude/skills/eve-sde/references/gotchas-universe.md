@@ -5,7 +5,7 @@ form "how many systems...", "which system is the most/least...", "how do I get
 from A to B", or any question about planets, moons, stars or security.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
-differs. The shapes stay true across builds, the numbers do not.
+differs.
 
 - **`universe.planetResources` is Equinox sovereignty, not planetary industry.**
   It holds `power` / `workforce` / `reagent` for the 2,712 sov-claimable nullsec

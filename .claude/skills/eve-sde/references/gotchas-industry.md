@@ -4,7 +4,7 @@ For the `industry` part and `items.type_materials`. Read before answering
 anything about build costs, blueprints, invention or ore yields.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
-differs. The shapes stay true across builds, the numbers do not.
+differs.
 
 - **Manufacturing output per run is `bp_products.quantity`.** Antimatter Charge
   S consumes 204 Tritanium *per run of 100 charges* -- 2.04 each. 368

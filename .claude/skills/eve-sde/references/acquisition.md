@@ -64,3 +64,29 @@ a part yourself with plain `xz` gives the larger figure.
 
 Sizes above are the compressed download. Uncompressed the three large parts
 are roughly universe 22 MB, moons 68 MB, items 53 MB — plan disk against those.
+
+## Decompressing uploaded parts
+
+```python
+import gzip, lzma, bz2, shutil, sqlite3, pathlib
+
+OPENERS = {".xz": lzma.open, ".gz": gzip.open, ".bz2": bz2.open}
+for src in pathlib.Path(".").glob("*.sqlite*"):        # adjust to the upload path
+    if src.suffix in OPENERS:                          # eve-sde-items.sqlite.xz
+        with OPENERS[src.suffix](src) as f, open(src.stem, "wb") as o:
+            shutil.copyfileobj(f, o)                   # -> eve-sde-items.sqlite
+```
+
+**Decompress every part and keep its published name.** Several are usually
+uploaded together, and everything downstream expects `eve-sde-<group>.sqlite`.
+Renaming one to `sde.sqlite` is the same failure as a mistyped path, described
+under "Attaching several parts" below.
+
+## `--portable` builds
+
+A `--portable` database omits item descriptions, unpublished types and the
+`moons` table, and sets `meta.portable = '1'`. On one, do **not** filter on
+`published` (everything present is published), do not promise moon data, and do
+not quote descriptions. Dropping unpublished types removes **every planet
+type** — all ten are `published = 0` — so planet-type questions cannot be
+answered from a portable build at all. Published releases are never portable.

@@ -1,10 +1,12 @@
-# Gotchas: items, dogma and ships
+# Gotchas: dogma and ship stats
 
-For the `items` part. Read before answering anything about ship or module
-stats, resistances, tech level, volumes or hauling.
+For the `items` part. Read before answering **what a ship or module stat means**
+— resistances, units, capacitor, speed, sensors, skills. For questions about
+*which rows to select* (published, tech level, volumes, names) read
+`gotchas-types.md` instead; almost no question needs both.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
-differs. The shapes stay true across builds, the numbers do not.
+differs.
 
 ## Units: read `unitID`, not the name
 
@@ -79,22 +81,17 @@ literal `1.386294`.
   110 (thermalDamageResonance)   <- 977 (hullThermalDamageResonance)
   ```
 
-  23 of the 24 effects that touch structure resonance target the bare set --
-  Damage Control, Bastion, hull resistance bonuses, system-wide storms. Only
-  `moduleBonusAssaultDamageControl` targets `hull*`, and it is modifying an
-  Assault Damage Control module, not a hull.
+  23 of the 24 effects touching structure resonance target the bare set; the one
+  exception (`moduleBonusAssaultDamageControl`) modifies an Assault Damage
+  Control module, not a hull.
 
-  All **423 of 423** published ships carry the bare set at exactly `0.67`, none
-  missing -> **33% structure resist to all four damage types, on every ship**,
-  matching what fitting tools show. By category, `hull*` belongs to 44
-  starbases, 42 modules, 22 celestials, 14 ships and 8 entities -- restricted to
-  `published = 1`, 42 starbases, 34 modules, 9 ships and 1 celestial. Either
-  way it is overwhelmingly module and structure furniture; those 9 published
-  ships are the anomaly, and their `1.0` is not what the client displays. **Do
-  not use 974-977 for a ship**, and do not read a missing `hull*` row as 0%
-  structure resistance. The Rifter is one of the 9 that carries both, so it is
-  the worst possible ship to test the rule on -- `hull*` gives 0% where the
-  client shows 33%.
+  All **423 of 423** published ships carry the bare set at exactly `0.67` ->
+  **33% structure resist to all four damage types, on every ship**, matching
+  what fitting tools show. `hull*` is on only 9 published ships (and 42
+  starbases, 34 modules). **Do not use 974-977 for a ship**, and do not read a
+  missing `hull*` row as 0% structure resistance. The Rifter is one of the 9
+  carrying both, so it is the worst ship to test the rule on -- `hull*` says 0%
+  where the client shows 33%.
 
   The three layers therefore live in different ID blocks, and structure's is not
   contiguous:
@@ -128,14 +125,11 @@ literal `1.386294`.
   | 1829 shield | Onyx, Broadsword, Fiend, Laelaps | Taipan | Ibis |
   | 1825 armor | Devoter, Phobos, Gold Magnate, Silver Magnate | -- | Impairor (and the unpublished AIR Civilian Astero) |
 
-  **Both attributes are near-invisible to the usual navigation.** They are
-  `published = 0` with `displayName` and `unitID` NULL, and `highIsGood = 1` on
-  an attribute where negative is the good direction -- so reading `unitID` or
-  trusting `displayName` finds nothing. They *are* findable by name or
-  description (`rookieArmorResistanceBonus` / "Bonus to armor resistances",
-  `rookieShieldResistBonus` / "Shield resistance bonus"), which is how to
-  re-derive the list from `type_dogma` if the build has moved on -- do that
-  rather than trusting the names above.
+  Both are `published = 0` with `displayName` and `unitID` NULL, so `unitID` and
+  `displayName` will not surface them; search `name` or `description` instead
+  (`rookieShieldResistBonus` / "Shield resistance bonus";
+  `rookieArmorResistanceBonus` / "Bonus to armor resistances") to re-derive the
+  list if the build has moved on.
 
   The general rule, which covers more than resistances: **`typeBonus.roleBonuses`
   is always on and is already reflected in what the client shows; the per-skill
@@ -147,12 +141,10 @@ literal `1.386294`.
   is 121, so say which you mean.
 
   Reading `roleBonuses` in prose is the quickest check -- the Onyx's says "20.0
-  bonus to all shield resistances", the Damnation's does not mention resists --
-  but two cautions. **The prose is not consistently cased** -- both Magnates say
-  "bonus to all Armor Resistances" in title case while the other nine are lower
-  case. SQLite's `LIKE` is case-insensitive for ASCII, so it catches all 11; but
-  `GLOB` is case-sensitive and returns only 9, as does any matching you do in
-  Python. And **`roleBonuses` is NULL for
+  bonus to all shield resistances", the Damnation's does not mention resists.
+  Two cautions: the casing is inconsistent (both Magnates use title case), so
+  match case-insensitively -- `LIKE` is, `GLOB` and Python are not. And
+  **`roleBonuses` is NULL for
   50 of the 423 ships**, the Rifter among them -- every published ship has a
   `typeBonus` row, but a row is not a value, so handle NULL rather than assuming
   the column is populated.
@@ -182,94 +174,3 @@ literal `1.386294`.
 - **Drone range is not a ship attribute.** Both an Onyx and a Rifter show 20 km
   at zero skills and 60 km trained, because it comes from the character's
   Drone Avionics skills. Nothing in `type_dogma` will give it to you.
-- **Hauling capacity: `capacity` vs `volume` vs `packagedVolume`.** Cargo space
-  is `types.capacity`, and what a packaged item takes up is
-  `types.packagedVolume` -- **not `volume`**, which is the assembled size. A
-  Rifter is 27,289 m3 assembled and 2,500 m3 packaged, so using `volume` makes
-  every ship-hauling answer ~10.9x too pessimistic (685 published types
-  differ between the two). `capacity` is NULL for 25,265
-  published types (anything with no hold), so `ORDER BY capacity DESC` is fine
-  but `WHERE capacity > x` silently drops them.
-
-  The related trap: a **ship maintenance bay holds *assembled* ships**. The
-  Bowhead's 1,600,000 m3 `shipMaintenanceBayCapacity` sounds enormous but fits
-  only 58 Rifters, while a Charon's 465,000 m3 of ordinary cargo fits 186
-  packaged ones. Freighter cargo figures in the SDE are also **pre-skill** --
-  no Racial Freighter bonus applied.
-
-- **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
-  `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
-  `bp_skills` is what a *blueprint activity* needs -- a different question.
-  The Rifter needs `requiredSkill1 = 3329` (Minmatar Frigate) at level 1.
-  **These do not recurse on their own.** Skills have their own
-  `requiredSkill*` attributes, so "what do I need to fly this" means walking the
-  tree: a Rifter also needs Spaceship Command I via Minmatar Frigate. One hop
-  for a T1 frigate, several for T2 -- a single query under-reports.
-- **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
-  published types. It is an internal seed value. For real prices use ESI; the
-  SDE has none.
-
-- **`published = 1` applies to market items, not everything.** It is right for
-  ships, modules, charges and ore -- 26,992 of 52,863 types are published, the
-  rest being test and unreleased content. But **every celestial type is
-  `published = 0`**: all ten planet types, plus whole categories (Station,
-  Effects, Bonus, Placeables, Abstract). Joining `planets` to `types` with
-  `published = 1` returns **zero rows**, silently. Scope the filter to the
-  question.
-- **Planet type names are `Planet (Temperate)`, not `Temperate`.** Filtering on
-  the bare word returns zero rows with no error -- the same silent-zero shape as
-  the `published` mistake, and planetary-industry questions hit it constantly.
-  The ten values are `Planet (Barren)`, `(Gas)`, `(Ice)`, `(Lava)`, `(Oceanic)`,
-  `(Plasma)`, `(Shattered)`, `(Storm)`, `(Temperate)` and `(Scorched Barren)`.
-  Those ten names span **17 rows** in `types` -- seven are duplicated across
-  typeIDs -- so joining planets to their type *by name* multiplies rows. `planets`
-  references exactly 10 typeIDs; join on `typeID`.
-
-- **Tech level has three sources that disagree.** "How many published Tech II
-  items are there?" answers 2,537 from `types.techLevel`, 2,434 from dogma
-  attribute 422, and 1,892 from `metaGroupID = 2` -- and 43 types have a
-  `techLevel` column that flatly contradicts their dogma. 19 published hulls are
-  `techLevel = 2` but `metaGroupID = 4` (Faction) -- Utu, Freki, Malice -- with
-  no invention path at all. **`metaGroupID = 2` is the one to trust** for "is
-  this T2".
-
-  But `metaGroupID = 2` is not the same as "a ship a player can fly". **7 of the
-  121 published T2 hulls are Alliance Tournament and CONCORD special editions** --
-  Chameleon, Enforcer, Hydra, Marshal, Pacifier, Tiamat, Whiptail. They are
-  genuinely `metaGroupID = 2`, so "the fastest-aligning T2 frigate" answers
-  *Hydra* (4.148 s), a tournament prize almost nobody owns. The right answer is
-  the **Nergal at 4.193 s** -- not the Ares, which is third at 4.544 s and is
-  only the answer if the question is restricted to Interceptors. Their
-  market group path runs through **`Special Edition Ships`** where a normal T2
-  runs through `Frigates > Advanced Frigates`, so walk the tree to exclude them:
-
-  ```sql
-  WITH RECURSIVE up(typeID, mg) AS (
-    SELECT typeID, marketGroupID FROM types
-    WHERE categoryID = 6 AND published = 1 AND metaGroupID = 2   -- REQUIRED
-    UNION ALL
-    SELECT u.typeID, g.parentGroupID FROM up u
-    JOIN market_groups g ON g.marketGroupID = u.mg
-  )
-  SELECT DISTINCT up.typeID FROM up
-  JOIN market_groups g ON g.marketGroupID = up.mg
-  WHERE g.name = 'Special Edition Ships';        -- the 7 to exclude
-  -- Drop the metaGroupID filter and this returns 68 -- every published ship
-  -- sold under Special Edition, at all tech levels. Used as a blanket exclusion
-  -- list it removes ten times what you meant.
-  ```
-
-  For any "best X" question, say which set you used -- obtainable hulls or all
-  of them.
-
-- **Names are not unique.** 12 published type names, 6 group names and 2
-  attribute names are shared by more than one ID. Joining on name can duplicate
-  rows -- resolve to an ID first when a query must return exactly one thing.
-
-- **`groups_` has a trailing underscore** (`group` is reserved in SQL).
-
-- 960 published types have `volume` NULL; `metaGroupID` and `techLevel` are
-  populated for only ~26% and ~19% of types.
-
-- Ore variant names changed: "Concentrated Veldspar" and "Dense Veldspar" no
-  longer exist as types. The grades are now `Veldspar II-Grade` and similar.
