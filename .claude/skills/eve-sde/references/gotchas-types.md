@@ -17,8 +17,11 @@ rather than quoting.
   is `types.capacity`, and what a packaged item takes up is
   `types.packagedVolume` -- **not `volume`**, which is the assembled size. A
   Rifter is 27,289 m3 assembled and 2,500 m3 packaged, so using `volume` makes
-  every ship-hauling answer ~10.9x too pessimistic (685 published types
-  differ between the two). `capacity` is NULL for 25,265
+  every ship-hauling answer far too pessimistic. **The ratio is not a constant**
+  -- across the 685 published types where the two differ it runs 2.0x to 47.7x
+  for ships (Capsule 2.0, Rifter 10.9, a Revenant 47.7), only 2.0-4.0x for the
+  242 modules, and up to 200x for celestials. Compute it per item; do not carry
+  the Rifter's 10.9 to anything else. `capacity` is NULL for 25,265
   published types (anything with no hold), so `ORDER BY capacity DESC` is fine
   but `WHERE capacity > x` silently drops them.
 

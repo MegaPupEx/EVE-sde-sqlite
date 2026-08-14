@@ -30,14 +30,24 @@ rather than quoting.
   apply it with `operation 6` (postPercent) onto attributes 271-274, which are
   **inverted resonances**: resonance x 1.5, so a 50% shield resist becomes 25%.
   A Class 6 Wolf-Rayet is the well-known **-50% shield resists**, not +50%.
-  `signatureRadiusMultiplier = 0.5` is the same shape -- `highIsGood = 1` on a
-  value where lower is the good direction. Whenever an effect writes onto a
+
+  **That 50 is one beacon's value, not the attribute's.** The shield bonus is
+  carried only by the six Wolf-Rayet beacons and scales by class --
+  **15 / 22 / 29 / 36 / 43 / 50** for C1-C6 -- so a C3 hole is -29%, not -50%.
+  The armor equivalent is on the Pulsars only, and most beacons carry no
+  resistance bonus at all. Read the magnitude off the beacon you actually have.
+  `signatureRadiusMultiplier` is the same trap in both directions: it ranges
+  **0.5 to 2.0**, so a Wolf-Rayet halves your signature while a **Class 6 Pulsar
+  doubles it** -- `highIsGood = 1` on an attribute where the good direction
+  depends on the effect. Whenever an effect writes onto a
   `unitID = 108` attribute, read the sign through the inversion, not off
   `highIsGood`.
 - **`universe.systemWideEffects` is not the wormhole effect**, despite keying on
   the same beacon typeID. Its `dbuffs` are Sisters-of-EVE event bonuses scoped
   to a single ship, and those `_key`s are **`misc.dbuffCollections` IDs, not
-  attributeIDs** -- 229 of 276 dbuff keys collide with a real attributeID (83%), so a join to
+  attributeIDs** -- 229 of the 276 keys in `dbuffCollections` collide with a real attributeID (83%)
+  -- and of the 55 keys `systemWideEffects` actually references, **55 of 55
+  collide**, so not one join fails loudly to expose the bug. A join to
   `dogma_attributes` succeeds and returns nonsense. Use `mapSecondarySuns` ->
   `items.type_dogma` on the beacon type instead.
 - **Wormhole class is on the constellation and region, not the system.**

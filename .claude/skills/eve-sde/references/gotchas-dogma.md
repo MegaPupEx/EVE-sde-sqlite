@@ -147,8 +147,13 @@ literal `1.386294`.
   hull. Widen the definition to all 58 `unitID = 108` attributes and the count
   is 121, so say which you mean.
 
-  Reading `roleBonuses` in prose is the quickest check -- the Onyx's says "20.0
-  bonus to all shield resistances", the Damnation's does not mention resists.
+  Reading `roleBonuses` in prose is a quick *screen*, not a test: **31 published
+  ships mention "resist" in their role bonus and only 11 carry 1825/1829.** The
+  20 false positives are EWAR-resistance bonuses -- every titan and supercarrier
+  ("bonus to Sensor Dampener resistance"), the deep-space transports, and the
+  Monitor, which this file uses as its 90%-resist example. Screen on the prose
+  if you like, then **confirm against `type_dogma` attributes 1825/1829**; only
+  those are damage-resistance bonuses.
   Two cautions: the casing is inconsistent (both Magnates use title case), so
   match case-insensitively -- `LIKE` is, `GLOB` and Python are not. And
   **`roleBonuses` is NULL for
@@ -195,12 +200,13 @@ literal `1.386294`.
   by attributeID, per the table above -- because a bare
   `LIKE '%DamageResonance'` returns **12** rows for a typical ship and **16** for
   the 9 that also carry `hull*` -- so the count itself varies by hull. There is also a
-  `passive*DamageResonance` family (1418-1429). For armor and shield its display
-  names differ from the active ones only in capitalisation -- but for structure
-  they are **byte-identical**: `Structure EM Damage Resistance` is the
-  `displayName` of **three** different attributes (113, 974 and 1426), and the
-  same holds for the other three damage types. Twelve attributes share four
-  display names, so `displayName` cannot identify a structure attribute at all.
+  `passive*DamageResonance` family (1418-1429). **`displayName` cannot identify
+  a resonance attribute in any layer.** Only the EM pairs differ, and only in
+  case (`Armor EM` vs `Armor Em`); thermal, kinetic and explosive are
+  byte-identical between the active and passive families in armor and shield
+  alike. Structure is worse still -- `Structure EM Damage Resistance` is the
+  `displayName` of **three** attributes (113, 974 and 1426). Match on
+  attributeID, never on `displayName`.
   Note also that the four **`passiveHull*` members (1426-1429) are
   `unitID = 127`, not 108**, so the inversion rule does not apply to them. For resistances, select the attributeID family
   deliberately rather than joining on name.
@@ -216,7 +222,10 @@ literal `1.386294`.
 - **Sensor strength is four attributes, only one of them non-zero.** 208 radar,
   209 ladar, 210 magnetometric, 211 gravimetric -- a ship carries all four and
   zeroes the three that do not apply, so the displayed "sensor strength" is the
-  max, and which attribute is non-zero *is* the sensor type. An Onyx is
+  max, and which attribute is non-zero *is* the sensor type -- for 421 of 423
+  published ships. The **Apotheosis (10/10/10/10)** and **Council Diplomatic
+  Shuttle (8/8/8/8)** carry all four, so "the non-zero one is the sensor type"
+  gives four contradictory answers there; use `MAX()`, which is right either way. An Onyx is
   gravimetric 19, a Rifter ladar 8. Averaging or summing the four gives a
   quarter of the right answer with no error to notice.
 - **Weapon and drone damage has no ship-side attribute, and no DPS is stored.**

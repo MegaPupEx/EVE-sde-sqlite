@@ -99,8 +99,8 @@ treatment in the `gotchas-*` files.
   positional unpacking builds the graph on the wrong column.
 - Hauling uses `packagedVolume`, not `volume` (assembled, ~11x larger).
 - Manufacturing cost per unit is `bp_materials.quantity / bp_products.quantity` —
-  a run can make 1 or 10,000, so reading materials alone is off by up to four
-  orders of magnitude.
+  a run can make 1 or 5,000 (10,000 for reactions), so reading materials alone is
+  off by nearly four orders of magnitude.
 - **Every ship value is pre-skill.** A Rifter's 365 m/s and 4.73 s align are the
   untrained hull; a player reading their own ship sees different numbers. Say
   "base hull". Resistances are the exception — they are skill-independent.

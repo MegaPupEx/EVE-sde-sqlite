@@ -33,7 +33,13 @@ rather than quoting.
 - **`bp_skills` mixes activities.** The Dominix blueprint has 1 manufacturing
   skill and 3 invention skills; without `AND activity = '...'` you get both and
   report the wrong set.
-- **Invention runs T1 -> T2 blueprint.** Materials, skills and time live on the
+- **Tech III invention has no T1 blueprint.** Of 1,361 invention products, 978
+  are Tech II and **216 are Tech III** -- and the T3 rows are invented from
+  **Ancient Relics** (`categoryID = 34`: Intact/Malfunctioning/Wrecked Hull
+  Sections, Thruster Sections, Power Cores and so on), not from a blueprint at
+  all. Starting a subsystem or strategic-cruiser question from a T1 blueprint
+  finds nothing and reads as "T3 is not inventable".
+- **Invention runs T1 -> T2 blueprint** (for Tech II). Materials, skills and time live on the
   **T1** blueprint, and the product is the **T2 blueprint**, not the T2 item.
   Starting from the T2 blueprint finds no invention rows at all.
   `bp_products.probability` is the *base* chance before decryptors and skills.
@@ -51,11 +57,12 @@ rather than quoting.
   that multiplied by the facility rate, your skills and your implants. The
   facility half *is* in the SDE --
   `universe.npc_stations.reprocessingEfficiency` runs 0.25 to 0.50, and 4,649 of
-  5,210 stations sit at **0.50**. Because it is so nearly uniform, "which
-  station refines best" usually has **no answer**: all 18 stations in Jita are
-  0.50. Check the distribution before ranking, and if it is flat, say so and
-  fall back to `world.stationServices` (only some stations offer a Reprocessing
-  Plant at all). So quote the 100% figure as a ceiling, halve it
+  5,210 stations sit at **0.50**. It is uniform *in some systems* -- all 18 in Jita
+  are 0.50 -- but **283 of the 1,143 multi-station systems do have a spread**,
+  and it can be 2x: Oursulaert runs 0.25 to 0.50. So check the distribution for
+  the system asked about rather than assuming either way. Note
+  `world.stationServices` is not a useful fallback: **5,197 of 5,210 stations
+  offer a Reprocessing Plant**, so it discriminates thirteen. So quote the 100% figure as a ceiling, halve it
   for a realistic NPC-station estimate, and say plainly that the SDE holds no
   skill or implant data. Reporting the raw number as "what you get" overstates a
   refine by roughly 2x.
