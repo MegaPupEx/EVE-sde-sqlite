@@ -305,8 +305,8 @@ def build(raw, dbpath, build_no, released):
     def xyz(r, key="position"):
         """3D coordinates, only when asked for.
 
-        467,000 celestial positions are high-entropy floats that compress
-        badly: they add ~10 MB to the archive, which is 37% of the 30 MB
+        482,768 celestial positions are high-entropy floats that compress
+        badly: they add ~9.4 MB to the archive, which is 31% of the 30 MB
         upload budget, to answer distance questions specifically. Off by
         default; --positions turns them on.
         """
@@ -614,7 +614,7 @@ GROUPS = {
     "items": ["types", "groups_", "categories", "market_groups", "meta_groups",
               "dogma_attributes", "dogma_effects", "type_dogma", "type_effects",
               "type_materials", "typeBonus", "typeLists", "typeElements",
-              "dynamicItemAttributes", "metaGroups", "compressibleTypes",
+              "dynamicItemAttributes", "compressibleTypes",
               "contrabandTypes", "dogmaUnits", "dogmaAttributeCategories"],
     # moons are 344k rows -- over half the universe data -- and are asked about
     # far less often than systems and planets, so they get their own part.

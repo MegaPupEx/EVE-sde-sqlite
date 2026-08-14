@@ -87,7 +87,8 @@ differs.
   exact** -- 0 mismatches against the moon rows across the 46,618 k-space
   planets. Counting moons therefore needs `universe` alone, not the `moons`
   part. Note 46,618 is the k-space figure; there are **68,407** planets in
-  total, the rest in wormhole, abyssal and void space.
+  total, the other **21,789** all in wormhole space -- abyssal and void systems have no
+  planets at all.
 - **Zarzakh has no planets at all** -- the only k-space system without any. A
   count taken through `systems JOIN planets` therefore reports 3,551 nullsec
   systems instead of 3,552. Count from `systems` directly.
