@@ -12,7 +12,7 @@ Items and classification:
 
 | Table | Key columns |
 | --- | --- |
-| `types` | `typeID`, `name`, `groupID`, `categoryID`, `mass`, `volume` (assembled), `packagedVolume` (what it takes up in a hold), `capacity` (its own cargo space), `basePrice`, `portionSize`, `published`, `metaLevel`, `techLevel`, `metaGroupID`, `raceID`, `factionID` |
+| `types` | `typeID`, `name`, `groupID`, `categoryID`, `mass`, `volume` (assembled), `packagedVolume` (what it takes up in a hold), `capacity` (its own cargo space), `basePrice`, `portionSize`, `published`, `metaLevel`, `techLevel`, `metaGroupID`, `marketGroupID`, `raceID`, `factionID` |
 | `groups_` | `groupID`, `name`, `categoryID` |
 | `categories` | `categoryID`, `name` |
 | `market_groups` | `marketGroupID`, `parentGroupID`, `name` |
@@ -86,10 +86,13 @@ WHERE s.space = 'kspace' GROUP BY 1 ORDER BY 2 DESC;
 Category IDs and the commonly used attributeIDs are in SKILL.md's
 "IDs you will need constantly" block.
 
-**Do not reach for these by name.** Attribute names are the single richest
+**Do not reach for attributes by name.**
+
+Attribute names are the single richest
 source of confidently wrong answers in this dataset — see `gotchas-dogma.md`.
-Anchor on the attributeID for anything in a family: resistances, resonances,
-the four sensor-strength attributes, the three tech-level sources. Name joins
+Anchor on the attributeID for anything in a family: resistances, resonances and
+the four sensor-strength attributes. (Tech level also has three disagreeing
+sources, but that is a filtering question — see `gotchas-types.md`.) Name joins
 are safe only for isolated scalars like `maxVelocity`, and even then two
 attribute names are shared by two IDs each — and **`published = 1` does not
 separate them**, since all four rows are published:

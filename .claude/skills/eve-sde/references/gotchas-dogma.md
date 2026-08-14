@@ -156,6 +156,14 @@ literal `1.386294`.
   it on kinetic -- both above every conventional hull, whose ceiling is the Onyx
   at 76%. Report the outlier and the best normal hull; naming only the Monitor
   answers a question nobody asked.
+- **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
+  `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
+  `bp_skills` is what a *blueprint activity* needs -- a different question.
+  The Rifter needs `requiredSkill1 = 3329` (Minmatar Frigate) at level 1.
+  **These do not recurse on their own.** Skills have their own
+  `requiredSkill*` attributes, so "what do I need to fly this" means walking the
+  tree: a Rifter also needs Spaceship Command I via Minmatar Frigate. One hop
+  for a T1 frigate, several for T2 -- a single query under-reports.
 - **Four families of resonance attribute exist.** Always anchor the layer --
   by attributeID, per the table above -- because a bare
   `LIKE '%DamageResonance'` returns 16 rows for one ship. There is also a

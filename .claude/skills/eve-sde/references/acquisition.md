@@ -1,7 +1,8 @@
 # Getting a database when none is present
 
-Read this only if options 1 and 2 in SKILL.md (already on disk / uploaded to the
-conversation) both failed. Work down and stop at the first that succeeds.
+Two things live here: the decompression loop for parts **uploaded to the
+conversation**, and how to **fetch or build** a database when none is present.
+SKILL.md points here for both. Work down and stop at the first that succeeds.
 
 **3. Prebuilt release** — fastest when reachable, already integrity checked, no
 build step. Releases carry the SDE **split by domain**; fetch only the parts the
@@ -32,6 +33,13 @@ needed — but it is a single personal repo, so treat a failure here as "cannot
 reach it, move on" and fall through. GitHub answers 404 rather than 403 for
 anything it will not serve, so a failure never proves the release is gone.
 
+**Sizes are the compressed `.xz` download at the preset the builder uses**
+(`preset=9|PRESET_EXTREME`). This matters for `moons`, the only part near the
+30 MB cap: 20.5 MB at 9e but **24.0 MB at xz's default preset 6**, so
+recompressing a part yourself gives the larger figure. Uncompressed, the three
+large parts are roughly universe 22 MB, moons 68 MB, items 53 MB — plan disk
+against those.
+
 **4. Build from CCP** — authoritative. Downloads ~99 MB and takes a couple of
 minutes; needs ~1.5 GB of temporary disk. Standard library only. Needs
 `developers.eveonline.com`:
@@ -57,14 +65,6 @@ applies:
 curl -sO https://www.fuzzwork.co.uk/dump/latest-sqlite.db.gz && gunzip latest-sqlite.db.gz
 ```
 
-Sizes above are the compressed `.xz` download **at the preset the builder uses**
-(`preset=9|PRESET_EXTREME`). This matters for `moons`, the only part near the
-30 MB cap: 20.5 MB at 9e but **24.0 MB at xz's default preset 6**. Recompressing
-a part yourself with plain `xz` gives the larger figure.
-
-Sizes above are the compressed download. Uncompressed the three large parts
-are roughly universe 22 MB, moons 68 MB, items 53 MB — plan disk against those.
-
 ## Decompressing uploaded parts
 
 ```python
@@ -80,7 +80,7 @@ for src in pathlib.Path(".").glob("*.sqlite*"):        # adjust to the upload pa
 **Decompress every part and keep its published name.** Several are usually
 uploaded together, and everything downstream expects `eve-sde-<group>.sqlite`.
 Renaming one to `sde.sqlite` is the same failure as a mistyped path, described
-under "Attaching several parts" below.
+under "Attaching several parts" in SKILL.md.
 
 ## `--portable` builds
 

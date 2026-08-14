@@ -25,14 +25,7 @@ differs.
   packaged ones. Freighter cargo figures in the SDE are also **pre-skill** --
   no Racial Freighter bonus applied.
 
-- **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
-  `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
-  `bp_skills` is what a *blueprint activity* needs -- a different question.
-  The Rifter needs `requiredSkill1 = 3329` (Minmatar Frigate) at level 1.
-  **These do not recurse on their own.** Skills have their own
-  `requiredSkill*` attributes, so "what do I need to fly this" means walking the
-  tree: a Rifter also needs Spaceship Command I via Minmatar Frigate. One hop
-  for a T1 frigate, several for T2 -- a single query under-reports.
+
 - **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
   published types. It is an internal seed value. For real prices use ESI; the
   SDE has none.
@@ -108,10 +101,9 @@ differs.
 - **Names are not unique.** 12 published type names, 6 group names and 2
   attribute names are shared by more than one ID. Joining on name can duplicate
   rows -- resolve to an ID first when a query must return exactly one thing.
-
-
-- 960 published types have `volume` NULL; `metaGroupID` and `techLevel` are
-  populated for only ~26% and ~19% of types.
-
-- Ore variant names changed: "Concentrated Veldspar" and "Dense Veldspar" no
-  longer exist as types. The grades are now `Veldspar II-Grade` and similar.
+- **Sparse columns give false negatives.** 960 published types have `volume`
+  NULL, and `metaGroupID` and `techLevel` are populated for only ~26% and ~19%
+  of types -- so `WHERE metaGroupID = 2` silently excludes three quarters of the
+  catalogue before any filtering you intended.
+- **Ore variant names changed.** "Concentrated Veldspar" and "Dense Veldspar" no
+  longer exist as types; the grades are now `Veldspar II-Grade` and similar.

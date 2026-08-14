@@ -26,7 +26,7 @@ looks odd.
 | `references/gotchas-types.md` | **which rows belong** — `published`, tech level, volume vs `packagedVolume`, `basePrice`, planet type names, duplicate names |
 | `references/gotchas-universe.md` | any system, planet, moon, star, security, region or routing question |
 | `references/gotchas-industry.md` | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
-| `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the 13 generic tables worth knowing, out of 81 |
+| `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the ~11 generic tables worth knowing (of 81), plus `factions` and `races` |
 | `references/schema.md` (world section) | missions, agents, NPC corporations, dungeons, DED ratings, certificates, factions or races — the traps there are severe and live nowhere else |
 | `references/examples.md` | **try this first for any straightforward stat, blueprint, reprocessing, planet, gate or security query** — its first example covers most plain "what is X's Y" questions in 600 bytes and names the columns, which usually removes the need to open `schema.md` at all |
 | `references/acquisition.md` | no database is present and none was uploaded — how to fetch or build one |
@@ -37,8 +37,9 @@ fetch `universe`, read `gotchas-universe.md`.
 **Coverage is not uniform.** `items`, `universe` and `industry` are documented
 in depth. The `world` part has traps but no gotcha file — they are in
 `schema.md`'s world section. **`cosmetic` and `misc` are documented nowhere**:
-skins, graphics, icons, `fighterAbilities`, `dbuffCollections` and roughly 60
-other generically ingested tables have no notes at all. For those, list
+skins, graphics, icons, `fighterAbilities` and roughly 60 other generically
+ingested tables have no notes at all. (`misc.dbuffCollections` is the one
+exception — its ID-collision trap is in `gotchas-universe.md`.) For those, list
 `sqlite_master`, `PRAGMA table_info`, and say plainly that the shape is
 unverified rather than inferring it.
 
@@ -50,7 +51,7 @@ unverified rather than inferring it.
 
 ## If you read nothing else
 
-These six prevent more wrong answers than anything else in the package. Full
+These seven prevent more wrong answers than anything else in the package. Full
 treatment in the `gotchas-*` files.
 
 - `unitID = 108` means the value is **inverted** — `0.4` is 60% resist, not 40%.
@@ -79,11 +80,11 @@ Two conventions, and guessing wrong costs a turn every time:
   not `marketGroups`. **The name column is always bare `name`**, never CCP's
   classic `typeName` / `groupName` / `solarSystemName`: it is `types.name`,
   `groups_.name`, `systems.name`, `regions.name`.
-- **The other 81** were ingested generically, keep CCP's camelCase name, and
-  is keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
-  `planetSchematics._key`, `mapStars._key`. It is nearly every table in `world`
-  and `cosmetic` but a minority in `items`, `universe` and `industry` — **check,
-  do not assume either way**. `JOIN typeBonus tb ON tb.typeID = t.typeID` fails
+- **The other 81** were ingested generically, keep CCP's camelCase name, and are
+  keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
+  `planetSchematics._key`, `mapStars._key`. By part: `cosmetic` 17 of 17, `world` 36 of 38,
+  `industry` 8 of 13, `universe` 7 of 14, `items` 8 of 18 — so it is the rule in
+  some parts and the exception in others. **Check, do not assume either way.** `JOIN typeBonus tb ON tb.typeID = t.typeID` fails
   with `no such column`; the join is `ON tb._key = t.typeID`.
 
   Two exceptions: **`factions` and `races` have no `_key`** — they use
@@ -117,8 +118,9 @@ resistances  shield 271/274/273/272 · armor 267/270/269/268 · structure 113/11
 ```
 
 **Anchor on attributeIDs, not names**, for anything in a family — resistances,
-sensor strength, tech level. Names in those families lie; see
-`references/gotchas-dogma.md`.
+sensor strength. Names in those families lie; see `references/gotchas-dogma.md`.
+Tech level has three disagreeing sources and is a filtering question — see
+`references/gotchas-types.md`.
 
 ## Check the build first
 
@@ -145,11 +147,12 @@ builds and its absence proves nothing either way:
 SELECT x FROM systems WHERE name = 'Jita';   -- NULL = no coordinates in this build
 ```
 
-`portable = '1'` marks a slimmed build (see below). Published parts carry
-`complete = '1'` and no `portable` key at all.
+`complete = '1'` marks a full build; published parts always carry it.
 
-`portable = '1'` marks a hand-built slimmed database; see `acquisition.md`.
-Published releases are never portable.
+`portable = '1'` marks a hand-built slimmed database — see `acquisition.md`.
+Published releases never carry the key at all. On a portable build the `moons`
+table still **exists but is empty**, so moon questions return zero rows rather
+than raising `no such table`; check `meta` before reading absence as fact.
 
 ## Get a database
 
