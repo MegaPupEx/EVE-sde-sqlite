@@ -4,6 +4,9 @@ For the `items` part. Read before answering **which rows belong in the answer**
 — published flags, tech level, volumes, prices, planet type names, duplicate
 names. For what a dogma *value means*, read `gotchas-dogma.md`.
 
+**"Best/fastest X hull" questions need both files.** Picking the hulls is here;
+what the stat means is there. The worked example below is one of them.
+
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
 differs.
 
@@ -50,6 +53,14 @@ differs.
   typeIDs -- so joining planets to their type *by name* multiplies rows. `planets`
   references exactly 10 typeIDs; join on `typeID`.
 
+- **There is no hull-size column.** "Frigate", "cruiser", "battleship" exist
+  only as `groups_.name` values, so a size class is a list of group names you
+  curate. Cruiser-sized T2, for instance, is Heavy Assault Cruiser + Heavy
+  Interdiction Cruiser + Logistics + Combat Recon + Force Recon + Flag Cruiser;
+  frigate-sized T2 is Assault Frigate + Covert Ops + Electronic Attack Ship +
+  Expedition Frigate + Interceptor + Logistics Frigate + Stealth Bomber. Say
+  which groups you used -- two correct answers can differ on whether Marauders
+  count as battleships.
 - **Tech level has three sources that disagree.** "How many published Tech II
   items are there?" answers 2,537 from `types.techLevel`, 2,434 from dogma
   attribute 422, and 1,892 from `metaGroupID = 2` -- and 43 types have a
@@ -86,6 +97,13 @@ differs.
 
   For any "best X" question, say which set you used -- obtainable hulls or all
   of them.
+
+  **The align times above come from `gotchas-dogma.md`, not from this file.**
+  Align is `ln(4) * inertia * mass / 1e6` where `inertia` is attribute 70
+  (named `agility`, which is not what it sounds like), and **SQLite's `LOG()` is
+  base 10** -- using it makes every align time 2.3026x too fast while leaving the
+  ranking intact, so the error is invisible. Do not recompute these numbers
+  without reading that file.
 
 - **Names are not unique.** 12 published type names, 6 group names and 2
   attribute names are shared by more than one ID. Joining on name can duplicate

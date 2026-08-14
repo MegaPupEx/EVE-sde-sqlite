@@ -3,7 +3,10 @@
 For the `items` part. Read before answering **what a ship or module stat means**
 — resistances, units, capacitor, speed, sensors, skills. For questions about
 *which rows to select* (published, tech level, volumes, names) read
-`gotchas-types.md` instead; almost no question needs both.
+`gotchas-types.md` instead.
+
+**"Best/fastest X hull" questions need both files** -- this one for the formula
+and the unit trap, `gotchas-types.md` for which hulls are eligible.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
 differs.
@@ -56,8 +59,7 @@ rate of fire**, in milliseconds; ship velocity is `maxVelocity` (37).
 
 **SQLite's `LOG()` is base 10, not natural.** `LOG(4)` returns 0.602, not
 1.386, so `LOG(4) * inertia * mass / 1e6` gives align times exactly 2.3026x too
-fast -- a Rifter reads **2.06 s instead of 4.73 s**, an Ares 1.97 s instead of
-4.54 s. The ranking is unchanged,
+fast -- a Rifter reads **2.06 s instead of 4.73 s**. The ranking is unchanged,
 which is exactly why the error survives a sanity check. Use `LN(4)`, or the
 literal `1.386294`.
 
@@ -148,6 +150,12 @@ literal `1.386294`.
   50 of the 423 ships**, the Rifter among them -- every published ship has a
   `typeBonus` row, but a row is not a value, so handle NULL rather than assuming
   the column is populated.
+- **A few hulls sit far outside the normal resist range**, so "which ship
+  resists X best" does not land where a player expects. The **Monitor** (T2 Flag
+  Cruiser) carries **90% on all four shield layers**, and the **Cybele** matches
+  it on kinetic -- both above every conventional hull, whose ceiling is the Onyx
+  at 76%. Report the outlier and the best normal hull; naming only the Monitor
+  answers a question nobody asked.
 - **Four families of resonance attribute exist.** Always anchor the layer --
   by attributeID, per the table above -- because a bare
   `LIKE '%DamageResonance'` returns 16 rows for one ship. There is also a
