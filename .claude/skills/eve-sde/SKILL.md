@@ -379,11 +379,15 @@ them before trusting a result. Verified against build 3466501.
 
   All **423 of 423** published ships carry the bare set at exactly `0.67`, none
   missing -> **33% structure resist to all four damage types, on every ship**,
-  which is what the client and every fitting tool show. By category, `hull*` is
-  carried by 42 starbases, 34 modules, 9 ships and 1 celestial -- those 9 ships
-  are the anomaly, not the rule, and their `1.0` is not what the client
-  displays. **Do not use 974-977 for a ship**, and do not read a missing `hull*`
-  row as 0% structure resistance.
+  matching what fitting tools show. By category, `hull*` belongs to 44
+  starbases, 42 modules, 22 celestials, 14 ships and 8 entities -- restricted to
+  `published = 1`, 42 starbases, 34 modules, 9 ships and 1 celestial. Either
+  way it is overwhelmingly module and structure furniture; those 9 published
+  ships are the anomaly, and their `1.0` is not what the client displays. **Do
+  not use 974-977 for a ship**, and do not read a missing `hull*` row as 0%
+  structure resistance. The Rifter is one of the 9 that carries both, so it is
+  the worst possible ship to test the rule on -- `hull*` gives 0% where the
+  client shows 33%.
 
   The three layers therefore live in different ID blocks, and structure's is not
   contiguous:
@@ -407,22 +411,39 @@ them before trusting a result. Verified against build 3466501.
   and a Cerberus's, but the client shows 20/84/76/60 where the raw values give
   0/80/70/50. The difference is `rookieShieldResistBonus` (1829) = `-20` plus
   four passive `ItemModifier` effects, applied as
-  `resonance * (1 + bonus/100)`. Affected hulls -- the name "rookie" is
-  misleading, four of the six are Heavy Interdiction Cruisers:
+  `resonance * (1 + bonus/100)`. The complete list -- the name "rookie" is
+  misleading, four of the six shield cases are Heavy Interdiction Cruisers:
 
-  | Attribute | Hulls |
-  | --- | --- |
-  | 1829 shield | Onyx, Broadsword, Fiend, Laelaps, Taipan (-20/-12), Ibis (-8) |
-  | 1825 armor | Devoter, Phobos, Gold Magnate, Silver Magnate (-20), Impairor (-8) |
+  | Attribute | -20 | -12 | -8 |
+  | --- | --- | --- | --- |
+  | 1829 shield | Onyx, Broadsword, Fiend, Laelaps | Taipan | Ibis |
+  | 1825 armor | Devoter, Phobos, Gold Magnate, Silver Magnate | -- | Impairor (and the unpublished AIR Civilian Astero) |
+
+  **Neither attribute is discoverable from the schema.** Both are
+  `published = 0` with `displayName`, `unitID` and description all NULL, and
+  `highIsGood = 1` on an attribute where negative is the good direction. None of
+  the usual navigation -- join on name, read `unitID`, trust `displayName` --
+  will surface them. The only routes are parsing `modifierInfo` or reading this
+  list, so re-derive it from `type_dogma` rather than trusting the names above
+  if the build has moved on.
 
   The general rule, which covers more than resistances: **`typeBonus.roleBonuses`
   is always on and is already reflected in what the client shows; the per-skill
-  bonuses in `typeBonus.types` scale with skill level and are not.** 89 published
-  ships carry an effect that modifies a resonance attribute, but the other 78 are
-  per-skill-level ship bonuses (a Damnation gets 4% armor resist per level of
-  Amarr Cruiser) and correctly do not apply to a base hull. Reading
-  `roleBonuses` in prose is the fastest check: the Onyx's says "20.0 bonus to
-  all shield resistances", the Damnation's does not mention resists at all.
+  bonuses in `typeBonus.types` scale with skill level and are not.** 90 published
+  ships carry an effect that modifies one of the twelve core resonance
+  attributes; the other 79 are per-skill-level ship bonuses (a Damnation gets 4%
+  armor resist per level of Amarr Cruiser) and correctly do not apply to a base
+  hull. Widen the definition to all 58 `unitID = 108` attributes and the count
+  is 121, so say which you mean.
+
+  Reading `roleBonuses` in prose is the quickest check -- the Onyx's says "20.0
+  bonus to all shield resistances", the Damnation's does not mention resists --
+  but two cautions. **Match case-insensitively**: both Magnates say "bonus to
+  all Armor Resistances" in title case while the other nine are lower case, so a
+  case-sensitive `LIKE` misses two real bonuses. And **`roleBonuses` is NULL for
+  50 of the 423 ships**, the Rifter among them -- every published ship has a
+  `typeBonus` row, but a row is not a value, so handle NULL rather than assuming
+  the column is populated.
 - **Four families of resonance attribute exist.** Always anchor the layer --
   by attributeID, per the table above -- because a bare
   `LIKE '%DamageResonance'` returns 16 rows for one ship. There is also a
@@ -644,6 +665,13 @@ produces a plausible number rather than an error.
 
 ## Examples
 
+These are written **unqualified** (`types`, `type_dogma`), which works when a
+part is opened directly as the main database. If you followed "Split databases"
+and attached the parts under names, prefix every table -- `items.types`,
+`universe.systems`. Unprefixed queries against attached parts fail with
+`no such table`, which looks identical to the mistyped-filename failure
+described in that section and is easy to misdiagnose.
+
 ```sql
 -- ship fitting stats
 SELECT a.name, d.value
@@ -704,9 +732,11 @@ FROM systems WHERE space = 'kspace'
 GROUP BY band;
 
 -- Resistances as the client shows them: all three layers, client damage-type
--- order, and the always-on role bonus applied. Verified against the in-game
--- fitting window for the Rifter (0/20/40/50, 60/35/25/10, 33/33/33/33) and the
--- Onyx (20/84/76/60, 50/86/63/10, 33/33/33/33).
+-- order, and the always-on role bonus applied. Checked against EVE Workbench's
+-- base-hull panel for the Rifter (0/20/40/50, 60/35/25/10, 33/33/33/33) and the
+-- Onyx (20/84/76/60, 50/86/63/10, 33/33/33/33) -- a fitting tool, not the
+-- client itself, so treat it as strong corroboration rather than proof.
+-- Fitting tools round to integers; the exact values here are 86.25 and 62.5.
 WITH layer(attributeID, layer, dmg, ord) AS (
   VALUES (271,'Shield','EM',1),   (274,'Shield','Thermal',2),
          (273,'Shield','Kinetic',3), (272,'Shield','Explosive',4),
