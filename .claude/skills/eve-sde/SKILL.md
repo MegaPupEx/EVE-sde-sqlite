@@ -46,10 +46,16 @@ curl -sSLo items.xz    $BASE/eve-sde-items.sqlite.xz    && xz -d items.xz     # 
 | `cosmetic` | ~0.4 MB | skins, graphics, icons |
 | `misc` | ~0.01 MB | the remainder |
 
-**`moons` is a separate part from `universe`.** A moon question needs both --
-`moons` for the moon rows, `universe` to resolve which system or planet they
-orbit. Fetching only `universe` gives no `moons` table at all, which reads as
-"this system has no moons" if you do not notice.
+**`moons` is a separate part from `universe`.** Which parts you need depends on
+the question:
+
+- **Counting moons** -- `universe` alone is enough. `planets.moons` and
+  `planets.belts` are denormalised counts, verified exact against the moon rows
+  (0 mismatches across 46,618 planets). "Which system has the most moons?"
+  answers correctly from `universe` by itself.
+- **Anything about a specific moon** -- gravity, radius, coordinates, orbit --
+  needs `moons` too. Without it the query raises `no such table: moons`, so it
+  fails loudly rather than answering wrongly.
 
 There is no single combined download: one file only fits the 30 MB upload limit
 by dropping 3D coordinates, so the parts are the published form. ATTACH whatever
@@ -185,7 +191,7 @@ Universe:
 | `constellations` | `constellationID`, `name`, `regionID` |
 | `systems` | `solarSystemID`, `name`, `regionID`, `constellationID`, `security`, `securityClass`, `space` (`kspace`/`wormhole`/`abyssal`/`void`) |
 | `planets` | `planetID`, `solarSystemID`, `celestialIndex`, `typeID`, `radius`, `surfaceGravity`, `temperature`, `pressure`, `density`, `orbitRadius`, `orbitPeriod`, `eccentricity`, `moons`, `belts` |
-| `moons` | `moonID`, `solarSystemID`, `planetID`, `orbitIndex`, `radius` |
+| `moons` | `moonID`, `solarSystemID`, `planetID`, `celestialIndex`, `orbitIndex`, `typeID`, `radius`, `density`, `surfaceGravity`, `escapeVelocity`, `orbitRadius`, `orbitPeriod`, `rotationRate`, `eccentricity`, `massDust`, `massGas`, `temperature`, `pressure`, `fragmented`, `locked`, `x`, `y`, `z` — same physical statistics as `planets` |
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
 | `stargates` | `stargateID`, `solarSystemID`, `destSystemID`, `destStargateID` |
 | `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `reprocessingEfficiency` |
@@ -295,6 +301,13 @@ them before trusting a result. Verified against build 3466501.
 
 - 18,915 published types have **no** `type_materials` row: not reprocessable,
   rather than reprocessing to nothing.
+- **1,364 moons have NULL `surfaceGravity`** (and NULL `density`), all
+  `typeID = 14`. `ORDER BY surfaceGravity DESC` is safe -- SQLite sorts NULL
+  smallest -- but `ASC` puts 1,364 NULLs at the top of a "lowest gravity"
+  query, and `AVG()` silently skips them.
+- **Zarzakh has no planets at all** -- the only k-space system without any. A
+  count taken through `systems JOIN planets` therefore reports 3,551 nullsec
+  systems instead of 3,552. Count from `systems` directly.
 - 960 published types have `volume` NULL; `metaGroupID` and `techLevel` are
   populated for only ~26% and ~19% of types.
 - **3,222 systems have no stargates** (all wormhole/abyssal/void, plus 217 in
