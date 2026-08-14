@@ -43,18 +43,27 @@ Worked example -- "which ship resists webs best?":
 -- WRONG: names suggest higher is better
 SELECT t.name, d.value FROM type_dogma d JOIN types t ON t.typeID = d.typeID
 WHERE d.attributeID = 2115 AND t.published = 1 AND t.categoryID = 6
-ORDER BY d.value DESC;              -- Bantam, Condor, Griffin at 1.0
+ORDER BY d.value DESC;              -- 409 of 423 ships tie at 1.0 (= 0% resist)
 
 -- RIGHT: unitID 108 is inverted
 SELECT t.name, ROUND((1 - d.value) * 100, 1) AS pct FROM type_dogma d
 JOIN types t ON t.typeID = d.typeID
 WHERE d.attributeID = 2115 AND t.published = 1 AND t.categoryID = 6
-ORDER BY d.value ASC;               -- Erebus, Leviathan, Avatar at 80%
+ORDER BY d.value ASC;               -- all eight titans tie at 80%
 ```
 
 The naive answer names T1 frigates as the best web-resisters. They are the
 **worst**, at 0%. `highIsGood` does not save you -- `remoteRepairImpedance` is
 inverted and flagged `highIsGood = 1`.
+
+**This attribute is also the tie trap in miniature**, so do not lift the top
+rows of either query as an answer. There are exactly three distinct values
+across the 423 published ships: 409 sit at 0%, six at 50% and the **eight
+titans** (Avatar, Azariel, Erebus, Komodo, Leviathan, Molok, Ragnarok,
+Vanquisher) at 80%. `LIMIT 3` on the correct query names three of eight and
+reads as a podium; `LIMIT 3` on the wrong one names three of 409. Group by
+`value` before you present a ranking -- see the tie rule in
+`gotchas-universe.md`.
 
 Two more name traps: **`agility` (70) is the Inertia Modifier**, so "most agile"
 by either sort direction is wrong -- align time is

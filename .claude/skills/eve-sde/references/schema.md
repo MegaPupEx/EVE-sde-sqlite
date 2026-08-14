@@ -47,7 +47,7 @@ Universe:
 | `constellations` | `constellationID`, `name`, `regionID` |
 | `systems` | `solarSystemID`, `name`, `regionID`, `constellationID`, `security`, `securityClass`, `factionID`, `wormholeClassID` (usually NULL -- see `gotchas-universe.md`), `x`, `y`, `z` (metres), `space` (`kspace`/`wormhole`/`abyssal`/`void`/`other` -- five values, see `gotchas-universe.md`) |
 | `planets` | `planetID`, `solarSystemID`, `celestialIndex`, `typeID`, `radius`, `surfaceGravity`, `temperature`, `pressure`, `density`, `orbitRadius`, `orbitPeriod`, `eccentricity`, `moons`, `belts` |
-| `moons` | `moonID`, `solarSystemID`, `planetID`, `celestialIndex`, `orbitIndex`, `typeID`, `radius`, `density`, `surfaceGravity`, `escapeVelocity`, `orbitRadius`, `orbitPeriod`, `rotationRate`, `eccentricity`, `massDust`, `massGas`, `temperature`, `pressure`, `fragmented`, `locked`, `x`, `y`, `z` — same physical statistics as `planets` |
+| `moons` | **its own download — not in the `universe` part.** `moonID`, `solarSystemID`, `planetID`, `celestialIndex`, `orbitIndex`, `typeID`, `radius`, `density`, `surfaceGravity`, `escapeVelocity`, `orbitRadius`, `orbitPeriod`, `rotationRate`, `eccentricity`, `massDust`, `massGas`, `temperature`, `pressure`, `fragmented`, `locked`, `x`, `y`, `z` — same physical statistics as `planets`. It is universe-domain data in a separate 20.5 MB part because it is 344,457 rows; attaching `universe` alone gives `no such table: moons` |
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
 | `stargates` | `stargateID`, `solarSystemID`, `destStargateID`, `destSystemID`, `typeID`, `x`, `y`, `z` — **note the order**: `destStargateID` comes first, so `SELECT *` with positional unpacking silently builds the graph on gate IDs |
 | `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `typeID`, `operationID`, `reprocessingEfficiency`, `reprocessingStationsTake`, `useOperationName`, `orbitID`, `celestialIndex`, `orbitIndex`, `x`, `y`, `z` — **no name column**, see below |
@@ -58,8 +58,9 @@ a station:
 — which reproduces strings like `Jita IV - Moon 6 - Hyasyoda Corporation
 Refinery` (verified). Moons take the same shape (`Arifsdald VII - Moon 1`) from
 `moons.celestialIndex` and `orbitIndex`. Both need `world` attached. The
-assembly is stored nowhere, so if you quote a station or moon name, say it was
-derived.
+assembly is not in CCP's export, so if you quote a station or moon name, say it
+was derived. (Third-party mirrors of the SDE sometimes add pre-assembled `name`
+fields; this builder reads CCP's files only, so nothing here has them.)
 
 `factions` and `races` are in the **`world`** part, not `universe` -- resolving
 `systems.factionID` or `types.raceID` to a name needs `world` attached. They are
@@ -130,18 +131,23 @@ Table names do not match the casual descriptions:
 | PI production chains | `industry.planetSchematics` | 68 rows, P1-P4 only -- there are no P0 rows, so P1 inputs dangle by design. **`_key` is a schematicID, not a typeID**; the product is the single `types` entry with `isInput = false` |
 | Mutaplasmid roll ranges | `items.dynamicItemAttributes` | `_key` = mutaplasmid typeID; `attributeIDs` is `[{_key: attributeID, min, max}]` as multipliers on the base module |
 | Which hulls can link to a beacon | `cosmetic.linkWithShip` | 3 rows -- **in `cosmetic`, not `items`**, despite having nothing to do with skins. `linkableShipTypeListID` -> `items.typeLists` gives the eligible hulls; also carries `linkDuration`, `maxLinkRange`, `omegaOnly`, `applyPvpFlag` and a `dbuffs` array. C-CRAB = Carriers and Command Carriers only; CRAB adds Titan/Dread/Supercarrier/Lancer; Skyhook Reagent Silo takes 22 groups and blocks cloak, jump, dock and MJD while capping you at 1,000 m/s |
-| Eligibility sets (who may dock/link/trigger) | `items.typeLists` | **six columns, all six meaningful**: `included`/`excluded` x `TypeIDs`/`GroupIDs`/`CategoryIDs` (non-NULL on 218/268/45 and 26/27/2 of 462 rows). Reading only the typeID column returns **empty** for rows defined by group -- the C-CRAB list has 0 typeIDs and 2 groups. `displayName` is a pre-written human answer but is NULL on 425 rows and **can under-state the data**: list 300 says "Titans, Supercarriers, Carriers, and Dreadnoughts" while its groups also include Lancer Dreadnought and Command Carrier. Two lists include typeID 11019 (Cockroach, `published = 0`) -- drop unpublished hulls before answering. 229 of 462 `_key`s are also valid typeIDs, so never join `_key` to `types` |
+| Eligibility sets (who may dock/link/trigger) | `items.typeLists` | 10 columns, of which **six define the set and all six matter**: `included`/`excluded` x `TypeIDs`/`GroupIDs`/`CategoryIDs` (non-NULL on 218/268/45 and 26/27/2 of 462 rows). Reading only the typeID column returns **empty** for rows defined by group -- the C-CRAB list has 0 typeIDs and 2 groups. `displayName` is a pre-written human answer but is NULL on 425 rows and **can under-state the data**: list 300 says "Titans, Supercarriers, Carriers, and Dreadnoughts" while its groups also include Lancer Dreadnought and Command Carrier. Two lists include typeID 11019 (Cockroach, `published = 0`) -- drop unpublished hulls before answering. 229 of 462 `_key`s are also valid typeIDs, so never join `_key` to `types` |
 | Alpha-clone skill list | `world.cloneGrades` | `_key` is a **raceID** (1/2/4/8), and although the four rows are named per race their `skills` JSON is **byte-identical** -- 175 skills, 23 of them to level V. "What can an Alpha Minmatar train that a Caldari can't" returns a confident empty answer |
 | Ship masteries | `world.masteries` | `_key` = typeID (476/476). `_value` is `[{_key: 0..4, _value:[certificateID]}]`, and the 0-4 index selects which **tier column** of `world.certificates.skillTypes` to read (`basic`..`elite`) -- the SDE never says so. **72 of 476 rows carry an identical cert list at every level**, so reading it wrong looks self-consistent |
+| Fighter abilities | `misc.fighterAbilities` | 36 rows. Columns are `_key`, `displayName`, `tooltipText`, `targetMode`, `disallowInHighSec`, `disallowInLowSec`, `iconID`, `turretGraphicID` — **the name column is `displayName`, there is no `name`**, so the usual `t.name` pattern fails here. Which fighter has which ability is `misc.fighterAbilitiesByType` (`_key` = typeID, 94 rows, three columns `abilitySlot0/1/2` each holding `{abilityID, cooldownSeconds}` — a slot is NULL when unused, so unpivot all three) |
+| NPC agents sitting in space | `world.agentsInSpace` | 360 rows, columns `_key`, `dungeonID`, `solarSystemID`, `spawnPointID`, `typeID`. `_key` is the agent's `npcCharacters._key`; **`dungeonID` resolves 0 of 360** (see below) |
+| Proximity effects (abyssal weather, insurgencies) | `misc.appliedProximityEffects` | 118 rows, columns `_key` (the cloud/beacon typeID), `dbuffs`, `radius`, `delaySeconds`. `dbuffs` is `[{_key: dbuffID, _value: magnitude}]` -> `misc.dbuffCollections`, whose `displayName` names the effect and whose `itemModifiers` name the attributes it touches. `misc.proximityTrap` (24 rows) is the same shape for traps and adds `triggerFilterTypeListID` -> `items.typeLists` |
 | Ore/ice compression | `items.compressibleTypes` | `_key` -> `compressedTypeID`, strictly 1:1. **The 100x (ore) and 10x (ice/gas) figures are volume ratios, not unit ratios** -- 1 unit compresses to 1 unit, and Arkonor goes 16 m3 -> 0.16 m3. Compressed and uncompressed reprocess identically, same `portionSize`, so compressing loses nothing. The table holds no ratio; derive it from `types.volume` |
 
-**Mission dungeon references are almost all dangling.** Only **3 of 1,662**
-kill missions have a `dungeonID` that exists in `dungeons`; `agentsInSpace`
-resolves **0 of 360**. The ID ranges overlap, so this is not an ID-space
-mismatch -- the dungeon definitions those missions point at are simply not in
-the SDE. An inner join silently returns 3 rows where you expected 1,662, and a
-left join reports "no dungeon" for 99.8% of combat missions. Say the reference
-is unresolvable rather than reporting an absence.
+**Mission dungeon references are almost all dangling.** 1,662 missions carry a
+`killMission` object; **1,661 of those name a `dungeonID` and only 3 of them
+resolve** against `dungeons` (the odd one out is `_key` 16414, whose
+`killMission` is `{objectiveQuantity: 0}` with no `dungeonID` at all).
+`agentsInSpace` resolves **0 of 360**. The ID ranges overlap, so this is not an
+ID-space mismatch -- the dungeon definitions those missions point at are simply
+not in the SDE. An inner join silently returns 3 rows where you expected 1,661,
+and a left join reports "no dungeon" for 99.8% of combat missions. Say the
+reference is unresolvable rather than reporting an absence.
 
 **`dungeons.description` is 84% NULL** (226 of 1,409 populated), so a missing
 DED rating means "no description shipped", not "unrated". Ratings appear in

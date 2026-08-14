@@ -40,8 +40,10 @@ recompressing a part yourself gives the larger figure. Uncompressed, the three
 large parts are roughly universe 22 MB, moons 68 MB, items 53 MB — plan disk
 against those.
 
-**4. Build from CCP** — authoritative. Downloads ~99 MB and takes a couple of
-minutes; needs ~1.5 GB of temporary disk. Standard library only. Needs
+**4. Build from CCP** — authoritative. Downloads ~99 MB and takes **well under
+a minute** on a fast link (measured 29 s and 41 s); needs ~1.5 GB of temporary
+disk. Do not treat this as the slow fallback — download speed dominates, and
+the output is byte-for-byte the size of the release. Standard library only. Needs
 `developers.eveonline.com`:
 
 ```bash

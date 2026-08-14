@@ -114,12 +114,19 @@ Two conventions, and guessing wrong costs a turn every time:
   not `marketGroups`. **The name column is always bare `name`**, never CCP's
   classic `typeName` / `groupName` / `solarSystemName`: it is `types.name`,
   `groups_.name`, `systems.name`, `regions.name`.
-- **The other 81** were ingested generically, keep CCP's camelCase name, and are
+- **The other 81** were ingested generically, keep CCP's own table name, and are
   keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
   `planetSchematics._key`, `mapStars._key`. It is nearly every table in `world`
   and `cosmetic`, a minority in `items`, and mixed elsewhere — **check with
   `PRAGMA table_info`, do not assume**. `JOIN typeBonus tb ON tb.typeID =
   t.typeID` fails with `no such column`; the join is `ON tb._key = t.typeID`.
+
+  **Do not use casing to tell the two groups apart.** It looks like camelCase
+  means generic, but twelve generic tables are plain lowercase words —
+  `missions`, `dungeons`, `certificates`, `masteries`, `skins`, `graphics`,
+  `icons`, `landmarks`, `bloodlines`, `ancestries`, `schools`, `archetypes` —
+  and they are indistinguishable by name from hand-shaped `types` or `systems`.
+  The only reliable test is whether a `_key` column exists.
 
   Two exceptions: **`factions` and `races` have no `_key`** — they use
   `factionID` and `raceID`.

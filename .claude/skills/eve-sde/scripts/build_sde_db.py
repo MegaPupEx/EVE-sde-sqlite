@@ -18,7 +18,10 @@ The default build omits most tables. Anything that documents typeBonus,
 mapStars, planetSchematics, dogmaUnits or moon statistics assumes --complete.
 
 Requires only the Python standard library. Downloads ~99 MB, needs ~1.5 GB of
-temporary disk, and takes a couple of minutes end to end.
+temporary disk, and takes well under a minute end to end on a fast link
+(measured 29 s and 41 s on two machines). Download dominates, so a slow
+connection is the only reason it would run long -- building is not the
+expensive path, and is worth preferring over a stale release.
 
 Localised strings ({"en": ..., "de": ...}) are reduced to English.
 """
