@@ -163,7 +163,7 @@ rather than quoting.
   | Exotic | Kinetic resist | +50% scan resolution | 1 (30 only) |
   | Firestorm | Thermal resist | +50% armor HP | 1 (70 only) |
   | Gamma | Explosive resist | +50% shield HP | 1 (50 only) |
-  | Dark | *no rows* | *no rows* | **0** -- absent entirely; its velocity-bonus / turret-range-penalty pair is game knowledge, not data |
+  | Dark | turret optimal + falloff | velocity | **0 abyssal rows** -- but the pair *is* derivable: the `[HF]` Dark rows use the same dbuffs (97: `maxRange`+`falloff` penalty, 98: `maxVelocity` bonus). Only the abyssal -30/-50/-70 strengths are missing |
 
   **Answer any tier question with the roll, not the row** -- "a Tier 4
   <weather> rolls **-50% or -70%** <its resist>; the SDE carries only the <n>
