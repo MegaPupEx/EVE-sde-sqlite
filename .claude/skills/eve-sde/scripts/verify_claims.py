@@ -813,6 +813,17 @@ CHECKS = [
       "universe items",
       ([0.5, 0.57, 0.64, 0.71, 0.78, 0.85],
        [1.3, 1.44, 1.58, 1.72, 1.86, 2.0]), fn=fn_wh_signature),
+    C("gotchas-universe.md",
+      "beacon recharge effect targets capacitor (55), never shield (479)",
+      "universe items", (1, 0), sql="""
+      SELECT (SELECT COUNT(DISTINCT e.effectID) FROM type_effects te
+              JOIN dogma_effects e ON e.effectID = te.effectID
+              WHERE te.typeID IN (SELECT effectBeaconTypeID FROM mapSecondarySuns)
+                AND e.modifierInfo LIKE '%"modifiedAttributeID":55,%'),
+             (SELECT COUNT(DISTINCT e.effectID) FROM type_effects te
+              JOIN dogma_effects e ON e.effectID = te.effectID
+              WHERE te.typeID IN (SELECT effectBeaconTypeID FROM mapSecondarySuns)
+                AND e.modifierInfo LIKE '%"modifiedAttributeID":479,%')"""),
     C("gotchas-universe.md", "the beacon name is unhyphenated 'Wolf Rayet'",
       "universe items", (1, 0), sql="""
       SELECT (SELECT COUNT(*) FROM types WHERE name = 'Class 6 Wolf Rayet Effects'),

@@ -70,6 +70,14 @@ rather than quoting.
   it is a plain multiplier whose flag lies about direction. Whenever an effect writes onto a
   `unitID = 108` attribute, read the sign through the inversion, not off
   `highIsGood`.
+
+  **Two beacon attributes whose names invite over-broad glosses** -- three
+  graded sessions made both mistakes: `rechargeRateMultiplier` writes
+  `rechargeRate` (attribute 55), which is **capacitor** recharge time only --
+  shield recharge is attribute 479 and the wormhole beacons do not touch it, so
+  do not say "shield/cap recharge". And `energyWarfareStrengthMultiplier` is
+  **NOS and neutralizer drain amount only** -- not damps, ECM, webs or scrams,
+  so do not gloss it as "e-war strength".
 - **`universe.systemWideEffects` is not the wormhole effect**, despite keying on
   the same beacon typeID. Its `dbuffs` are Sisters-of-EVE event bonuses scoped
   to a single ship, and those `_key`s are **`misc.dbuffCollections` IDs, not
