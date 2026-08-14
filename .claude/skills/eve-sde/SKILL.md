@@ -51,7 +51,8 @@ the question:
 
 - **Counting moons** -- `universe` alone is enough. `planets.moons` and
   `planets.belts` are denormalised counts, verified exact against the moon rows
-  (0 mismatches across 46,618 planets). "Which system has the most moons?"
+  (0 mismatches across the 46,618 k-space planets; 68,407 planets in total,
+  the rest being wormhole/abyssal/void). "Which system has the most moons?"
   answers correctly from `universe` by itself.
 - **Anything about a specific moon** -- gravity, radius, coordinates, orbit --
   needs `moons` too. Without it the query raises `no such table: moons`, so it
@@ -168,7 +169,7 @@ Items and classification:
 
 | Table | Key columns |
 | --- | --- |
-| `types` | `typeID`, `name`, `groupID`, `categoryID`, `mass`, `volume`, `packagedVolume`, `capacity`, `basePrice`, `portionSize`, `published`, `metaLevel`, `techLevel`, `metaGroupID`, `raceID`, `factionID` |
+| `types` | `typeID`, `name`, `groupID`, `categoryID`, `mass`, `volume` (assembled), `packagedVolume` (what it takes up in a hold), `capacity` (its own cargo space), `basePrice`, `portionSize`, `published`, `metaLevel`, `techLevel`, `metaGroupID`, `raceID`, `factionID` |
 | `groups_` | `groupID`, `name`, `categoryID` (note the trailing underscore) |
 | `categories` | `categoryID`, `name` |
 | `market_groups` | `marketGroupID`, `parentGroupID`, `name` |
@@ -179,7 +180,8 @@ Attributes (all ship/module stats live here):
 | Table | Key columns |
 | --- | --- |
 | `type_dogma` | `typeID`, `attributeID`, `value` |
-| `dogma_attributes` | `attributeID`, `name`, `displayName`, `description`, `defaultValue`, `highIsGood`, `stackable`, `published`, `unitID`, `attributeCategoryID`, `dataType`, `minAttributeID`, `maxAttributeID`, `tooltipTitle`, `tooltipDescription` |
+| `dogma_attributes` | `attributeID`, `name`, `displayName`, `description`, `defaultValue` (**use it -- a missing `type_dogma` row means "default", not "no value"**), `highIsGood` (unreliable), `stackable`, `published`, `unitID` (**decides what the number means -- see "Units" below, and note it is a different ID space from `attributeID`**), `attributeCategoryID`, `dataType`, `minAttributeID`, `maxAttributeID`, `tooltipTitle`, `tooltipDescription` |
+| `dogmaUnits` | `_key` (**this is the unitID**), `name`, `displayName`, `description` |
 | `type_effects` | `typeID`, `effectID`, `isDefault` |
 | `dogma_effects` | `effectID`, `name`, `displayName`, `effectCategoryID`, `isOffensive`, `isAssistance`, `durationAttributeID`, `rangeAttributeID`, `falloffAttributeID`, `modifierInfo` (JSON) |
 
@@ -203,7 +205,7 @@ Universe:
 | --- | --- |
 | `regions` | `regionID`, `name` |
 | `constellations` | `constellationID`, `name`, `regionID` |
-| `systems` | `solarSystemID`, `name`, `regionID`, `constellationID`, `security`, `securityClass`, `space` (`kspace`/`wormhole`/`abyssal`/`void`) |
+| `systems` | `solarSystemID`, `name`, `regionID`, `constellationID`, `security`, `securityClass`, `factionID`, `wormholeClassID` (usually NULL -- see Gotchas), `x`, `y`, `z` (metres), `space` (`kspace`/`wormhole`/`abyssal`/`void`/`other` -- five values, see Gotchas) |
 | `planets` | `planetID`, `solarSystemID`, `celestialIndex`, `typeID`, `radius`, `surfaceGravity`, `temperature`, `pressure`, `density`, `orbitRadius`, `orbitPeriod`, `eccentricity`, `moons`, `belts` |
 | `moons` | `moonID`, `solarSystemID`, `planetID`, `celestialIndex`, `orbitIndex`, `typeID`, `radius`, `density`, `surfaceGravity`, `escapeVelocity`, `orbitRadius`, `orbitPeriod`, `rotationRate`, `eccentricity`, `massDust`, `massGas`, `temperature`, `pressure`, `fragmented`, `locked`, `x`, `y`, `z` — same physical statistics as `planets` |
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
@@ -267,6 +269,12 @@ Table names do not match the casual descriptions:
 | Combat sites | `dungeons` | `description` holds the DED rating as prose |
 | Certificates | `certificates` | `skillTypes` is an array of `{_key: skillTypeID, basic, standard, improved, advanced, elite}`; `recommendedFor` is a bare int array -- inconsistent shapes in one table |
 | Factions, races | `factions`, `races` | here, not in `universe` |
+| Ship traits / role bonuses | `items.typeBonus` | the in-game Traits panel, not derivable from dogma. Keyed on **`_key` = typeID**. `types` is `[{_key: skillTypeID, _value: [{bonus, bonusText, unitID}]}]` (per level of that skill); `roleBonuses` is the flat role bonus; `miscBonuses` is prose only. All 423 published ships have a row. `bonusText` carries raw `&lt;a href=showinfo:N&gt;` HTML |
+| Wormhole system effects | `universe.mapSecondarySuns` | 1,038 of 2,604 J-space systems have one. `typeID` names it (Wolf-Rayet, Magnetar, Pulsar, Black Hole, Red Giant, Cataclysmic Variable); `effectBeaconTypeID` -> `items.type_dogma` gives the magnitudes |
+| Star class, temperature, luminosity | `universe.mapStars` | one row per real system (8,089); `statistics` is JSON with `spectralClass`, `temperature`, `luminosity`, `age` |
+| PI production chains | `industry.planetSchematics` | 68 rows, P1-P4 only -- there are no P0 rows, so P1 inputs dangle by design. **`_key` is a schematicID, not a typeID**; the product is the single `types` entry with `isInput = false` |
+| Mutaplasmid roll ranges | `items.dynamicItemAttributes` | `_key` = mutaplasmid typeID; `attributeIDs` is `[{_key: attributeID, min, max}]` as multipliers on the base module |
+| Ore/ice compression | `items.compressibleTypes` | `_key` -> `compressedTypeID`, strictly 1:1. Ore compresses **100x**, ice and gas only **10x**. Compressed and uncompressed reprocess identically |
 
 **Mission dungeon references are almost all dangling.** Only **3 of 1,662**
 kill missions have a `dungeonID` that exists in `dungeons`; `agentsInSpace`
@@ -289,8 +297,15 @@ key give different answers.
 ## Units: read `unitID`, not the name
 
 `dogma_attributes.unitID` decides what a value means, and the `dogmaUnits` table
-names each one. Attribute *names* are not a reliable guide -- this is the single
-richest source of confidently wrong answers in the dataset.
+names each one -- but `dogmaUnits` has **no `unitID` column**; the unit number is
+in `_key`, so the join is
+`JOIN dogmaUnits u ON u._key = a.unitID`.
+
+Attribute *names* are not a reliable guide -- this is the single richest source
+of confidently wrong answers in the dataset. Note also that **`unitID` and
+`attributeID` are separate ID spaces that overlap**: attributeID 101 is
+`shieldRechargeRate`, unitID 101 is "milliseconds", and the two have nothing to
+do with each other. Read the table below as unit numbers, not attribute numbers.
 
 | unitID | Meaning | Trap |
 | --- | --- | --- |
@@ -324,6 +339,12 @@ by either sort direction is wrong -- align time is
 `ln(4) * inertia * mass / 1e6`. And **attribute 51 is named `speed` but means
 rate of fire**, in milliseconds; ship velocity is `maxVelocity` (37).
 
+**SQLite's `LOG()` is base 10, not natural.** `LOG(4)` returns 0.602, not
+1.386, so `LOG(4) * inertia * mass / 1e6` gives align times about 2.3x too
+fast -- 1.7 s for a T2 frigate instead of 4.0 s. The ranking is unchanged,
+which is exactly why the error survives a sanity check. Use `LN(4)`, or the
+literal `1.386294`.
+
 ## Gotchas
 
 These cause silently wrong answers -- plausible numbers, not errors -- so check
@@ -333,24 +354,80 @@ them before trusting a result. Verified against build 3466501.
 
 - **Resonance is not resistance; it is inverted.** `armorEmDamageResonance =
   0.4` means **60% resist**, not 40%. Resist % is `(1 - value) * 100`. The rule
-  is **`unitID = 108`**, not the name -- see "Units" above; 34 inverted
-  attributes are not named "resonance" at all.
-- **Four families of resonance attribute exist, and two of them disagree.**
-  Always anchor the layer prefix -- `armor%`, `shield%`, `hull%` -- because a
-  bare `LIKE '%DamageResonance'` returns 16 rows for one ship. Worse, structure
-  resistance has two published sets with **identical `displayName`s**:
+  is **`unitID = 108`**, not the name -- see "Units" above; 19 inverted
+  attributes have no "resonance" anywhere in the name (58 carry unitID 108, of
+  which 24 end in `DamageResonance` and 39 contain "resonance" somewhere).
+- **Structure resistance is 0% on every ship, and the SDE will not tell you
+  that directly.** This is the trap that costs the most time, because both ways
+  of asking return something that looks like an answer:
 
-  | attributeID | name | Rifter value | means |
+  | attributeID | name | on a Rifter | on a Vexor |
   | --- | --- | --- | --- |
-  | 974-977 | `hull*DamageResonance` | 1.0 | 0% -- correct, matches the client |
-  | 109-113 | bare `emDamageResonance` etc. | 0.67 | 33% -- legacy, wrong |
+  | 974-977 | `hull*DamageResonance` | 1.0 -> 0% | **no row at all** |
+  | 109, 110, 111, 113 | bare `emDamageResonance` etc. | 0.67 -> 33% | 0.67 -> 33% |
 
-  Both are `published = 1`, both display as "Structure EM Damage Resistance",
-  and the legacy set is attached to 2,748 types. **Use the `hull*` set for
-  structure.** There is also a `passive*DamageResonance` family (1418-1429)
-  whose display names differ only in capitalisation. This is the one place the
-  skill's "prefer joining on name" advice actively misleads: for resistances,
-  select the attributeID family deliberately.
+  Only **9 of 423 published ships** carry the `hull*` set. Follow "use `hull*`
+  for structure" on a Vexor, a Megathron, or any battleship and you get **zero
+  rows** -- which reads as missing data, not as an answer. The legacy set is on
+  all 423 but is a uniform stub: the only value it ever takes across every
+  published ship is `0.67`, so "33% structure EM resist" is the same wrong
+  number for the whole game.
+
+  The correct read is the attribute default. All four `hull*` attributes have
+  `defaultValue = 1.0`, meaning **0% base structure resistance for every hull**
+  -- which is what the client shows. Query it so a missing row still answers:
+
+  ```sql
+  SELECT a.name, ROUND((1 - COALESCE(d.value, a.defaultValue)) * 100, 1) AS pct
+  FROM dogma_attributes a
+  LEFT JOIN type_dogma d
+    ON d.attributeID = a.attributeID
+   AND d.typeID = (SELECT typeID FROM types WHERE name = 'Vexor')
+  WHERE a.attributeID IN (974, 975, 976, 977);   -- 0.0 on every line
+  ```
+
+  Armor and shield are ordinary -- those rows exist per ship. Only structure
+  needs the `COALESCE`. Two independent testers hit this; one reported it as
+  "the single most consequential thing I had to work out myself".
+- **Four families of resonance attribute exist.** Always anchor the layer
+  prefix -- `armor%`, `shield%`, `hull%` -- because a bare
+  `LIKE '%DamageResonance'` returns 16 rows for one ship. There is also a
+  `passive*DamageResonance` family (1418-1429) whose display names differ from
+  the active ones only in capitalisation; note that its four **`passiveHull*`
+  members (1426-1429) are `unitID = 127`, not 108**, so the inversion rule does
+  not apply to them. For resistances, select the attributeID family
+  deliberately rather than joining on name.
+- **Hauling capacity: `capacity` vs `volume` vs `packagedVolume`.** Cargo space
+  is `types.capacity`, and what a packaged item takes up is
+  `types.packagedVolume` -- **not `volume`**, which is the assembled size. A
+  Rifter is 27,289 m3 assembled and 2,500 m3 packaged, so using `volume` makes
+  every ship-hauling answer ~11x too pessimistic. `capacity` is NULL for 25,265
+  published types (anything with no hold), so `ORDER BY capacity DESC` is fine
+  but `WHERE capacity > x` silently drops them.
+
+  The related trap: a **ship maintenance bay holds *assembled* ships**. The
+  Bowhead's 1,600,000 m3 `shipMaintenanceBayCapacity` sounds enormous but fits
+  only 58 Rifters, while a Charon's 465,000 m3 of ordinary cargo fits 186
+  packaged ones. Freighter cargo figures in the SDE are also **pre-skill** --
+  no Racial Freighter bonus applied.
+- **`universe.planetResources` is Equinox sovereignty, not planetary industry.**
+  It holds `power` / `workforce` / `reagent` for the 2,712 sov-claimable nullsec
+  systems. **`_key` is a mixed ID space**: 23,086 rows are `planets.planetID`
+  and 2,712 are `mapStars._key` (the star is the power source, 500-1,000 each),
+  with no column distinguishing them -- joining only to `planets` silently drops
+  every star. NPC nullsec, Pochven and the three unused regions have no rows.
+- **Star spectral class is in `mapStars.statistics`, not the type name.** The
+  944 stars named `Sun O1 (Bright Blue)`, `Sun B0 (Blue)`, `Sun B5 (White
+  Dwarf)` and `Sun A0 (Blue Small)` are all **F-class** in the statistics JSON.
+  EVE has no O or B stars at all -- only A, F, G, K and M. The type name is an
+  art asset label, so "how many blue giants" answered from `types.name` is
+  confidently wrong.
+- **`universe.systemWideEffects` is not the wormhole effect**, despite keying on
+  the same beacon typeID. Its `dbuffs` are Sisters-of-EVE event bonuses scoped
+  to a single ship, and those `_key`s are **`misc.dbuffCollections` IDs, not
+  attributeIDs** -- the two ID spaces overlap completely, so a join to
+  `dogma_attributes` succeeds and returns nonsense. Use `mapSecondarySuns` ->
+  `items.type_dogma` on the beacon type instead.
 - **Wormhole class is on the constellation and region, not the system.**
   Only **5 of 2,604** wormhole systems carry a system-level `wormholeClassID`,
   and those five are Drifter hives whose system class (14-18) *contradicts*
@@ -368,8 +445,10 @@ them before trusting a result. Verified against build 3466501.
   ```
 
   **The `space` filter is not optional.** k-space constellations carry classes
-  7, 8 and 9 (high/low/null designations), so without it the same query answers
-  "Jita is class 7" and "1DQ1-A is class 9". Classes 1-6 are the familiar
+  7 and 9 (high/low/null designations), so without it the same query answers
+  "Jita is class 7" and "1DQ1-A is class 9". Class 8 never appears on a
+  constellation at all -- it is system-level only, on 687 k-space systems.
+  Classes 1-6 are the familiar
   wormhole classes, 12 is Thera, 13 shattered/frigate holes, 14-18 Drifter,
   19-25 abyssal/void/Pochven.
 - **`security` alone cannot identify nullsec.** Wormhole, abyssal and void
@@ -464,26 +543,38 @@ them before trusting a result. Verified against build 3466501.
   `typeID = 14`. `ORDER BY surfaceGravity DESC` is safe -- SQLite sorts NULL
   smallest -- but `ASC` puts 1,364 NULLs at the top of a "lowest gravity"
   query, and `AVG()` silently skips them.
-- **Zarzakh has no planets at all** -- the only k-space system without any. A
-  count taken through `systems JOIN planets` therefore reports 3,551 nullsec
-  systems instead of 3,552. Count from `systems` directly.
 - 960 published types have `volume` NULL; `metaGroupID` and `techLevel` are
   populated for only ~26% and ~19% of types.
-- **3,222 systems have no stargates** (all wormhole/abyssal/void, plus 217 in
-  known space). The gate graph is disconnected -- routing between components is
-  impossible, so a BFS must handle "no path" rather than hang or error.
 - **21 blueprint rows reference typeIDs that do not exist** (20 products, 1
   material) -- removed content whose blueprints remain. This is upstream data,
   not a build error; use inner joins so they drop out.
+- Ore variant names changed: "Concentrated Veldspar" and "Dense Veldspar" no
+  longer exist as types. The grades are now `Veldspar II-Grade` and similar.
+- Names are English-only; the builder discards other locales.
+
+**Geography -- counting systems, and what "unreachable" means:**
+
+Read this before answering anything of the form "how many systems...", "which
+system is the most/least...", or "how do I get from A to B". Every trap here
+produces a plausible number rather than an error.
+
+- **Zarzakh has no planets at all** -- the only k-space system without any. A
+  count taken through `systems JOIN planets` therefore reports 3,551 nullsec
+  systems instead of 3,552. Count from `systems` directly.
+- **3,222 systems have no stargates**: 2,604 wormhole + 200 abyssal + 200 void
+  + 217 k-space + GPMS-01. The gate graph is disconnected -- routing between
+  components is impossible, so a BFS must handle "no path" rather than hang or
+  error.
 - **"Highest security" has no clean answer.** 53 real k-space systems in the
   region **Exordium** sit at security exactly `1.0`. It is real, flyable
   new-player content -- 40 NPC stations including 13 AIR Laboratories, a single
   gate to Yulai, 12 jumps from Jita -- so 1,246 is the correct current figure
   and 1,193 is the legacy one every older source quotes. `ORDER BY security DESC
   LIMIT 5` therefore returns an arbitrary five of a 53-way tie. Outside
-  Exordium the top is Tew (0.9498) and Eystur (0.9492), then a six-way tie at
-  0.949 in The Forge. Say the tie exists rather than presenting five rows as
-  a ranking.
+  Exordium the top is Tew (0.949794) and Eystur (0.949232), and then a second
+  tie: **53 systems across 13 regions** sit at exactly `0.949` -- not the
+  handful in The Forge that the first page of results suggests. Say the tie
+  exists rather than presenting five rows as a ranking.
 - Region `19000001` (GPMR-01) is a dev region; its one system GPMS-01 also has
   `security = 1.0`. It carries `space = 'other'`, so a `space = 'kspace'` filter
   excludes it -- but that filter does **not** save you from the Exordium tie.
@@ -516,9 +607,6 @@ them before trusting a result. Verified against build 3466501.
   why the old short Jita-Amarr high-sec route no longer exists. Pochven systems
   are `space = 'kspace'` with security exactly -1.0, so they land in nullsec
   aggregates unless excluded.
-- Ore variant names changed: "Concentrated Veldspar" and "Dense Veldspar" no
-  longer exist as types. The grades are now `Veldspar II-Grade` and similar.
-- Names are English-only; the builder discards other locales.
 
 ## Examples
 
@@ -565,7 +653,9 @@ JOIN systems s2 ON s2.solarSystemID = g.destSystemID
 JOIN regions  r ON r.regionID = s2.regionID
 WHERE s1.name = 'Jita';
 
--- all published ships in a group, with hull size
+-- all published ships in a hull class. There is no hull-size column: "cruiser",
+-- "battleship" etc. exist only as group names, so a class is a list of groups
+-- (Battleship + Marauder + Black Ops + Force Auxiliary...) you curate yourself.
 SELECT t.name, t.mass, t.volume
 FROM types t
 JOIN groups_ g ON g.groupID = t.groupID
@@ -580,13 +670,16 @@ FROM systems WHERE space = 'kspace'
 GROUP BY band;
 
 -- resistances, converting resonance to the percentage shown in game.
--- Anchor the layer prefix: a bare '%DamageResonance' returns 16 rows across
--- four competing families, not the 4 you want.
+-- Select the attributeID family deliberately -- a bare '%DamageResonance' name
+-- match returns 16 rows across four competing families, not the 4 you want.
+-- 267-270 armor, 271-274 shield, 974-977 structure.
 SELECT a.name, ROUND((1 - d.value) * 100, 1) AS resist_pct
 FROM type_dogma d
 JOIN dogma_attributes a ON a.attributeID = d.attributeID
 JOIN types t ON t.typeID = d.typeID
-WHERE t.name = 'Rifter' AND a.name LIKE 'armor%DamageResonance';   -- or shield% / hull%
+WHERE t.name = 'Rifter' AND a.attributeID BETWEEN 267 AND 270;
+-- For structure (974-977) most ships have no rows: LEFT JOIN from
+-- dogma_attributes and COALESCE to defaultValue -- see Gotchas.
 
 -- what skills a ship requires (dogma, not bp_skills)
 SELECT sk.name, lvl.value AS level
