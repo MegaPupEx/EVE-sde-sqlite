@@ -214,6 +214,11 @@ literal `1.386294`.
   and in milliseconds. So
   `dps = damageMultiplier * (em+exp+kin+therm) / (attr51 / 1000)`. The hull's
   contribution is prose in `typeBonus`, not a number in dogma.
+- **Mining yield is `miningAmount / duration`, and `duration` is milliseconds.**
+  `miningAmount` (77) is m3 per cycle (unitID 9); `duration` (73) is unitID 101,
+  so a Miner I at 10 m3 / `15000` is **0.67 m3/s**, not 0.00067. Ship mining
+  bonuses are per-skill-level prose in `typeBonus`, and the Venture's +100% is a
+  role bonus -- always on.
 - **The 5-active-drone cap is not in the SDE.** `maxActiveDrones` (352) has
   `defaultValue = 0` and **zero rows on any ship** -- the limit comes from the
   character's Drones skill. Compute from `droneBandwidth` alone and an Ishtar

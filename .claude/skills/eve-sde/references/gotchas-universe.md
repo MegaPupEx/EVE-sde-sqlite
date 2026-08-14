@@ -90,6 +90,14 @@ differs.
   part. Note 46,618 is the k-space figure; there are **68,407** planets in
   total, the other **21,789** all in wormhole space -- abyssal and void systems have no
   planets at all.
+- **`asteroid_belts` says nothing about what is in a belt.** All **40,928** rows
+  carry `typeID = 15` ("Asteroid Belt") -- the column exists but never varies, so
+  belt *composition* is simply not in the SDE. Which ores spawn where is game
+  knowledge; say so rather than implying the belts are identical in-game.
+- **Not every high-sec system has belts, and Exordium has none.** 1,179 of the
+  1,246 high-sec systems have at least one; the 53-system Exordium region --
+  which this file elsewhere describes as real new-player content -- contains
+  **zero**, so it is the wrong answer to "where should I mine".
 - **Zarzakh has no planets at all** -- the only k-space system without any. A
   count taken through `systems JOIN planets` therefore reports 3,551 nullsec
   systems instead of 3,552. Count from `systems` directly.

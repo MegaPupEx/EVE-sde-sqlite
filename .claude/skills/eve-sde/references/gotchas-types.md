@@ -110,5 +110,11 @@ differs.
   NULL, and `metaGroupID` and `techLevel` are populated for only ~26% and ~19%
   of types -- so `WHERE metaGroupID = 2` silently excludes three quarters of the
   catalogue before any filtering you intended.
+- **Category 25 has 49 groups; only a handful are ordinary ore.** The rest are
+  moon ore, Triglavian and abyssal ore, ice, gas and event asteroids. The
+  conventional mineral ores, roughly in security order, are `Veldspar`,
+  `Scordite`, `Plagioclase`, `Pyroxeres`, `Omber`, `Kernite`, `Jaspet`,
+  `Hemorphite`, `Hedbergite` -- each a **group** whose members are the grade
+  variants below.
 - **Ore variant names changed.** "Concentrated Veldspar" and "Dense Veldspar" no
   longer exist as types; the grades are now `Veldspar II-Grade` and similar.

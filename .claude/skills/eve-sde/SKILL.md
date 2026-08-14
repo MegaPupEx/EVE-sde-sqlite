@@ -11,6 +11,10 @@ player state. This skill covers getting it into SQLite and querying it.
 **Not in the SDE:** market prices, kills, sovereignty, character or corp data.
 Those are live data — use ESI (`https://esi.evetech.net`) instead.
 
+**Two failure modes.** The first is wrong answers rather than errors — see
+below. The second is answering the query instead of the player; see "Answering a
+player, not a query".
+
 **The failure mode here is wrong answers, not errors.** The SDE is full of
 columns that look like the thing you want and are not: resonance is inverted,
 `security` alone does not mean nullsec, a millisecond column displays as "s".
@@ -51,6 +55,35 @@ unverified rather than inferring it.
 (`planetSchematics`), wormhole system effects (`mapSecondarySuns`), star class
 (`mapStars`), ore compression (`compressibleTypes`), NPC agents
 (`npcCharacters`), missions, dungeons and certificates.
+
+## Answering a player, not a query
+
+Most questions are not "run this SQL". They are questions where **the SDE gives
+you a true fragment and the rest is judgement**, and a careful reader of this
+skill can produce a flawless table that answers nothing the player asked. That
+is a failure too.
+
+What the SDE does **not** contain, so you will have to say so and then answer
+anyway:
+
+| Not in the SDE | Where it lives |
+| --- | --- |
+| Market prices (`basePrice` is a dead seed value) | ESI, or the in-game market |
+| Population, traffic, kills, sovereignty | ESI |
+| **What ore is in which asteroid belt** | game knowledge — every belt row is `typeID = 15` |
+| NPC spawns, rat difficulty, site contents | game knowledge |
+| Character skills, implants, boosters | the player's own character |
+| Whether a thing is *good* | judgement |
+
+Two standing habits:
+
+- **Say which layer you are quoting.** Every ship number here is the untrained
+  base hull; the player is looking at a trained, fitted ship. "A Rifter does
+  365 m/s base" is honest, "a Rifter does 365 m/s" is not.
+- **Answer the question under the question.** "Punisher or Rifter" is not a
+  request for two stat blocks — it is "which should I fly", and the useful
+  content is that three mid slots means tackle and five lows means brick. Quote
+  the data, then say what it means.
 
 ## If you read nothing else
 
