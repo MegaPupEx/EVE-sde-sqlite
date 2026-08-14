@@ -73,11 +73,22 @@ rather than quoting.
 
   **Two beacon attributes whose names invite over-broad glosses** -- three
   graded sessions made both mistakes: `rechargeRateMultiplier` writes
-  `rechargeRate` (attribute 55), which is **capacitor** recharge time only --
-  shield recharge is attribute 479 and the wormhole beacons do not touch it, so
-  do not say "shield/cap recharge". And `energyWarfareStrengthMultiplier` is
-  **NOS and neutralizer drain amount only** -- not damps, ECM, webs or scrams,
-  so do not gloss it as "e-war strength".
+  `rechargeRate` (attribute 55), which is **capacitor** recharge time only
+  (a multiplier *below* 1, so it speeds your cap) -- shield recharge is
+  attribute 479 and no wormhole beacon touches that one, so do not say
+  "shield/cap recharge". And `energyWarfareStrengthMultiplier` is **NOS and
+  neutralizer drain amount only** -- not damps, ECM, webs or scrams, so do not
+  gloss it as "e-war strength".
+
+  **This bullet is the traps, not the effect list -- do not describe a
+  wormhole effect from it alone.** A Pulsar, for instance, also multiplies
+  **shield capacity** up and NOS/neut strength up and capacitor recharge time
+  down, on the same class ladders as its signature multiplier -- none of which
+  is stated above because none of it is a trap. Read the beacon's full
+  attribute set from `items.type_dogma` before telling a player what a hole
+  does to them; a session that answered from this bullet alone told a
+  shield-tanked pilot about the armor penalty and skipped the +58% shield
+  pool.
 - **`universe.systemWideEffects` is not the wormhole effect**, despite keying on
   the same beacon typeID. Its `dbuffs` are Sisters-of-EVE event bonuses scoped
   to a single ship, and those `_key`s are **`misc.dbuffCollections` IDs, not
