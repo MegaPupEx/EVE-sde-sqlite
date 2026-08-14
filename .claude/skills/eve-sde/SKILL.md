@@ -75,7 +75,9 @@ Two conventions, and guessing wrong costs a turn every time:
   `types.typeID`, `type_dogma.attributeID`, `market_groups.marketGroupID`,
   `systems.solarSystemID`. Note `groups_` has a trailing underscore (`group` is
   reserved in SQL), and multi-word names are snake_case — it is `market_groups`,
-  not `marketGroups`.
+  not `marketGroups`. **The name column is always bare `name`**, never CCP's
+  classic `typeName` / `groupName` / `solarSystemName`: it is `types.name`,
+  `groups_.name`, `systems.name`, `regions.name`.
 - **Everything else** was ingested generically, keeps CCP's camelCase name, and
   is keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
   `planetSchematics._key`, `mapStars._key`. Counting domain tables (excluding

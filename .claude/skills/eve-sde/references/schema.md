@@ -50,7 +50,16 @@ Universe:
 | `moons` | `moonID`, `solarSystemID`, `planetID`, `celestialIndex`, `orbitIndex`, `typeID`, `radius`, `density`, `surfaceGravity`, `escapeVelocity`, `orbitRadius`, `orbitPeriod`, `rotationRate`, `eccentricity`, `massDust`, `massGas`, `temperature`, `pressure`, `fragmented`, `locked`, `x`, `y`, `z` — same physical statistics as `planets` |
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
 | `stargates` | `stargateID`, `solarSystemID`, `destStargateID`, `destSystemID`, `typeID`, `x`, `y`, `z` — **note the order**: `destStargateID` comes first, so `SELECT *` with positional unpacking silently builds the graph on gate IDs |
-| `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `typeID`, `operationID`, `reprocessingEfficiency`, `reprocessingStationsTake`, `useOperationName`, `orbitID`, `celestialIndex`, `x`, `y`, `z` — **no name column**: the station's name is built from `items.types.name` (the structure type) plus `world.stationOperations.operationName` |
+| `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `typeID`, `operationID`, `reprocessingEfficiency`, `reprocessingStationsTake`, `useOperationName`, `orbitID`, `celestialIndex`, `orbitIndex`, `x`, `y`, `z` — **no name column**, see below |
+
+**Stations and moons have no names in the SDE; the client assembles them.** For
+a station:
+`<system> <celestialIndex in Roman>[ - Moon <orbitIndex>] - <world.npcCorporations.name> <world.stationOperations.operationName>`
+— which reproduces strings like `Jita IV - Moon 6 - Hyasyoda Corporation
+Refinery` (verified). Moons take the same shape (`Arifsdald VII - Moon 1`) from
+`moons.celestialIndex` and `orbitIndex`. Both need `world` attached. The
+assembly is stored nowhere, so if you quote a station or moon name, say it was
+derived.
 
 `factions` and `races` are in the **`world`** part, not `universe` -- resolving
 `systems.factionID` or `types.raceID` to a name needs `world` attached. They are

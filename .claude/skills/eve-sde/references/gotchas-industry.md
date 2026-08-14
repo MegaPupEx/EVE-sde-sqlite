@@ -11,6 +11,14 @@ differs. The shapes stay true across builds, the numbers do not.
   manufacturing blueprints produce more than one per run and reactions reach
   10,000, so per-unit costs are off by up to four orders of magnitude if you
   read `bp_materials.quantity` directly.
+- **Planetary industry has the same divisor trap as manufacturing.** In
+  `planetSchematics`, the inputs and the output are both per *cycle*, and
+  **60 of the 68 schematics produce more than one unit per cycle** — a P1 run
+  makes 20 from 3,000 P0 in 1,800 s. Divide by the output entry's `quantity`
+  (the single `types` row with `isInput = false`) before quoting a per-unit
+  cost, exactly as with `bp_products.quantity`. The four tiers run
+  3,000 P0 -> 20 P1 -> (40+40) -> 5 P2 -> (10+10+10) -> 3 P3 -> (6+6+6) -> 1 P4,
+  so a single P4 unit is hundreds of thousands of P0.
 - **`portionSize` governs reprocessing, and nothing else.** `type_materials`
   quantities are per `portionSize` units: Veldspar yields 400 Tritanium per
   **100** units. It is **not** the manufacturing batch size -- that is
@@ -39,7 +47,11 @@ differs. The shapes stay true across builds, the numbers do not.
   that multiplied by the facility rate, your skills and your implants. The
   facility half *is* in the SDE --
   `universe.npc_stations.reprocessingEfficiency` runs 0.25 to 0.50, and 4,649 of
-  5,210 stations sit at **0.50**. So quote the 100% figure as a ceiling, halve it
+  5,210 stations sit at **0.50**. Because it is so nearly uniform, "which
+  station refines best" usually has **no answer**: all 18 stations in Jita are
+  0.50. Check the distribution before ranking, and if it is flat, say so and
+  fall back to `world.stationServices` (only some stations offer a Reprocessing
+  Plant at all). So quote the 100% figure as a ceiling, halve it
   for a realistic NPC-station estimate, and say plainly that the SDE holds no
   skill or implant data. Reporting the raw number as "what you get" overstates a
   refine by roughly 2x.
