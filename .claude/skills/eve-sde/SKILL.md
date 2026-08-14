@@ -26,10 +26,8 @@ SELECT * FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, source
 below. This is the only option in a sandbox with no outbound access, and it
 costs nothing to check first.
 
-**3. Prebuilt release** — fastest when reachable (~27 MB, the complete build,
-already integrity checked, no build step):
-
-Releases carry the SDE **split by domain**. Fetch only the parts the question
+**3. Prebuilt release** — fastest when reachable, already integrity checked, no
+build step. Releases carry the SDE **split by domain**. Fetch only the parts the question
 needs -- most questions need one or two:
 
 ```bash
@@ -94,11 +92,14 @@ for src in pathlib.Path(".").glob("*.sqlite*"):        # adjust to the upload pa
 db = sqlite3.connect("sde.sqlite")
 ```
 
-Produce that upload file with:
+Produce upload files with:
 
 ```bash
-python3 build_sde_db.py --db eve-sde.sqlite --complete --compress xz   # ~27 MB
+python3 build_sde_db.py --complete --positions --split --parts-only --compress xz
 ```
+
+Attach whichever parts the question needs. A single combined file is possible
+with `--complete --compress xz` (~27 MB) but cannot carry coordinates.
 
 ### Split databases
 
@@ -118,10 +119,13 @@ moons and stargates; `items` covers types, dogma and reprocessing; `industry`
 covers blueprints and schematics; `world` covers missions, dungeons, agents and
 certificates.
 
-**Use xz, not gzip.** It takes the complete ~147 MB database to ~27 MB, inside
-the 30 MB per-file limit on claude.ai, where gzip does not fit at all. If a
-build ever outgrows that, upload the split parts instead -- the cap is per
-file. `--portable` exists for tighter limits, but is rarely needed.
+**Use xz, not gzip** -- gzip does not get the data under the 30 MB per-file
+limit on claude.ai; xz does, with room to spare per part.
+
+Coordinates (`x`, `y`, `z` on systems, planets, moons, belts, stargates) are
+present in the published parts, so distance questions are answerable. A build
+made without `--positions` has them NULL -- check `meta.positions` before
+promising a distance.
 
 If a database *was* built with `--portable` it sets `meta.portable = '1'` and
 omits item descriptions, unpublished types, and the `moons` table. On such a
