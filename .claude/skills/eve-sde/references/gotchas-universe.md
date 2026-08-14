@@ -31,16 +31,24 @@ rather than quoting.
   **inverted resonances**: resonance x 1.5, so a 50% shield resist becomes 25%.
   A Class 6 Wolf-Rayet is the well-known **-50% shield resists**, not +50%.
 
-  **That 50 is one beacon's value, not the attribute's.** The shield bonus is
-  carried only by the six Wolf-Rayet beacons and scales by class --
+  **That 50 is one beacon's value, not the attribute's.** Among the 36 beacons
+  `mapSecondarySuns` actually references, the shield bonus is carried only by
+  the six Wolf-Rayet beacons and scales by class --
   **15 / 22 / 29 / 36 / 43 / 50** for C1-C6 -- so a C3 hole is -29%, not -50%.
   The armor equivalent is on the six Pulsars, scaling identically
   (15/22/29/36/43/50), and **24 of the 36 beacons carry no resistance bonus at
-  all**. Read the magnitude off the beacon you actually have.
-  `signatureRadiusMultiplier` is the same trap in both directions: it ranges
-  **0.5 to 2.0**, so a Wolf-Rayet halves your signature while a **Class 6 Pulsar
-  doubles it** -- `highIsGood = 1` on an attribute where the good direction
-  depends on the effect. Whenever an effect writes onto a
+  all**. Widen past those 36 and the "only" stops holding -- Sansha and Drifter
+  incursion beacons, the Metaliminal storms and the tournament beacon all carry
+  resistance bonuses, and 50 is not unique to the C6 Wolf-Rayet. Read the
+  magnitude off the beacon you actually have.
+  `signatureRadiusMultiplier` scales by class too, in both directions:
+  **0.85 / 0.78 / 0.71 / 0.64 / 0.57 / 0.50** for C1-C6 Wolf-Rayet and
+  **1.30 / 1.44 / 1.58 / 1.72 / 1.86 / 2.00** for the Pulsars. So a C6
+  Wolf-Rayet halves your signature and a C1 only trims 15%, while a C6 Pulsar
+  doubles it -- `highIsGood = 1` on an attribute where the good direction
+  depends on which effect you are in. Note this one is `unitID 109` writing onto
+  `signatureRadius`, so it is *not* an instance of the inversion rule above --
+  it is a plain multiplier whose flag lies about direction. Whenever an effect writes onto a
   `unitID = 108` attribute, read the sign through the inversion, not off
   `highIsGood`.
 - **`universe.systemWideEffects` is not the wormhole effect**, despite keying on

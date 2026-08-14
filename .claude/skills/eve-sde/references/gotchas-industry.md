@@ -27,8 +27,11 @@ rather than quoting.
   quantities are per `portionSize` units: Veldspar yields 400 Tritanium per
   **100** units. It is **not** the manufacturing batch size -- that is
   `bp_products.quantity`. The two coincide for most ammo, which is what makes
-  the mistake easy, but 30 published types disagree: XL torpedoes have
-  `portionSize = 100` while a run makes 5,000, a 50x error.
+  the mistake easy, but 30 published types disagree -- and it is
+  the **T2** ammo, not the family: `Mjolnir Javelin XL Torpedo` has
+  `portionSize = 100` while a run makes 5,000 (a 50x error), whereas the plain
+  `Mjolnir XL Torpedo` runs 100 and agrees. Of the 30, 24 are the 100 -> 5,000
+  shape; the rest are smaller mismatches.
 
 - **`bp_skills` mixes activities.** The Dominix blueprint has 1 manufacturing
   skill and 3 invention skills; without `AND activity = '...'` you get both and
@@ -41,7 +44,7 @@ rather than quoting.
   material list as-is; expected cost per item also needs `probability` (0.26 for
   Intact, 0.21 Malfunctioning, 0.14 Wrecked).
 - **Tech III invention has no T1 blueprint.** Of 1,361 invention products, 978
-  are Tech II and **216 are Tech III** -- and the T3 rows are invented from
+  are Tech II and **216 rows are Tech III** (72 distinct blueprints, each invented from three relic grades) -- and the T3 rows are invented from
   **Ancient Relics** (`categoryID = 34`: Intact/Malfunctioning/Wrecked Hull
   Sections, Thruster Sections, Power Cores and so on), not from a blueprint at
   all. Starting a subsystem or strategic-cruiser question from a T1 blueprint

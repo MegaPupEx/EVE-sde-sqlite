@@ -204,9 +204,10 @@ literal `1.386294`.
   a resonance attribute in any layer.** Only the EM pairs differ, and only in
   case (`Armor EM` vs `Armor Em`); thermal, kinetic and explosive are
   byte-identical between the active and passive families in armor and shield
-  alike. Structure is worse still -- `Structure EM Damage Resistance` is the
-  `displayName` of **three** attributes (113, 974 and 1426). Match on
-  attributeID, never on `displayName`.
+  alike. Structure is worse still: **all four** of its display names are three-way
+  collisions -- `Structure EM Damage Resistance` is shared by 113, 974 and 1426,
+  and thermal, kinetic and explosive collide the same way (110/977/1429,
+  109/976/1428, 111/975/1427). Match on attributeID, never on `displayName`.
   Note also that the four **`passiveHull*` members (1426-1429) are
   `unitID = 127`, not 108**, so the inversion rule does not apply to them. For resistances, select the attributeID family
   deliberately rather than joining on name.
