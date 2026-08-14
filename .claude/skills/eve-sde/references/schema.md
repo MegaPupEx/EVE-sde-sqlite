@@ -87,10 +87,14 @@ Common `attributeID`s: 9 hp (structure), 263 shieldCapacity, 265 armorHP,
 564 scanResolution, 76 maxTargetRange, 283 droneCapacity, 1271 droneBandwidth,
 70 agility, 600 warpSpeedMultiplier.
 
-Prefer joining on `dogma_attributes.name` over hardcoding IDs — it is clearer
-and survives schema drift. Two attribute names (`902`, `cynoJammerActivationDelay`)
-are shared by two IDs each, so add `AND published = 1` or resolve to an ID when a
-query must return exactly one row.
+**Do not reach for these by name.** Attribute names are the single richest
+source of confidently wrong answers in this dataset — see `gotchas-items.md`.
+Anchor on the attributeID for anything in a family: resistances, resonances,
+the four sensor-strength attributes, the three tech-level sources. Name joins
+are safe only for isolated scalars like `maxVelocity`, and even then two
+attribute names (`902`, `cynoJammerActivationDelay`) are shared by two IDs each,
+so add `AND published = 1` or resolve to an ID when a query must return exactly
+one row.
 
 ## The `world` part and other generic tables
 

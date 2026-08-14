@@ -4,10 +4,8 @@ For the `universe` and `moons` parts. Read before answering anything of the
 form "how many systems...", "which system is the most/least...", "how do I get
 from A to B", or any question about planets, moons, stars or security.
 
-> **Counts below were verified against build `3466501`.** If
-> `SELECT value FROM meta WHERE key='sdeBuildNumber'` differs, treat every
-> figure here as approximate and re-derive it. The *shapes* -- which column
-> lies, which join drops rows -- are stable across builds; the numbers are not.
+Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+differs. The shapes stay true across builds, the numbers do not.
 
 - **`universe.planetResources` is Equinox sovereignty, not planetary industry.**
   It holds `power` / `workforce` / `reagent` for the 2,712 sov-claimable nullsec
@@ -73,10 +71,6 @@ from A to B", or any question about planets, moons, stars or security.
 
 **Geography -- counting systems, and what "unreachable" means:**
 
-Read this before answering anything of the form "how many systems...", "which
-system is the most/least...", or "how do I get from A to B". Every trap here
-produces a plausible number rather than an error.
-
 - **`planets.moons` and `planets.belts` are denormalised counts, and they are
   exact** -- 0 mismatches against the moon rows across the 46,618 k-space
   planets. Counting moons therefore needs `universe` alone, not the `moons`
@@ -91,7 +85,7 @@ produces a plausible number rather than an error.
   error.
 - **"Highest security" has no clean answer.** 53 real k-space systems in the
   region **Exordium** sit at security exactly `1.0`. It is real, flyable
-  new-player content -- 40 NPC stations including 13 AIR Laboratories, a single
+  new-player content -- 53 NPC stations, 13 of them AIR-branded, a single
   gate to Yulai, 12 jumps from Jita -- so 1,246 is the correct current figure
   and 1,193 is the legacy one every older source quotes. `ORDER BY security DESC
   LIMIT 5` therefore returns an arbitrary five of a 53-way tie. Outside

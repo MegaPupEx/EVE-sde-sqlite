@@ -3,10 +3,8 @@
 For the `industry` part and `items.type_materials`. Read before answering
 anything about build costs, blueprints, invention or ore yields.
 
-> **Counts below were verified against build `3466501`.** If
-> `SELECT value FROM meta WHERE key='sdeBuildNumber'` differs, treat every
-> figure here as approximate and re-derive it. The *shapes* -- which column
-> lies, which join drops rows -- are stable across builds; the numbers are not.
+Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+differs. The shapes stay true across builds, the numbers do not.
 
 - **Manufacturing output per run is `bp_products.quantity`.** Antimatter Charge
   S consumes 204 Tritanium *per run of 100 charges* -- 2.04 each. 368
@@ -46,8 +44,9 @@ anything about build costs, blueprints, invention or ore yields.
   skill or implant data. Reporting the raw number as "what you get" overstates a
   refine by roughly 2x.
 
-- **4 products are made by more than one blueprint** ('Firewall' Signal
-  Amplifier has 5). `bp_products -> blueprints` is not one-to-one.
+- **84 products are made by more than one blueprint** -- 4 for manufacturing
+  ('Firewall' Signal Amplifier has 5), the other 80 through invention, where many
+  T1 blueprints invent into one T2 blueprint. `bp_products -> blueprints` is not one-to-one.
 - **Blueprint lookups start from the product**, not the blueprint name. Join
   `bp_products` to find which blueprint makes a thing.
 

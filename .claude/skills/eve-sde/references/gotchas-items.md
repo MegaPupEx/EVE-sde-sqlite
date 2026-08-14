@@ -3,10 +3,8 @@
 For the `items` part. Read before answering anything about ship or module
 stats, resistances, tech level, volumes or hauling.
 
-> **Counts below were verified against build `3466501`.** If
-> `SELECT value FROM meta WHERE key='sdeBuildNumber'` differs, treat every
-> figure here as approximate and re-derive it. The *shapes* -- which column
-> lies, which join drops rows -- are stable across builds; the numbers are not.
+Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+differs. The shapes stay true across builds, the numbers do not.
 
 ## Units: read `unitID`, not the name
 
@@ -18,12 +16,13 @@ in `_key`, so the join is
 Attribute *names* are not a reliable guide -- this is the single richest source
 of confidently wrong answers in the dataset. Note also that **`unitID` and
 `attributeID` are separate ID spaces that overlap**: attributeID 101 is
-`shieldRechargeRate`, unitID 101 is "milliseconds", and the two have nothing to
+`launcherSlotsLeft`, unitID 101 is "milliseconds", and the two have nothing to
 do with each other. Read the table below as unit numbers, not attribute numbers.
+(Shield recharge is attributeID **479**; capacitor recharge is 55.)
 
 | unitID | Meaning | Trap |
 | --- | --- | --- |
-| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes, 69,032 rows.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
+| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes defined (57 actually used), 69,032 rows.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
 | **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes, 40,522 rows.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
 | 3, 123 | Actual seconds | Sits beside unitID 101 with nothing in the schema to distinguish them |
 | 109 | Modifier percent: `1.1` = +10%, `0.9` = -10% | `0.75` means **-25%**, not 75% |
@@ -181,7 +180,8 @@ literal `1.386294`.
   is `types.capacity`, and what a packaged item takes up is
   `types.packagedVolume` -- **not `volume`**, which is the assembled size. A
   Rifter is 27,289 m3 assembled and 2,500 m3 packaged, so using `volume` makes
-  every ship-hauling answer ~11x too pessimistic. `capacity` is NULL for 25,265
+  every ship-hauling answer ~10.9x too pessimistic (685 published types
+  differ between the two). `capacity` is NULL for 25,265
   published types (anything with no hold), so `ORDER BY capacity DESC` is fine
   but `WHERE capacity > x` silently drops them.
 
@@ -215,10 +215,6 @@ literal `1.386294`.
   the `published` mistake, and planetary-industry questions hit it constantly.
   The ten values are `Planet (Barren)`, `(Gas)`, `(Ice)`, `(Lava)`, `(Oceanic)`,
   `(Plasma)`, `(Shattered)`, `(Storm)`, `(Temperate)` and `(Scorched Barren)`.
-- **`volume` is the assembled volume; `packagedVolume` is what you haul.** A
-  Rifter is 27,289 m3 assembled and **2,500 m3 packaged** -- 685 published types
-  differ. Every "how many X fit in a Y" answer is ~10x wrong on the assembled
-  figure.
 
 - **Tech level has three sources that disagree.** "How many published Tech II
   items are there?" answers 2,537 from `types.techLevel`, 2,434 from dogma

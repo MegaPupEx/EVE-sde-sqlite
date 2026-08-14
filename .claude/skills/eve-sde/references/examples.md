@@ -3,8 +3,6 @@
 Queries that are correct against the traps documented in the `gotchas-*` files.
 Prefer adapting one of these to writing from scratch.
 
-## Examples
-
 These are written **unqualified** (`types`, `type_dogma`), which works when a
 part is opened directly as the main database. If you ATTACHed parts under names,
 prefix every table -- `items.types`, `universe.systems`. Unprefixed queries
@@ -106,3 +104,15 @@ JOIN dogma_attributes la ON la.attributeID = lvl.attributeID
      AND la.name = ra.name || 'Level'
 WHERE t.name = 'Rifter';
 ```
+
+## Elsewhere
+
+Two query shapes deliberately live next to the trap they depend on rather than
+here, to avoid a copy drifting out of sync:
+
+- **Shortest-route BFS over the stargate graph** — `gotchas-universe.md`, beside
+  the warning that the graph is disconnected and a route may not exist.
+- **Resolving `systems.factionID` / `types.raceID` to a name** — `schema.md`,
+  beside the note that `factions` and `races` are in the `world` part and are the
+  only two tables not keyed on `_key`.
+

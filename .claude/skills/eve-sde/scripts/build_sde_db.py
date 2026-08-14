@@ -501,9 +501,11 @@ def make_portable(dbpath):
 def compress(path, fmt):
     """Compress the database for upload into environments that cannot download it.
 
-    xz is the useful one: it takes the full ~92 MB database to ~13 MB, which is
-    comfortably under the 30 MB per-file limit on claude.ai, so nothing has to
-    be stripped out to make it fit. Python decompresses all three from the
+    xz is the useful one. The base build (no --complete, no --positions) is
+    ~92 MB and compresses to ~13 MB, comfortably under the 30 MB per-file limit
+    on claude.ai. A --complete --positions build compresses to ~37 MB, which
+    does *not* fit -- hence --split, which puts every part under the limit
+    without dropping anything. Python decompresses all three formats from the
     standard library (gzip / lzma / bz2).
     """
     import gzip as _gzip, lzma as _lzma, bz2 as _bz2
@@ -714,7 +716,7 @@ def main():
     ap.add_argument("--portable", action="store_true",
                     help="drop descriptions, unpublished types and moons (~31 MB)")
     ap.add_argument("--compress", choices=["gz", "xz", "bz2"],
-                    help="also write a compressed copy; xz takes the full DB to ~13 MB")
+                    help="also write a compressed copy; xz takes the base DB to ~13 MB")
     ap.add_argument("--gzip", action="store_true", help=argparse.SUPPRESS)  # back-compat
     a = ap.parse_args()
 
