@@ -59,8 +59,7 @@ a station:
 Refinery` (verified). Moons take the same shape (`Arifsdald VII - Moon 1`) from
 `moons.celestialIndex` and `orbitIndex`. Both need `world` attached. The
 assembly is not in CCP's export, so if you quote a station or moon name, say it
-was derived. (Third-party mirrors of the SDE sometimes add pre-assembled `name`
-fields; this builder reads CCP's files only, so nothing here has them.)
+was derived.
 
 `factions` and `races` are in the **`world`** part, not `universe` -- resolving
 `systems.factionID` or `types.raceID` to a name needs `world` attached. They are
