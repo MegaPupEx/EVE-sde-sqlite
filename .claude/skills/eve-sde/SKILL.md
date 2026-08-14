@@ -117,6 +117,8 @@ attributeID  9 hp (structure) · 263 shieldCapacity · 265 armorHP · 37 maxVelo
              102 turretSlotsLeft · 101 launcherSlotsLeft · 552 signatureRadius
              564 scanResolution · 76 maxTargetRange · 283 droneCapacity
              1271 droneBandwidth · 70 agility (inertia!) · 600 warpSpeedMultiplier
+weapons      64 damageMultiplier · 114/116/117/118 em/exp/kin/thermDamage
+             51 `speed` = rate of fire, in MILLISECONDS (not velocity — that is 37)
 resistances  shield 271/274/273/272 · armor 267/270/269/268 · structure 113/110/109/111
              (EM/Thermal/Kinetic/Explosive — the client's order, not the ID order)
 ```

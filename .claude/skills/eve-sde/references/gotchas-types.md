@@ -49,7 +49,12 @@ differs.
   only as `groups_.name` values, so a size class is a list of group names you
   curate. Cruiser-sized T2, for instance, is Heavy Assault Cruiser + Heavy
   Interdiction Cruiser + Logistics + Combat Recon Ship + Force Recon Ship + Flag
-  Cruiser (note **`Ship`** on both Recon names -- omitting it returns zero rows);
+  Cruiser (note **`Ship`** on both Recon names -- omitting it returns zero rows).
+  **A group name is not a tech level**: `Logistics` also holds the faction
+  Etana and Rabisu (`techLevel = 2`, `metaGroupID = 4`), which carry the two
+  largest capacitors in the group, so "rank the T2 logistics ships" answers with
+  a faction hull at the top unless you also filter `metaGroupID = 2`. Curate the
+  groups *and* the meta group;
   frigate-sized T2 is Assault Frigate + Covert Ops + Electronic Attack Ship +
   Expedition Frigate + Interceptor + Logistics Frigate + Stealth Bomber. Say
   which groups you used -- two correct answers can differ on whether Marauders

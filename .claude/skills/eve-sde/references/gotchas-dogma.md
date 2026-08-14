@@ -191,6 +191,18 @@ literal `1.386294`.
   max, and which attribute is non-zero *is* the sensor type. An Onyx is
   gravimetric 19, a Rifter ladar 8. Averaging or summing the four gives a
   quarter of the right answer with no error to notice.
+- **Weapon and drone damage has no ship-side attribute, and no DPS is stored.**
+  Damage lives on the *weapon or drone item*: `damageMultiplier` (64) and the
+  four damage types `emDamage` (114), `explosiveDamage` (116), `kineticDamage`
+  (117), `thermalDamage` (118). Rate of fire is **attribute 51, named `speed`**
+  and in milliseconds. So
+  `dps = damageMultiplier * (em+exp+kin+therm) / (attr51 / 1000)`. The hull's
+  contribution is prose in `typeBonus`, not a number in dogma.
+- **The 5-active-drone cap is not in the SDE.** `maxActiveDrones` (352) has
+  `defaultValue = 0` and **zero rows on any ship** -- the limit comes from the
+  character's Drones skill. Compute from `droneBandwidth` alone and an Ishtar
+  "fields 25 light drones", five times the real figure, with nothing to flag it.
+  Same shape as drone range below: a ship-looking number that is character data.
 - **Drone range is not a ship attribute.** Both an Onyx and a Rifter show 20 km
   at zero skills and 60 km trained, because it comes from the character's
   Drone Avionics skills. Nothing in `type_dogma` will give it to you.
