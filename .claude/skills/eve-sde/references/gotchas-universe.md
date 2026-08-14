@@ -22,7 +22,12 @@ rather than quoting.
   Five rows are unpublished placeholder/QA junk, and one of them -- QA Colony
   Resources Management Enhancer, at 9,000 power and 90,000 workforce -- is a
   *producer*, so it is one of only four and will wreck any max or mean taken
-  over that side. Filter on `types.published = 1`. `mutually_exclusive_group` is
+  over that side. Filter on `types.published = 1` -- but note the reverse trap
+  too: **`Deprecated Cynosural Navigation` (typeID 2008) and `Deprecated
+  Cynosural Suppression` (2001) are `published = 1` types with no
+  `sovereigntyUpgrades` row**, so a *name*-based lookup ("the cyno nav
+  upgrade") can land on a dead legacy type. Start from
+  `sovereigntyUpgrades._key` and join to `types`, never the other way. `mutually_exclusive_group` is
   free text (`Mining_A`, `PvE_C`, `Infrastructure_3`) with no lookup table.
 - **`universe.planetResources` is Equinox sovereignty, not planetary industry.**
   It holds `power` / `workforce` / `reagent` for the 2,712 sov-claimable nullsec

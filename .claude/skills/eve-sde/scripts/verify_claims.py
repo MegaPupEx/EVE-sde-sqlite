@@ -857,6 +857,14 @@ CHECKS = [
              (SELECT COUNT(*) FROM sovereigntyUpgrades u
               JOIN types t ON t.typeID = u._key WHERE t.published = 0)
       FROM sovereigntyUpgrades"""),
+    C("gotchas-universe.md",
+      "Deprecated Cynosural types are published but have no upgrades row",
+      "universe items", (2, 0), sql="""
+      SELECT (SELECT COUNT(*) FROM types WHERE name LIKE 'Deprecated Cynosural%'
+              AND published = 1),
+             (SELECT COUNT(*) FROM sovereigntyUpgrades u
+              JOIN types t ON t.typeID = u._key
+              WHERE t.name LIKE 'Deprecated%')"""),
     C("gotchas-universe.md", "the QA producer: 9,000 power, 90,000 workforce",
       "universe items", (9000, 90000), sql="""
       SELECT u.power_production, u.workforce_production FROM sovereigntyUpgrades u
