@@ -10,12 +10,16 @@ republished within hours of each CCP release. Fetch only what a question needs:
 
 | Part | Size | Covers |
 | --- | --- | --- |
-| `eve-sde-universe.sqlite.xz` | ~28 MB | systems, planets, moons, belts, gates, stations, coordinates |
+| `eve-sde-moons.sqlite.xz` | ~20 MB | all 344k moons with physical statistics |
+| `eve-sde-universe.sqlite.xz` | ~8 MB | systems, planets, belts, gates, stations, 3D coordinates |
 | `eve-sde-items.sqlite.xz` | ~7 MB | types, dogma attributes and effects, reprocessing |
 | `eve-sde-world.sqlite.xz` | ~1.4 MB | missions, dungeons, agents, corps, certificates |
 | `eve-sde-industry.sqlite.xz` | ~0.5 MB | blueprints, schematics, assembly lines |
 | `eve-sde-cosmetic.sqlite.xz` | ~0.4 MB | skins, graphics, icons |
 | `eve-sde-misc.sqlite.xz` | ~0.01 MB | the remainder |
+
+Moons are their own part because they are 344,457 rows — over half the universe
+data — and are asked about far less often than systems and planets.
 
 ```bash
 BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download

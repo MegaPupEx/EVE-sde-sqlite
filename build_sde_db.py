@@ -606,7 +606,10 @@ GROUPS = {
               "type_materials", "typeBonus", "typeLists", "typeElements",
               "dynamicItemAttributes", "metaGroups", "compressibleTypes",
               "contrabandTypes", "dogmaUnits", "dogmaAttributeCategories"],
-    "universe": ["regions", "constellations", "systems", "planets", "moons",
+    # moons are 344k rows -- over half the universe data -- and are asked about
+    # far less often than systems and planets, so they get their own part.
+    "moons": ["moons"],
+    "universe": ["regions", "constellations", "systems", "planets",
                  "asteroid_belts", "stargates", "npc_stations", "mapStars",
                  "mapSecondarySuns", "landmarks", "planetResources",
                  "sovereigntyUpgrades", "systemWideEffects", "systemDbuffEmitters"],

@@ -86,17 +86,25 @@ jobs:
               os.remove("pt.sqlite")
 
           # the parts must actually cover the data, not just exist
-          for need in ("items", "universe", "industry", "world"):
+          for need in ("items", "universe", "moons", "industry", "world"):
               assert need in seen, f"missing the {need} part"
           with lzma.open("eve-sde-universe.sqlite.xz") as f, open("u.sqlite", "wb") as o:
               shutil.copyfileobj(f, o)
           u = sqlite3.connect("u.sqlite")
           s = u.execute("SELECT COUNT(*) FROM systems").fetchone()[0]
-          m = u.execute("SELECT COUNT(*) FROM moons").fetchone()[0]
           xs = u.execute("SELECT COUNT(*) FROM planets WHERE x IS NOT NULL").fetchone()[0]
-          assert s > 8000 and m > 300000, f"universe looks short: {s} systems, {m} moons"
+          assert s > 8000, f"universe looks short: {s} systems"
           assert xs > 60000, f"positions missing: only {xs} planets have coordinates"
           u.close(); os.remove("u.sqlite")
+
+          with lzma.open("eve-sde-moons.sqlite.xz") as f, open("mo.sqlite", "wb") as o:
+              shutil.copyfileobj(f, o)
+          mo = sqlite3.connect("mo.sqlite")
+          m = mo.execute("SELECT COUNT(*) FROM moons").fetchone()[0]
+          mg = mo.execute("SELECT COUNT(*) FROM moons WHERE surfaceGravity IS NOT NULL").fetchone()[0]
+          assert m > 300000, f"moons looks short: {m} rows"
+          assert mg > 300000, f"moon statistics missing: only {mg} rows have gravity"
+          mo.close(); os.remove("mo.sqlite")
 
           with lzma.open("eve-sde-items.sqlite.xz") as f, open("i.sqlite", "wb") as o:
               shutil.copyfileobj(f, o)
@@ -142,12 +150,22 @@ jobs:
             --title "SDE build ${{ steps.check.outputs.build }}" \
             --notes "EVE Online SDE build \`${{ steps.check.outputs.build }}\`, released by CCP on \`${{ steps.check.outputs.released }}\`.
 
-          \`eve-sde.sqlite.xz\` is the **complete** SDE as an indexed SQLite database — 107 tables, ~27 MB compressed, ~147 MB expanded. Fits the 30 MB per-file upload limit on claude.ai.
+          The complete SDE as indexed SQLite, split by domain. Each part is a full database — fetch only what you need, and \`ATTACH\` several to join across them.
+
+          | Part | Covers |
+          | --- | --- |
+          | \`eve-sde-universe\` | systems, planets, belts, stargates, stations, 3D coordinates |
+          | \`eve-sde-moons\` | all 344k moons with their physical statistics |
+          | \`eve-sde-items\` | types, dogma attributes and effects, reprocessing, market groups |
+          | \`eve-sde-world\` | missions, dungeons, agents, corporations, certificates |
+          | \`eve-sde-industry\` | blueprints, schematics, assembly lines |
+          | \`eve-sde-cosmetic\` | skins, graphics, icons |
+          | \`eve-sde-misc\` | the remainder |
 
           \`\`\`bash
-          xz -d eve-sde.sqlite.xz
+          xz -d eve-sde-universe.sqlite.xz
           \`\`\`
 
-          The same data is also split by domain — \`eve-sde-items\`, \`-universe\`, \`-industry\`, \`-world\`, \`-cosmetic\`, \`-misc\` — for when one file is inconvenient. Each part is a complete database; SQLite can \`ATTACH\` several and join across them. The largest, \`universe\`, is ~18 MB.
+          Split rather than combined because the 30 MB per-file upload limit on claude.ai is per *file*: as parts everything fits, including the 3D coordinates a single archive cannot carry.
 
           Built by \`build_sde_db.py\`; schema and query notes are in \`.claude/skills/eve-sde/SKILL.md\`."

@@ -36,14 +36,20 @@ curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz && xz -d universe.xz  # 
 curl -sSLo items.xz    $BASE/eve-sde-items.sqlite.xz    && xz -d items.xz     # ~7 MB
 ```
 
-| Part | Covers |
-| --- | --- |
-| `universe` | systems, planets, moons, belts, stargates, stations, coordinates |
-| `items` | types, dogma attributes and effects, reprocessing, market groups |
-| `industry` | blueprints, schematics, assembly lines |
-| `world` | missions, dungeons, agents, corporations, certificates |
-| `cosmetic` | skins, graphics, icons |
-| `misc` | the remainder |
+| Part | Size | Covers |
+| --- | --- | --- |
+| `universe` | ~8 MB | systems, planets, belts, stargates, stations, 3D coordinates |
+| `moons` | ~20 MB | all 344k moons with physical statistics |
+| `items` | ~7 MB | types, dogma attributes and effects, reprocessing, market groups |
+| `world` | ~1.4 MB | missions, dungeons, agents, corporations, certificates |
+| `industry` | ~0.5 MB | blueprints, schematics, assembly lines |
+| `cosmetic` | ~0.4 MB | skins, graphics, icons |
+| `misc` | ~0.01 MB | the remainder |
+
+**`moons` is a separate part from `universe`.** A moon question needs both --
+`moons` for the moon rows, `universe` to resolve which system or planet they
+orbit. Fetching only `universe` gives no `moons` table at all, which reads as
+"this system has no moons" if you do not notice.
 
 There is no single combined download: one file only fits the 30 MB upload limit
 by dropping 3D coordinates, so the parts are the published form. ATTACH whatever
@@ -114,10 +120,9 @@ for g in ("items", "universe"):
 db.execute("SELECT t.name FROM universe.planets p JOIN items.types t ON t.typeID=p.typeID ...")
 ```
 
-Only fetch the parts a question needs: `universe` covers systems, planets,
-moons and stargates; `items` covers types, dogma and reprocessing; `industry`
-covers blueprints and schematics; `world` covers missions, dungeons, agents and
-certificates.
+Only fetch the parts a question needs. Common pairings: planet or route
+questions want `universe` alone; moon questions want `universe` + `moons`; ship
+and module questions want `items`; build costs want `items` + `industry`.
 
 **Use xz, not gzip** -- gzip does not get the data under the 30 MB per-file
 limit on claude.ai; xz does, with room to spare per part.
