@@ -139,7 +139,8 @@ literal `1.386294`.
   bonuses in `typeBonus.types` scale with skill level and are not.** 90 published
   ships carry an effect that modifies one of the twelve core resonance
   attributes; the other 79 are per-skill-level ship bonuses (a Damnation gets 4%
-  armor resist per level of Amarr Cruiser) and correctly do not apply to a base
+  armor resist per level of **Amarr Battlecruiser** -- the skill is on the hull's
+  own size band, so do not assume the cruiser skill) and correctly do not apply to a base
   hull. Widen the definition to all 58 `unitID = 108` attributes and the count
   is 121, so say which you mean.
 
@@ -154,12 +155,27 @@ literal `1.386294`.
 - **A few hulls sit far outside the normal resist range**, so "which ship
   resists X best" does not land where a player expects. The **Monitor** (T2 Flag
   Cruiser) carries **90% on all four shield layers** and tops every one of them.
-  **Below it there is no stable runner-up.** The next-best hull differs on every
-  damage type, and on three of the four it is a Faction or tournament hull
-  (Cybele, Utu, Malice) rather than anything a player flies. Do not quote one
-  layer's ceiling as if it held across the others, and do not assume the same
-  hull places twice: re-derive per layer, applying whatever eligibility filter
-  the question implies, and say which set you used.
+  It does not top them outright -- the faction **Cybele** ties it exactly on
+  kinetic (both store `0.1`). Below those, the next-best hull **differs on every
+  damage type** and is frequently a multi-way tie, so there is no stable
+  runner-up to name. **Do not quote a runner-up from memory or from another
+  layer** -- this bullet has been wrong three times for exactly that reason.
+  Derive it, per layer, with the eligibility filter the question implies:
+
+  ```sql
+  SELECT t.name, mg.name AS meta,
+         ROUND((1 - d.value * (1 + COALESCE(rb.value,0)/100.0)) * 100, 1) AS pct
+  FROM type_dogma d
+  JOIN types t USING(typeID)
+  LEFT JOIN meta_groups mg ON mg.metaGroupID = t.metaGroupID
+  LEFT JOIN type_dogma rb ON rb.typeID = t.typeID AND rb.attributeID = 1829
+  WHERE d.attributeID = 271        -- 271/274/273/272 = EM/Th/Kin/Exp shield
+    AND t.published = 1 AND t.categoryID = 6
+  ORDER BY pct DESC LIMIT 10;
+  ```
+
+  Report the ties as ties, and say whether faction and tournament hulls were in
+  the set.
 - **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
   `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
   `bp_skills` is what a *blueprint activity* needs -- a different question.
