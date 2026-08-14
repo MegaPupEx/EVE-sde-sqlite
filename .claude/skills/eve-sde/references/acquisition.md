@@ -84,8 +84,10 @@ under "Attaching several parts" in SKILL.md.
 
 ## `--portable` builds
 
-A `--portable` database omits item descriptions, unpublished types and the
-`moons` table, and sets `meta.portable = '1'`. On one, do **not** filter on
+A `--portable` database drops item descriptions and unpublished types, empties
+the `moons` table, and sets `meta.portable = '1'`. Note *empties*, not drops:
+`moons` still exists and returns zero rows, so moon questions fail silently
+rather than raising `no such table`. On one, do **not** filter on
 `published` (everything present is published), do not promise moon data, and do
 not quote descriptions. Dropping unpublished types removes **every planet
 type** — all ten are `published = 0` — so planet-type questions cannot be
