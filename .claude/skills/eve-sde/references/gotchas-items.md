@@ -53,8 +53,9 @@ by either sort direction is wrong -- align time is
 rate of fire**, in milliseconds; ship velocity is `maxVelocity` (37).
 
 **SQLite's `LOG()` is base 10, not natural.** `LOG(4)` returns 0.602, not
-1.386, so `LOG(4) * inertia * mass / 1e6` gives align times about 2.3x too
-fast -- 1.7 s for a T2 frigate instead of 4.0 s. The ranking is unchanged,
+1.386, so `LOG(4) * inertia * mass / 1e6` gives align times exactly 2.3026x too
+fast -- a Rifter reads **2.06 s instead of 4.73 s**, an Ares 1.97 s instead of
+4.54 s. The ranking is unchanged,
 which is exactly why the error survives a sanity check. Use `LN(4)`, or the
 literal `1.386294`.
 
@@ -104,8 +105,10 @@ literal `1.386294`.
   | Armor | 267 | 270 | 269 | 268 |
   | Structure | 113 | 110 | 109 | **111** |
 
-  112 is `energyDamageAbsorptionFactor` and is not a resonance, so
-  `BETWEEN 109 AND 112` silently swaps one real value for a junk row.
+  112 is `energyDamageAbsorptionFactor`, not a resonance -- and it is attached to
+  **zero types**, so `BETWEEN 109 AND 112` does not add a junk row: it silently
+  returns **three** resistances instead of four, dropping EM (113) off the end.
+  A missing layer is easier to overlook than an extra one.
 - **The client's damage-type order is not the attributeID order.** Every EVE UI
   lists resists **EM, Thermal, Kinetic, Explosive**. The IDs run **EM,
   Explosive, Kinetic, Thermal** (267/268/269/270). Selecting

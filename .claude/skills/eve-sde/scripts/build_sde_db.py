@@ -5,7 +5,7 @@ Build a queryable SQLite database from the EVE Online Static Data Export (SDE).
 Downloads the current SDE from CCP's official distribution, then flattens the
 JSONL files into a normalised SQLite database with indexes.
 
-    python3 build_sde_db.py                 # 26 core tables -> ./sde.sqlite, ~92 MB
+    python3 build_sde_db.py                 # 25 core tables + meta -> ./sde.sqlite, ~92 MB
     python3 build_sde_db.py --complete      # all 107 tables, ~137 MB
     python3 build_sde_db.py --complete --positions          # + 3D coords, ~162 MB
     python3 build_sde_db.py --complete --positions --split --parts-only --compress xz

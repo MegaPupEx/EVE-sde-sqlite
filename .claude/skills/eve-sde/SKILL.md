@@ -25,7 +25,7 @@ looks odd.
 | `references/gotchas-items.md` | any ship or module stat, resistance, dogma attribute, tech level, volume or hauling question |
 | `references/gotchas-universe.md` | any system, planet, moon, star, security, region or routing question |
 | `references/gotchas-industry.md` | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
-| `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the 13 generic tables worth knowing, out of roughly 80 |
+| `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the 13 generic tables worth knowing, out of 81 |
 | `references/schema.md` (world section) | missions, agents, NPC corporations, dungeons, DED ratings, certificates, factions or races — the traps there are severe and live nowhere else |
 | `references/examples.md` | a resistance, blueprint-material, reprocessing, ship-skill, planet, gate or security-band query — adapt one rather than composing from scratch |
 | `references/acquisition.md` | no database is present and none was uploaded — how to fetch or build one |
@@ -71,14 +71,14 @@ treatment in the `gotchas-*` files.
 
 Two conventions, and guessing wrong costs a turn every time:
 
-- **26 hand-shaped tables** use snake_case names and real ID columns:
+- **25 hand-shaped tables** use snake_case names and real ID columns:
   `types.typeID`, `type_dogma.attributeID`, `market_groups.marketGroupID`,
   `systems.solarSystemID`. Note `groups_` has a trailing underscore (`group` is
   reserved in SQL), and multi-word names are snake_case — it is `market_groups`,
   not `marketGroups`. **The name column is always bare `name`**, never CCP's
   classic `typeName` / `groupName` / `solarSystemName`: it is `types.name`,
   `groups_.name`, `systems.name`, `regions.name`.
-- **Everything else** was ingested generically, keeps CCP's camelCase name, and
+- **The other 81** were ingested generically, keep CCP's camelCase name, and
   is keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
   `planetSchematics._key`, `mapStars._key`. Counting domain tables (excluding
   `meta`, which every part has): 8 of 18 in `items`, 8 of 13 in `industry`,

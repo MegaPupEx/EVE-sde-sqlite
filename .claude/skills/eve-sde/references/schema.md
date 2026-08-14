@@ -24,7 +24,7 @@ Attributes (all ship/module stats live here):
 | --- | --- |
 | `type_dogma` | `typeID`, `attributeID`, `value` |
 | `dogma_attributes` | `attributeID`, `name`, `displayName`, `description`, `defaultValue` (**use it -- a missing `type_dogma` row means "default", not "no value"**), `highIsGood` (unreliable), `stackable`, `published`, `unitID` (**decides what the number means -- see "Units" in `gotchas-items.md`, and note it is a different ID space from `attributeID`**), `attributeCategoryID`, `dataType`, `minAttributeID`, `maxAttributeID`, `tooltipTitle`, `tooltipDescription` |
-| `dogmaUnits` | `_key` (**this is the unitID**), `name`, `displayName`, `description` |
+| `dogmaUnits` | `_key` (**this is the unitID**), `name`, `displayName`, `description` — listed here because dogma queries need it, but it is a *generic* table: camelCase, `_key`-keyed |
 | `type_effects` | `typeID`, `effectID`, `isDefault` |
 | `dogma_effects` | `effectID`, `name`, `displayName`, `effectCategoryID`, `isOffensive`, `isAssistance`, `durationAttributeID`, `rangeAttributeID`, `falloffAttributeID`, `modifierInfo` (JSON) |
 
@@ -112,7 +112,8 @@ symptom. Resolve to an attributeID; nothing else works.
 
 ## The `world` part and other generic tables
 
-Everything outside the 26 hand-shaped tables was ingested generically. Two
+Everything outside the 25 hand-shaped tables was ingested generically -- 81 of
+the 106 domain tables. Two
 consequences: the primary key is **`_key`** rather than a domain-specific name
 (not `missionID`, `dungeonID`, etc.), and nested fields are JSON -- use
 `json_extract()` and `json_each()`.
