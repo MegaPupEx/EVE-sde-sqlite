@@ -172,9 +172,6 @@ rather than quoting.
   regions** at exactly `0.949`. Report ties as ties. More generally: this
   dataset is full of exact ties -- resists, moon radii, security -- so check for
   them before presenting any `LIMIT n` as a ranking.
-- Region `19000001` (GPMR-01) is a dev region; its one system GPMS-01 also has
-  `security = 1.0`. It carries `space = 'other'`, so a `space = 'kspace'` filter
-  excludes it -- but that filter does **not** save you from the Exordium tie.
 - **Three counting traps compound, and all inflate nullsec.** The three unused
   regions `UUA-F4` (107), `J7HZ-F` (77) and `A821-A` (46) are `kspace` with
   ordinary nullsec security -- 230 systems nobody can reach, so nullsec is 3,552
@@ -194,9 +191,6 @@ rather than quoting.
   something to assume in general.
 - **`security` has mixed storage classes**: 121 INTEGER rows (the clamped ±1),
   8,369 REAL. Comparisons are unaffected; `typeof()` and JSON export are not.
-- **GPMS-01 sits at `(1, 1, 1)`**, one metre from the origin, so any
-  nearest-neighbour query that does not exclude `space = 'other'` finds it
-  closest to everything near the map's centre.
 
 ## Routing
 
@@ -215,3 +209,15 @@ for a, b in db.execute("SELECT solarSystemID, destSystemID FROM stargates"):
 Filter the edge list by `systems.security` for high-sec-only routing. The graph
 is **disconnected** -- 3,222 systems have no gates at all -- so always handle the
 "no path exists" case rather than assuming a route can be found.
+
+## Rare
+
+Accurate, verified, and almost never load-bearing -- read only if the question
+touches them directly.
+
+- Region `19000001` (GPMR-01) is a dev region; its one system **GPMS-01** has
+  `security = 1.0` and `space = 'other'`, so a `space = 'kspace'` filter
+  excludes it -- but that filter does **not** save you from the Exordium tie.
+- **GPMS-01 sits at `(1, 1, 1)`**, one metre from the origin, so any
+  nearest-neighbour query that does not exclude `space = 'other'` finds it
+  closest to everything near the map's centre.

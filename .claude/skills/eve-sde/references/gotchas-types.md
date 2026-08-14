@@ -41,17 +41,13 @@ rather than quoting.
   is 750 x 10.0 x 1000 = **7.5M ISK**, and the multiplier is per faction (Minmatar
   10.0, Gallente 8.0, Caldari 5.0 on the same cargo). Amarr is simply absent from
   the Slaves row -- legal there.
-- **Read `confiscateMinSec` as a security floor, and note `attackMinSec` never
-  fires.** `confiscateMinSec` takes graded values -- -1.0 on 21 entries and
-  0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0 and 1.1 across the other 29 -- so it
-  behaves as "enforced where security >= this", which makes **-1.0 the harshest
-  setting (everywhere), not a "never" sentinel**, and the single 1.1 entry
-  unenforceable. `attackMinSec` is **1.1 on all 50 entries**, above the 1.0
-  ceiling, so on the same reading no cargo is ever shot over. That reading is
-  inferred from the value distribution; the SDE states no semantics, so say so
-  rather than asserting the mechanic. Elite Slaves is the row to watch: all
-  eight of its entries are `confiscateMinSec` 1.0 with `fineByValue` 0.0 and
-  `standingLoss` 0.0, so it is listed as contraband and penalises nothing.
+- **Read `confiscateMinSec` as a security floor.** It takes graded values --
+  -1.0 on 21 entries and 0.2 through 1.1 across the other 29 -- so it behaves
+  as "enforced where security >= this", which makes **-1.0 the harshest setting
+  (everywhere), not a "never" sentinel**. That reading is inferred from the
+  value distribution; the SDE states no semantics, so say so rather than
+  asserting the mechanic. (`attackMinSec` and the zero-penalty Elite Slaves row
+  are in "Rare" below.)
 - **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
   published types. It is an internal seed value. For real prices use ESI; the
   SDE has none.
@@ -80,8 +76,6 @@ rather than quoting.
   names agree on **none** of them: key 4 is `Corvette` here and `Constellation`
   there, 8 is `Frigate` vs `Moon`, 9 is `Navy Frigate` vs `Asteroid Belt`. You
   get celestial-object names for 58% of rows, no error and no NULL.
-  `cosmetic.skinrTierThresholds._key` is the same ID space, so it inherits the
-  same trap.
 - **There is no hull-size column.** "Frigate", "cruiser", "battleship" exist
   only as `groups_.name` values, so a size class is a list of group names you
   curate. Cruiser-sized T2, for instance, is Heavy Assault Cruiser + Heavy
@@ -162,3 +156,17 @@ rather than quoting.
   variants below.
 - **Ore variant names changed.** "Concentrated Veldspar" and "Dense Veldspar" no
   longer exist as types; the grades are now `Veldspar II-Grade` and similar.
+
+## Rare
+
+Accurate, verified, and almost never load-bearing -- read only if the question
+touches them directly.
+
+- **`contrabandTypes.attackMinSec` never fires.** It is 1.1 on all 50 faction
+  entries, above the 1.0 security ceiling, so on the floor reading no contraband
+  cargo is ever shot over -- a column that exists and never varies.
+- **Elite Slaves is contraband that penalises nothing.** All eight of its
+  entries are `confiscateMinSec` 1.0 with `fineByValue` 0.0 and `standingLoss`
+  0.0 -- listed, but unenforceable and fine-free everywhere.
+- **`cosmetic.skinrTierThresholds._key` shares `shipTreeGroups`' ID space**, so
+  it inherits the same not-a-`groupID` collision trap.

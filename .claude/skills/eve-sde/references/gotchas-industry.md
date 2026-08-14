@@ -126,6 +126,15 @@ rather than quoting.
 - 18,915 published types have **no** `type_materials` row: not reprocessable,
   rather than reprocessing to nothing.
 
+- **21 blueprint rows reference typeIDs that do not exist** (20 products, 1
+  material) -- removed content whose blueprints remain. This is upstream data,
+  not a build error; use inner joins so they drop out.
+
+## Rare
+
+Accurate, verified, and almost never load-bearing -- read only if the question
+touches them directly.
+
 - **The legacy `Batch Compressed *` line is stale and contradicts itself.** The
   `Compressed Arkonor Blueprint` consumes **1,000 Arkonor** to make **1 Batch
   Compressed Arkonor**, but that one unit reprocesses to exactly what **100**
@@ -133,7 +142,4 @@ rather than quoting.
   blueprints survive, and it is the only compression *ratio* anywhere in the
   SDE, so it is exactly what someone reaches for. Use `items.compressibleTypes`
   and the `types.volume` difference instead; modern compression is 1 unit to
-  1 unit.
-- **21 blueprint rows reference typeIDs that do not exist** (20 products, 1
-  material) -- removed content whose blueprints remain. This is upstream data,
-  not a build error; use inner joins so they drop out.
+  1 unit (documented under `compressibleTypes` in `schema.md`).

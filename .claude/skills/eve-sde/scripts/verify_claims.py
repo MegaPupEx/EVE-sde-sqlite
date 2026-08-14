@@ -1007,7 +1007,7 @@ CHECKS = [
       "universe world", 5197, fn=fn_reprocessing_service),
 
     # ---------------- schema.md (world and generic tables)
-    C("schema.md", "10,966 agents; 180 level-5, of which 37 real and 143 event",
+    C("gotchas-world.md", "10,966 agents; 180 level-5, of which 37 real and 143 event",
       "world", (10966, 180, 37, 143), sql="""
       SELECT COUNT(*),
              SUM(json_extract(agent, '$.level') = 5),
@@ -1016,9 +1016,9 @@ CHECKS = [
              SUM(json_extract(agent, '$.level') = 5
                  AND json_extract(agent, '$.agentTypeID') = 8)
       FROM npcCharacters WHERE agent IS NOT NULL"""),
-    C("schema.md", "agentTypes names all 13 kinds", "world", 13,
+    C("gotchas-world.md", "agentTypes names all 13 kinds", "world", 13,
       sql="SELECT COUNT(*) FROM agentTypes"),
-    C("schema.md", "killMission: 1,662 rows, 1,661 with dungeonID, 3 resolve, odd row 16414",
+    C("gotchas-world.md", "killMission: 1,662 rows, 1,661 with dungeonID, 3 resolve, odd row 16414",
       "world", (1662, 1661, 3, [16414]), fn=lambda conn: (
           one(conn, "SELECT COUNT(*) FROM missions WHERE killMission IS NOT NULL"),
           one(conn, """SELECT COUNT(*) FROM missions
@@ -1027,28 +1027,28 @@ CHECKS = [
                        ON d._key = json_extract(m.killMission, '$.dungeonID')"""),
           col(conn, """SELECT _key FROM missions WHERE killMission IS NOT NULL
                        AND json_extract(killMission, '$.dungeonID') IS NULL"""))),
-    C("schema.md", "killMission and courierMission are mutually exclusive", "world",
+    C("gotchas-world.md", "killMission and courierMission are mutually exclusive", "world",
       0, sql="""
       SELECT COUNT(*) FROM missions
       WHERE killMission IS NOT NULL AND courierMission IS NOT NULL"""),
-    C("schema.md", "agentsInSpace: 360 rows, dungeonID resolves 0", "world",
+    C("gotchas-world.md", "agentsInSpace: 360 rows, dungeonID resolves 0", "world",
       (360, 0), sql="""
       SELECT COUNT(*),
              (SELECT COUNT(*) FROM agentsInSpace a
               JOIN dungeons d ON d._key = a.dungeonID)
       FROM agentsInSpace"""),
-    C("schema.md", "dungeons: 1,409 rows, 1,014 distinct names, 226 descriptions",
+    C("gotchas-world.md", "dungeons: 1,409 rows, 1,014 distinct names, 226 descriptions",
       "world", (1409, 1014, 226), sql="""
       SELECT COUNT(*), COUNT(DISTINCT name), SUM(description IS NOT NULL)
       FROM dungeons"""),
-    C("schema.md", "DED ratings: 'Threat Assessment' 44, strict 'DED Threat Assessment:' 38",
+    C("gotchas-world.md", "DED ratings: 'Threat Assessment' 44, strict 'DED Threat Assessment:' 38",
       "world", (44, 38), sql="""
       SELECT SUM(description LIKE '%Threat Assessment%'),
              SUM(description LIKE '%DED Threat Assessment:%')
       FROM dungeons"""),
-    C("schema.md", "cloneGrades: 4 rows, 1 distinct payload, 175 skills, 23 at V",
+    C("gotchas-world.md", "cloneGrades: 4 rows, 1 distinct payload, 175 skills, 23 at V",
       "world", (4, 1, 175, 23), fn=fn_clone_grades),
-    C("schema.md", "masteries: 476 rows, 72 identical at every level", "world",
+    C("gotchas-world.md", "masteries: 476 rows, 72 identical at every level", "world",
       (476, 72), fn=fn_masteries_identical),
     C("schema.md", "typeLists: 462 rows; 218/268/45 + 26/27/2 non-NULL; 425 unnamed; 229 key-collisions",
       "items", (462, (218, 268, 45, 26, 27, 2), 425, 229), fn=fn_typelists_shape),
