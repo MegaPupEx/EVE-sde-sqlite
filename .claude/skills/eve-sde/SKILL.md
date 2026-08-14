@@ -41,7 +41,7 @@ curl -sSLo items.xz    $BASE/eve-sde-items.sqlite.xz    && xz -d items.xz     # 
 | `universe` | ~8 MB | systems, planets, belts, stargates, stations, 3D coordinates |
 | `moons` | ~20 MB | all 344k moons with physical statistics |
 | `items` | ~7 MB | types, dogma attributes and effects, reprocessing, market groups |
-| `world` | ~1.4 MB | missions, dungeons, agents, corporations, certificates |
+| `world` | ~1.4 MB | missions, dungeons, NPC agents and corporations, certificates, **factions**, **races** |
 | `industry` | ~0.5 MB | blueprints, schematics, assembly lines |
 | `cosmetic` | ~0.4 MB | skins, graphics, icons |
 | `misc` | ~0.01 MB | the remainder |
@@ -195,7 +195,9 @@ Universe:
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
 | `stargates` | `stargateID`, `solarSystemID`, `destSystemID`, `destStargateID` |
 | `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `reprocessingEfficiency` |
-| `factions`, `races` | `factionID`/`raceID`, `name` |
+
+`factions` and `races` are in the **`world`** part, not `universe` -- resolving
+`systems.factionID` or `types.raceID` to a name needs `world` attached.
 
 `activity` values: `manufacturing`, `copying`, `invention`,
 `research_material`, `research_time`, `reaction`.
@@ -214,6 +216,42 @@ Prefer joining on `dogma_attributes.name` over hardcoding IDs — it is clearer
 and survives schema drift. Two attribute names (`902`, `cynoJammerActivationDelay`)
 are shared by two IDs each, so add `AND published = 1` or resolve to an ID when a
 query must return exactly one row.
+
+## The `world` part and other generic tables
+
+Everything outside the 26 hand-shaped tables was ingested generically. Two
+consequences: the primary key is always **`_key`** (not `missionID`,
+`dungeonID`, etc.), and nested fields are JSON -- use `json_extract()` and
+`json_each()`.
+
+Table names do not match the casual descriptions:
+
+| You want | Table | Notes |
+| --- | --- | --- |
+| NPC agents | `npcCharacters` | **no `agents` table.** Agents are rows where the `agent` column is non-null: `{agentTypeID, divisionID, isLocator, level}`. 10,966 of them. `locationID` joins `universe.npc_stations.stationID` |
+| NPC corporations | `npcCorporations` | not `corporations` |
+| Missions | `missions` | `messages` is an array of `{_key: slot, text}`; the briefing slot is `messages.mission.briefing`. `killMission` / `courierMission` are `{dungeonID, objectiveQuantity}` and mutually exclusive |
+| Combat sites | `dungeons` | `description` holds the DED rating as prose |
+| Certificates | `certificates` | `skillTypes` is an array of `{_key: skillTypeID, basic, standard, improved, advanced, elite}`; `recommendedFor` is a bare int array -- inconsistent shapes in one table |
+| Factions, races | `factions`, `races` | here, not in `universe` |
+
+**Mission dungeon references are almost all dangling.** Only **3 of 1,662**
+kill missions have a `dungeonID` that exists in `dungeons`; `agentsInSpace`
+resolves **0 of 360**. The ID ranges overlap, so this is not an ID-space
+mismatch -- the dungeon definitions those missions point at are simply not in
+the SDE. An inner join silently returns 3 rows where you expected 1,662, and a
+left join reports "no dungeon" for 99.8% of combat missions. Say the reference
+is unresolvable rather than reporting an absence.
+
+**`dungeons.description` is 84% NULL** (226 of 1,409 populated), so a missing
+DED rating means "no description shipped", not "unrated". Ratings appear in
+three incompatible formats -- `DED Threat Assessment: Deadly (10 of 10)`,
+`DED Threat Assessment Level: 10 of 10`, and `Threat Assessment Level: 8 of 10`
+-- so `LIKE '%DED Threat Assessment:%'` finds 38 and misses 6, including a
+10/10. Match on `Threat Assessment` alone (44 rows). The severity word is not
+reliable either: level 10 appears as both "Critical" and "Deadly". Dungeon names
+also repeat -- 1,409 rows, 1,014 distinct names -- so counting by name and by
+key give different answers.
 
 ## Gotchas
 
