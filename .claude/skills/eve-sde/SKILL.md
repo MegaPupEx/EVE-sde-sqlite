@@ -159,8 +159,12 @@ Attributes (all ship/module stats live here):
 | Table | Key columns |
 | --- | --- |
 | `type_dogma` | `typeID`, `attributeID`, `value` |
-| `dogma_attributes` | `attributeID`, `name`, `description`, `defaultValue`, `highIsGood` |
-| `type_effects`, `dogma_effects` | `typeID`/`effectID`, `name` |
+| `dogma_attributes` | `attributeID`, `name`, `displayName`, `description`, `defaultValue`, `highIsGood`, `stackable`, `published`, `unitID`, `attributeCategoryID`, `dataType`, `minAttributeID`, `maxAttributeID`, `tooltipTitle`, `tooltipDescription` |
+| `type_effects` | `typeID`, `effectID`, `isDefault` |
+| `dogma_effects` | `effectID`, `name`, `displayName`, `effectCategoryID`, `isOffensive`, `isAssistance`, `durationAttributeID`, `rangeAttributeID`, `falloffAttributeID`, `modifierInfo` (JSON) |
+
+`PRAGMA table_info(<table>)` lists every column; the tables here name the ones
+you will reach for, not the full set.
 
 Industry:
 
@@ -215,6 +219,22 @@ them before trusting a result. Verified against build 3466501.
 - **Resonance is not resistance; it is inverted.** `armorEmDamageResonance =
   0.4` means **60% resist**, not 40%. Resist % is `(1 - value) * 100`. Every
   `*DamageResonance` attribute works this way.
+- **Four families of resonance attribute exist, and two of them disagree.**
+  Always anchor the layer prefix -- `armor%`, `shield%`, `hull%` -- because a
+  bare `LIKE '%DamageResonance'` returns 16 rows for one ship. Worse, structure
+  resistance has two published sets with **identical `displayName`s**:
+
+  | attributeID | name | Rifter value | means |
+  | --- | --- | --- | --- |
+  | 974-977 | `hull*DamageResonance` | 1.0 | 0% -- correct, matches the client |
+  | 109-113 | bare `emDamageResonance` etc. | 0.67 | 33% -- legacy, wrong |
+
+  Both are `published = 1`, both display as "Structure EM Damage Resistance",
+  and the legacy set is attached to 2,748 types. **Use the `hull*` set for
+  structure.** There is also a `passive*DamageResonance` family (1418-1429)
+  whose display names differ only in capitalisation. This is the one place the
+  skill's "prefer joining on name" advice actively misleads: for resistances,
+  select the attributeID family deliberately.
 - **Wormhole class is on the constellation and region, not the system.**
   `systems.wormholeClassID` is NULL for most of J-space -- only 692 of 2,604
   wormhole systems carry it, while 1,127 constellations and 108 regions do.
@@ -238,6 +258,10 @@ them before trusting a result. Verified against build 3466501.
   `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
   `bp_skills` is what a *blueprint activity* needs -- a different question.
   The Rifter needs `requiredSkill1 = 3329` (Minmatar Frigate) at level 1.
+  **These do not recurse on their own.** Skills have their own
+  `requiredSkill*` attributes, so "what do I need to fly this" means walking the
+  tree: a Rifter also needs Spaceship Command I via Minmatar Frigate. One hop
+  for a T1 frigate, several for T2 -- a single query under-reports.
 - **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
   published types. It is an internal seed value. For real prices use ESI; the
   SDE has none.
@@ -279,9 +303,19 @@ them before trusting a result. Verified against build 3466501.
 - **21 blueprint rows reference typeIDs that do not exist** (20 products, 1
   material) -- removed content whose blueprints remain. This is upstream data,
   not a build error; use inner joins so they drop out.
-- Region `19000001` (GPMR-01) is a dev region whose single system GPMS-01 has
-  `security = 1.0`, above any real system. Exclude it from "highest security"
-  style queries -- `space = 'kspace'` already does.
+- **"Highest security" has no clean answer.** 53 real k-space systems in the
+  region **Exordium** sit at security exactly `1.0` -- CONCORD-held content with
+  NPC stations and a gate to Genesis, not an artifact. `ORDER BY security DESC
+  LIMIT 5` therefore returns an arbitrary five of a 53-way tie. Outside
+  Exordium the top is Tew (0.9498) and Eystur (0.9492), then a six-way tie at
+  0.949 in The Forge. Say the tie exists rather than presenting five rows as
+  a ranking.
+- Region `19000001` (GPMR-01) is a dev region; its one system GPMS-01 also has
+  `security = 1.0`. It carries `space = 'other'`, so a `space = 'kspace'` filter
+  excludes it -- but that filter does **not** save you from the Exordium tie.
+- **`space` has five values**, not four: `kspace`, `wormhole`, `abyssal`, `void`
+  and `other` (GPMS-01 alone). `WHERE space != 'kspace'` to mean "j-space and
+  friends" quietly includes the dev system.
 - Names are English-only; the builder discards other locales.
 
 ## Examples
@@ -343,12 +377,14 @@ SELECT CASE WHEN security >= 0.45 THEN 'high'
 FROM systems WHERE space = 'kspace'
 GROUP BY band;
 
--- resistances, converting resonance to the percentage shown in game
+-- resistances, converting resonance to the percentage shown in game.
+-- Anchor the layer prefix: a bare '%DamageResonance' returns 16 rows across
+-- four competing families, not the 4 you want.
 SELECT a.name, ROUND((1 - d.value) * 100, 1) AS resist_pct
 FROM type_dogma d
 JOIN dogma_attributes a ON a.attributeID = d.attributeID
 JOIN types t ON t.typeID = d.typeID
-WHERE t.name = 'Rifter' AND a.name LIKE '%DamageResonance';
+WHERE t.name = 'Rifter' AND a.name LIKE 'armor%DamageResonance';   -- or shield% / hull%
 
 -- what skills a ship requires (dogma, not bp_skills)
 SELECT sk.name, lvl.value AS level
