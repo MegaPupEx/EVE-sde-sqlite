@@ -280,9 +280,11 @@ them before trusting a result. Verified against build 3466501.
   skill's "prefer joining on name" advice actively misleads: for resistances,
   select the attributeID family deliberately.
 - **Wormhole class is on the constellation and region, not the system.**
-  `systems.wormholeClassID` is NULL for most of J-space -- only 692 of 2,604
-  wormhole systems carry it, while 1,127 constellations and 108 regions do.
-  Join upward or a C2 hole reads as "unknown":
+  Only **5 of 2,604** wormhole systems carry a system-level `wormholeClassID`,
+  and those five are Drifter hives whose system class (14-18) *contradicts*
+  their constellation's class of 1. A further 687 k-space systems carry class 8,
+  which is unrelated to J-space -- so filtering `wormholeClassID IS NOT NULL`
+  gets you mostly k-space. Join upward or a C2 hole reads as "unknown":
 
   ```sql
   SELECT s.name, COALESCE(s.wormholeClassID, c.wormholeClassID, r.wormholeClassID) AS class
@@ -297,7 +299,12 @@ them before trusting a result. Verified against build 3466501.
 - **`security` alone cannot identify nullsec.** Wormhole, abyssal and void
   systems all carry `security = -0.99`, so `WHERE security <= 0` sweeps in 3,004
   systems that are not nullsec. Filter `space = 'kspace'` first. Counts in known
-  space (5,485 total): 1,246 high, 687 low, 3,552 null.
+  space (5,485 total): 1,246 high, 687 low, 3,552 null -- but that "high" figure
+  includes Exordium's 53 systems at security 1.0. Conventional New Eden high-sec
+  is **1,193**. Say which you mean.
+- **`>= 0.5` instead of `>= 0.45` fails silently on routing.** A high-sec-only
+  Jita-to-Amarr route is 34 jumps at the correct threshold and 39 at the wrong
+  one -- a plausible answer either way, with no error to notice.
 - **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
   `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
   `bp_skills` is what a *blueprint activity* needs -- a different question.
@@ -312,12 +319,31 @@ them before trusting a result. Verified against build 3466501.
 
 **Filtering and units:**
 
-- **Filter `published = 1`.** Only 26,992 of 52,863 types are published; the
-  rest are test items, unreleased content and dev leftovers that pollute
-  aggregates and name searches.
-- **`portionSize` governs reprocessing.** `type_materials` quantities are per
-  `portionSize` units, not per unit. Veldspar yields 400 Tritanium per **100**
-  units. Divide by `portionSize` for per-unit figures.
+- **`published = 1` applies to market items, not everything.** It is right for
+  ships, modules, charges and ore -- 26,992 of 52,863 types are published, the
+  rest being test and unreleased content. But **every celestial type is
+  `published = 0`**: all ten planet types, plus whole categories (Station,
+  Effects, Bonus, Placeables, Abstract). Joining `planets` to `types` with
+  `published = 1` returns **zero rows**, silently. Scope the filter to the
+  question.
+- **`portionSize` governs reprocessing, and nothing else.** `type_materials`
+  quantities are per `portionSize` units: Veldspar yields 400 Tritanium per
+  **100** units. It is **not** the manufacturing batch size -- that is
+  `bp_products.quantity`. The two coincide for most ammo, which is what makes
+  the mistake easy, but 30 published types disagree: XL torpedoes have
+  `portionSize = 100` while a run makes 5,000, a 50x error.
+- **`techLevel = 2` is not Tech II.** 19 published hulls have `techLevel = 2`
+  but `metaGroupID = 4` (Faction) -- Utu, Freki, Malice, Adrestia and the like.
+  They have no invention path, so a "T2 ship" query built on `techLevel` finds
+  ships that cannot be invented. Filter `metaGroupID = 2`.
+- **`bp_skills` mixes activities.** The Dominix blueprint has 1 manufacturing
+  skill and 3 invention skills; without `AND activity = '...'` you get both and
+  report the wrong set.
+- **Invention runs T1 -> T2 blueprint.** Materials, skills and time live on the
+  **T1** blueprint, and the product is the **T2 blueprint**, not the T2 item.
+  Starting from the T2 blueprint finds no invention rows at all.
+  `bp_products.probability` is the *base* chance before decryptors and skills,
+  and is NULL for manufacturing rows.
 - **`systems.security` is unrounded.** Jita is 0.9459, shown in-game as 0.9.
   High-sec is `security >= 0.45` (which rounds to 0.5), not `>= 0.5`.
 - Blueprint `time` values are seconds.
@@ -367,6 +393,19 @@ them before trusting a result. Verified against build 3466501.
 - **`space` has five values**, not four: `kspace`, `wormhole`, `abyssal`, `void`
   and `other` (GPMS-01 alone). `WHERE space != 'kspace'` to mean "j-space and
   friends" quietly includes the dev system.
+- **`security` has mixed storage classes.** 121 rows are INTEGER (the clamped
+  `1` and `-1` values), 8,369 are REAL. Comparisons are unaffected, but
+  `typeof()`, string formatting and JSON export will show `1` rather than `1.0`.
+- **GPMS-01 sits at coordinates `(1, 1, 1)`** -- one metre from the origin. Any
+  nearest-neighbour query that does not exclude `space = 'other'` finds it
+  closest to everything near the centre of the map.
+- **Pochven is sealed.** Its 27 systems have 60 internal stargates and **zero**
+  to anywhere else -- filament access only. Niarja is now inside it, which is
+  why the old short Jita-Amarr high-sec route no longer exists. Pochven systems
+  are `space = 'kspace'` with security exactly -1.0, so they land in nullsec
+  aggregates unless excluded.
+- Ore variant names changed: "Concentrated Veldspar" and "Dense Veldspar" no
+  longer exist as types. The grades are now `Veldspar II-Grade` and similar.
 - Names are English-only; the builder discards other locales.
 
 ## Examples
