@@ -452,6 +452,24 @@ them before trusting a result. Verified against build 3466501.
   members (1426-1429) are `unitID = 127`, not 108**, so the inversion rule does
   not apply to them. For resistances, select the attributeID family
   deliberately rather than joining on name.
+- **Every ship value in the SDE is pre-skill.** Confirmed exactly against a
+  fitting tool with all skills at 0: a Rifter reads 250 GJ capacitor, 125 s
+  recharge, 22.5 km targeting, 365 m/s, 4.73 s align; an Onyx 1,250 GJ, 335 s,
+  80 km, 200 m/s, 11.74 s. Every one is the raw `type_dogma` value. The same
+  panels at all-V show 312.5 GJ / 93.75 s / 456 m/s / 3.55 s -- nothing in the
+  SDE produces those. So say "base hull" when you quote a number, and never
+  compare an SDE figure against one a player read off their own fitted ship.
+  Resistances are the exception worth knowing: they are skill-independent, so
+  base and trained agree (bar the always-on role bonuses above).
+- **Sensor strength is four attributes, only one of them non-zero.** 208 radar,
+  209 ladar, 210 magnetometric, 211 gravimetric -- a ship carries all four and
+  zeroes the three that do not apply, so the displayed "sensor strength" is the
+  max, and which attribute is non-zero *is* the sensor type. An Onyx is
+  gravimetric 19, a Rifter ladar 8. Averaging or summing the four gives a
+  quarter of the right answer with no error to notice.
+- **Drone range is not a ship attribute.** Both an Onyx and a Rifter show 20 km
+  at zero skills and 60 km trained, because it comes from the character's
+  Drone Avionics skills. Nothing in `type_dogma` will give it to you.
 - **Hauling capacity: `capacity` vs `volume` vs `packagedVolume`.** Cargo space
   is `types.capacity`, and what a packaged item takes up is
   `types.packagedVolume` -- **not `volume`**, which is the assembled size. A
