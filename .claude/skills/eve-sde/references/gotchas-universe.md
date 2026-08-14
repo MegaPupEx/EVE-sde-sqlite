@@ -6,7 +6,10 @@ from A to B", or any question about planets, moons, stars, security or wormhole
 system effects.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
-differs.
+differs. **Every count here is population-sensitive** -- `published = 1` vs all
+types, k-space vs all systems, ships vs all categories. Where the population is
+not stated it is the whole table; if your query filters differently, re-derive
+rather than quoting.
 
 - **`universe.planetResources` is Equinox sovereignty, not planetary industry.**
   It holds `power` / `workforce` / `reagent` for the 2,712 sov-claimable nullsec

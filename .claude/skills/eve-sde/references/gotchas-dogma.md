@@ -9,7 +9,10 @@ For the `items` part. Read before answering **what a ship or module stat means**
 and the unit trap, `gotchas-types.md` for which hulls are eligible.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
-differs.
+differs. **Every count here is population-sensitive** -- `published = 1` vs all
+types, k-space vs all systems, ships vs all categories. Where the population is
+not stated it is the whole table; if your query filters differently, re-derive
+rather than quoting.
 
 ## Units: read `unitID`, not the name
 
@@ -27,8 +30,8 @@ do with each other. Read the table below as unit numbers, not attribute numbers.
 
 | unitID | Meaning | Trap |
 | --- | --- | --- |
-| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes defined (57 actually used), 69,032 rows.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
-| **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes, 40,522 rows.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
+| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes defined (55 published, 57 ever used), 69,032 `type_dogma` rows across all types -- only 12,499 on published ones.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
+| **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes (55 published), 40,522 rows across all types -- 8,186 on published ones.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
 | 3, 123 | Actual seconds | Sits beside unitID 101 with nothing in the schema to distinguish them |
 | 109 | Modifier percent: `1.1` = +10%, `0.9` = -10% | `0.75` means **-25%**, not 75% |
 | 9 / 128 | m3 and Mbit/sec | `droneCapacity` (9) is a volume, `droneBandwidth` (1271) is unitID **128** = Mbit/sec -- a Vexor's 125 m3 bay holds 12 Hammerhead IIs but its 75 Mbit/s only fields 7 |

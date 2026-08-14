@@ -5,7 +5,10 @@ anything about build costs, blueprints, invention, ore yields, planetary
 industry chains or ore compression.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
-differs.
+differs. **Every count here is population-sensitive** -- `published = 1` vs all
+types, k-space vs all systems, ships vs all categories. Where the population is
+not stated it is the whole table; if your query filters differently, re-derive
+rather than quoting.
 
 - **Manufacturing output per run is `bp_products.quantity`.** Antimatter Charge
   S consumes 204 Tritanium *per run of 100 charges* -- 2.04 each. 368
