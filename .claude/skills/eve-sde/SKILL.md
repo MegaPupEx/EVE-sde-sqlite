@@ -32,7 +32,7 @@ needs -- most questions need one or two:
 
 ```bash
 BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
-curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz && xz -d universe.xz  # ~28 MB
+curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz && xz -d universe.xz  # ~8 MB
 curl -sSLo items.xz    $BASE/eve-sde-items.sqlite.xz    && xz -d items.xz     # ~7 MB
 ```
 
@@ -109,8 +109,8 @@ with `--complete --compress xz` (~27 MB) but cannot carry coordinates.
 
 ### Split databases
 
-A build may arrive split by domain: `-items`, `-universe`, `-industry`,
-`-world`, `-cosmetic`, `-misc`. Each is a normal database; `meta.splitGroup`
+A build may arrive split by domain: `-universe`, `-moons`, `-items`,
+`-industry`, `-world`, `-cosmetic`, `-misc`. Each is a normal database; `meta.splitGroup`
 names the part. ATTACH the ones you need and join across them normally:
 
 ```python
