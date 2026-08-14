@@ -28,11 +28,14 @@ looks odd.
 | `references/gotchas-industry.md` | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
 | `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the ~11 generic tables worth knowing (of 81), plus `factions` and `races` |
 | `references/schema.md` (world section) | missions, agents, NPC corporations, dungeons, DED ratings, certificates, factions or races — the traps there are severe and live nowhere else |
-| `references/examples.md` | **try this first for any straightforward stat, blueprint, reprocessing, planet, gate or security query** — its first example covers most plain "what is X's Y" questions in 600 bytes and names the columns, which usually removes the need to open `schema.md` at all |
+| `references/examples.md` | **try this first for any straightforward stat, blueprint, reprocessing, planet, gate or security query** — its first example is the reusable shape for plain "what is X's Y" stat questions, though its attribute list is only nine scalars — anything outside them needs the ID block below |
 | `references/acquisition.md` | no database is present and none was uploaded — how to fetch or build one |
 
-The three `gotchas-*` files map onto the download parts, so it is one decision:
-fetch `universe`, read `gotchas-universe.md`.
+The `gotchas-*` files follow the download parts, so fetching usually decides
+reading too: fetch `universe`, read `gotchas-universe.md`. Two exceptions —
+`items` has **two** files (`gotchas-dogma.md` for what a value means,
+`gotchas-types.md` for which rows belong), and reprocessing is documented in
+`gotchas-industry.md` although `type_materials` lives in the `items` part.
 
 **Coverage is not uniform.** `items`, `universe` and `industry` are documented
 in depth. The `world` part has traps but no gotcha file — they are in

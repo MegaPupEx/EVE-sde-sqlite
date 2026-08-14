@@ -31,6 +31,7 @@ do with each other. Read the table below as unit numbers, not attribute numbers.
 | **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes, 40,522 rows.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
 | 3, 123 | Actual seconds | Sits beside unitID 101 with nothing in the schema to distinguish them |
 | 109 | Modifier percent: `1.1` = +10%, `0.9` = -10% | `0.75` means **-25%**, not 75% |
+| 9 / 128 | m3 and Mbit/sec | `droneCapacity` (9) is a volume, `droneBandwidth` (1271) is unitID **128** = Mbit/sec -- a Vexor's 125 m3 bay holds 12 Hammerhead IIs but its 75 Mbit/s only fields 7 |
 | 105 / 121 / 124 / 127 | Four more percent conventions | `-50` = -50%, `5` = 5%, `0.5` = 50% -- all display as `%` |
 
 Worked example -- "which ship resists webs best?":
@@ -152,10 +153,12 @@ literal `1.386294`.
   the column is populated.
 - **A few hulls sit far outside the normal resist range**, so "which ship
   resists X best" does not land where a player expects. The **Monitor** (T2 Flag
-  Cruiser) carries **90% on all four shield layers**, and the **Cybele** matches
-  it on kinetic -- both above every conventional hull, whose ceiling is the Onyx
-  at 76%. Report the outlier and the best normal hull; naming only the Monitor
-  answers a question nobody asked.
+  Cruiser) carries **90% on all four shield layers** and tops every one of them.
+  **There is no single runner-up**: the best conventional hull differs per
+  damage type -- Broadsword 80% EM, Onyx 84% thermal, Onyx 76% kinetic, Vengeance
+  87.5% explosive (role bonuses applied). Do not quote one layer's ceiling as if
+  it held across the others, and re-derive per layer rather than assuming the
+  same hull wins twice. Report the outlier *and* the best normal hull.
 - **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
   `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
   `bp_skills` is what a *blueprint activity* needs -- a different question.

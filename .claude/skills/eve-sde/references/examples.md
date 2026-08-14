@@ -102,6 +102,10 @@ WHERE t.name = 'Onyx'
 ORDER BY CASE l.layer WHEN 'Shield' THEN 1 WHEN 'Armor' THEN 2 ELSE 3 END, l.ord;
 
 -- what skills a ship requires (dogma, not bp_skills)  [needs: items]
+-- ONE HOP ONLY. Skills have their own requiredSkill* attributes, so this
+-- under-reports: on a Drake it returns "Caldari Battlecruiser I" and misses
+-- Caldari Cruiser III, Destroyer III, Frigate III and Spaceship Command III.
+-- Recurse over the result for "what do I need to fly this".
 SELECT sk.name, lvl.value AS level
 FROM type_dogma req
 JOIN dogma_attributes ra ON ra.attributeID = req.attributeID AND ra.name LIKE 'requiredSkill_'
