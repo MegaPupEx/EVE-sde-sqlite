@@ -30,8 +30,8 @@ do with each other. Read the table below as unit numbers, not attribute numbers.
 
 | unitID | Meaning | Trap |
 | --- | --- | --- |
-| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes defined (55 published, 57 ever used), 69,032 `type_dogma` rows across all types -- only 12,499 on published ones.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
-| **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes (55 published), 40,522 rows across all types -- 8,186 on published ones.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
+| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes, 69,032 rows.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
+| **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes, 40,522 rows.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
 | 3, 123 | Actual seconds | Sits beside unitID 101 with nothing in the schema to distinguish them |
 | 109 | Modifier percent: `1.1` = +10%, `0.9` = -10% | `0.75` means **-25%**, not 75% |
 | 9 / 128 | m3 and Mbit/sec | `droneCapacity` (9) is a volume, `droneBandwidth` (1271) is unitID **128** = Mbit/sec -- a Vexor's 125 m3 bay holds 12 Hammerhead IIs and its 75 Mbit/s allows 7 by bandwidth -- but the character's Drones skill caps you at **5 active**, which is in neither number (see the drone-cap bullet below) |
@@ -87,19 +87,12 @@ literal `1.386294`.
   110 (thermalDamageResonance)   <- 977 (hullThermalDamageResonance)
   ```
 
-  23 of the 24 effects touching structure resonance target the bare set; the one
-  exception (`moduleBonusAssaultDamageControl`) modifies an Assault Damage
-  Control module, not a hull.
-
   All **423 of 423** published ships carry the bare set at exactly `0.67` ->
-  **33% structure resist to all four damage types, on every ship**, matching
-  what fitting tools show. `hull*` is on only 9 published ships (and 42
-  starbases, 34 modules). **Do not use 974-977 for a ship**, and do not read a
-  missing `hull*` row as 0% structure resistance. The Rifter is one of the 9
-  carrying both, so it is the worst ship to test the rule on -- `hull*` says 0%
-  where the client shows 33%.
+  **33% structure resist to all four damage types, on every ship**. `hull*` is
+  on 9 published ships, the Rifter among them, and reads 0% there. **Do not use
+  974-977 for a ship**, and do not read a missing `hull*` row as 0% resistance.
 
-  The three layers therefore live in different ID blocks, and structure's is not
+  The three layers live in different ID blocks, and structure's is not
   contiguous:
 
   | Layer | EM | Thermal | Kinetic | Explosive |
@@ -119,56 +112,42 @@ literal `1.386294`.
   thermal and explosive -- a Rifter's armor becomes 60/10/25/35 instead of
   60/35/25/10. Label from `a.name`, or order explicitly.
 - **Some hulls have an always-on role bonus that is not in the resonance
-  value.** An Onyx's stored shield resonances are byte-identical to an Eagle's
-  and a Cerberus's, but the client shows 20/84/76/60 where the raw values give
-  0/80/70/50. The difference is `rookieShieldResistBonus` (1829) = `-20` plus
-  four passive `ItemModifier` effects, applied as
-  `resonance * (1 + bonus/100)`. The complete list -- the name "rookie" is
-  misleading, four of the six shield cases are Heavy Interdiction Cruisers:
+  value.** An Onyx's raw shield resonances give 0/80/70/50; the client shows
+  20/84/76/60. The difference is `rookieShieldResistBonus` (1829) = `-20`,
+  applied by four passive `ItemModifier` effects as `resonance * (1 + bonus/100)`. The complete list -- the name
+  "rookie" is misleading, four of the six shield cases are HICs:
 
   | Attribute | -20 | -12 | -8 |
   | --- | --- | --- | --- |
   | 1829 shield | Onyx, Broadsword, Fiend, Laelaps | Taipan | Ibis |
   | 1825 armor | Devoter, Phobos, Gold Magnate, Silver Magnate | -- | Impairor (and the unpublished AIR Civilian Astero) |
 
-  Both are `published = 0` with `displayName` and `unitID` NULL, so `unitID` and
-  `displayName` will not surface them; search `name` or `description` instead
-  (`rookieShieldResistBonus` / "Shield resistance bonus";
+  Both are `published = 0` with `displayName` and `unitID` NULL; search `name` or
+  `description` (`rookieShieldResistBonus` / "Shield resistance bonus",
   `rookieArmorResistanceBonus` / "Bonus to armor resistances") to re-derive the
-  list if the build has moved on.
+  list on a newer build.
 
-  The general rule, which covers more than resistances: **`typeBonus.roleBonuses`
-  is always on and is already reflected in what the client shows; the per-skill
-  bonuses in `typeBonus.types` scale with skill level and are not.** 90 published
-  ships carry an effect that modifies one of the twelve core resonance
-  attributes; the other 79 are per-skill-level ship bonuses (a Damnation gets 4%
-  armor resist per level of **Amarr Battlecruiser** -- the skill is on the hull's
-  own size band, so do not assume the cruiser skill) and correctly do not apply to a base
-  hull. Widen the definition to all 58 `unitID = 108` attributes and the count
-  is 121, so say which you mean.
+  The general rule, wider than resistances: **`typeBonus.roleBonuses` is always
+  on and already in what the client shows; the per-skill bonuses in
+  `typeBonus.types` scale with skill level and are not** (a Damnation gets 4%
+  armor resist per level of **Amarr Battlecruiser** -- the skill sits on the
+  hull's own size band, not the cruiser one).
 
-  Reading `roleBonuses` in prose is a quick *screen*, not a test: **31 published
-  ships mention "resist" in their role bonus and only 11 carry 1825/1829.** The
-  20 false positives are EWAR-resistance bonuses -- every titan and supercarrier
-  ("bonus to Sensor Dampener resistance"), the deep-space transports, and the
-  Monitor, which this file uses as its 90%-resist example. Screen on the prose
-  if you like, then **confirm against `type_dogma` attributes 1825/1829**; only
-  those are damage-resistance bonuses.
-  Two cautions: the casing is inconsistent (both Magnates use title case), so
-  match case-insensitively -- `LIKE` is, `GLOB` and Python are not. And
-  **`roleBonuses` is NULL for
-  50 of the 423 ships**, the Rifter among them -- every published ship has a
-  `typeBonus` row, but a row is not a value, so handle NULL rather than assuming
-  the column is populated.
+  **Do not screen on the prose alone**: 31 published ships mention "resist" in
+  `roleBonuses` and only 11 carry 1825/1829. The 20 false positives are EWAR
+  resistances -- every titan and supercarrier, the deep-space transports, the
+  Monitor. Confirm against `type_dogma` 1825/1829. Two further cautions: casing
+  is inconsistent (`LIKE` is case-insensitive, `GLOB` and Python are not), and
+  **`roleBonuses` is NULL for 50 of the 423**, the Rifter included -- every ship
+  has a `typeBonus` row, but a row is not a value.
 - **A few hulls sit far outside the normal resist range**, so "which ship
   resists X best" does not land where a player expects. The **Monitor** (T2 Flag
   Cruiser) carries **90% on all four shield layers** and tops every one of them.
   It does not top them outright -- the faction **Cybele** ties it exactly on
   kinetic (both store `0.1`). Below those, the next-best hull **differs on every
   damage type** and is frequently a multi-way tie, so there is no stable
-  runner-up to name. **Do not quote a runner-up from memory or from another
-  layer** -- this bullet has been wrong three times for exactly that reason.
-  Derive it, per layer, with the eligibility filter the question implies:
+  runner-up to name. **Derive it per layer**, with the eligibility filter the
+  question implies, rather than quoting one from another layer:
 
   ```sql
   SELECT t.name, mg.name AS meta,

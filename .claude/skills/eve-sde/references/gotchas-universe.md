@@ -37,10 +37,8 @@ rather than quoting.
   **15 / 22 / 29 / 36 / 43 / 50** for C1-C6 -- so a C3 hole is -29%, not -50%.
   The armor equivalent is on the six Pulsars, scaling identically
   (15/22/29/36/43/50), and **24 of the 36 beacons carry no resistance bonus at
-  all**. Widen past those 36 and the "only" stops holding -- Sansha and Drifter
-  incursion beacons, the Metaliminal storms and the tournament beacon all carry
-  resistance bonuses, and 50 is not unique to the C6 Wolf-Rayet. Read the
-  magnitude off the beacon you actually have.
+  all** (other effect beacons outside those 36 -- incursions, Metaliminal storms
+  -- carry their own). Read the magnitude off the beacon you actually have.
   `signatureRadiusMultiplier` scales by class too, in both directions:
   **0.85 / 0.78 / 0.71 / 0.64 / 0.57 / 0.50** for C1-C6 Wolf-Rayet and
   **1.30 / 1.44 / 1.58 / 1.72 / 1.86 / 2.00** for the Pulsars. So a C6
@@ -118,14 +116,13 @@ rather than quoting.
   only. Ranking moons by `surfaceGravity` or `radius` produces a fluent,
   well-sourced and completely useless answer to "which moon should we mine" --
   moon composition comes from an in-game survey, not the SDE.
-- **`asteroid_belts` says nothing about what is in a belt.** All **40,928** rows
-  carry `typeID = 15` ("Asteroid Belt") -- the column exists but never varies, so
-  belt *composition* is simply not in the SDE. Which ores spawn where is game
-  knowledge; say so rather than implying the belts are identical in-game.
+- **`asteroid_belts` says nothing about what is in a belt either.** All 40,928
+  rows carry `typeID = 15`. Same shape as moons: the column exists and never
+  varies, so composition is game knowledge, not data.
 - **Not every high-sec system has belts, and Exordium has none.** 1,179 of the
-  1,246 high-sec systems have at least one; the 53-system Exordium region --
-  which this file elsewhere describes as real new-player content -- contains
-  **zero**, so it is the wrong answer to "where should I mine".
+  1,246 high-sec systems have at least one, but the 53-system Exordium region
+  contains **zero** -- so the highest-security region in the game is the wrong
+  answer to "where should I mine".
 - **Zarzakh has no planets at all** -- the only k-space system without any. A
   count taken through `systems JOIN planets` therefore reports 3,551 nullsec
   systems instead of 3,552. Count from `systems` directly.
@@ -133,48 +130,39 @@ rather than quoting.
   + 217 k-space + GPMS-01. The gate graph is disconnected -- routing between
   components is impossible, so a BFS must handle "no path" rather than hang or
   error.
-- **"Highest security" has no clean answer.** 53 real k-space systems in the
-  region **Exordium** sit at security exactly `1.0`. It is real, flyable
-  new-player content -- 53 NPC stations, 13 of them AIR-branded, a single
-  gate to Yulai, 12 jumps from Jita -- so 1,246 is the correct current figure
-  and 1,193 is the legacy one every older source quotes. `ORDER BY security DESC
-  LIMIT 5` therefore returns an arbitrary five of a 53-way tie. Outside
-  Exordium the top is Tew (0.949794) and Eystur (0.949232), and then a second
-  tie: **53 systems across 13 regions** sit at exactly `0.949` -- not the
-  handful in The Forge that the first page of results suggests. Say the tie
-  exists rather than presenting five rows as a ranking.
+- **"Highest security" has no clean answer -- it is ties all the way down.**
+  53 k-space systems in **Exordium** sit at exactly `1.0` (real, flyable
+  new-player content, one gate to Yulai), so `ORDER BY security DESC LIMIT 5`
+  returns an arbitrary five of a 53-way tie. Outside Exordium the top is Tew
+  (0.949794) then Eystur (0.949232), and then **another 53 systems across 13
+  regions** at exactly `0.949`. Report ties as ties. More generally: this
+  dataset is full of exact ties -- resists, moon radii, security -- so check for
+  them before presenting any `LIMIT n` as a ranking.
 - Region `19000001` (GPMR-01) is a dev region; its one system GPMS-01 also has
   `security = 1.0`. It carries `space = 'other'`, so a `space = 'kspace'` filter
   excludes it -- but that filter does **not** save you from the Exordium tie.
-- **Three unused regions are `space = 'kspace'` with ordinary nullsec security**
-  and inflate every nullsec count: `UUA-F4` (107 systems), `J7HZ-F` (77) and
-  `A821-A` (46) -- 230 in all. Two have no stargates and the third forms an
-  island unreachable from Jita. "How many nullsec systems does EVE have" is
-  3,552 with them and **3,322** without.
-- **"Unreachable" has three different meanings -- do not conflate them.**
-  3,222 systems have no stargates; 3,262 are gate-unreachable from Jita; but
-  only **231** are unreachable by any means at all. Wormhole (2,604), abyssal
-  (200), void (200) and Pochven (27) are gate-unreachable yet entirely flyable
-  by wormholes or filaments. The genuinely dead ones are the 230 systems in
-  `UUA-F4`/`J7HZ-F`/`A821-A` plus GPMS-01. Answering a player's "can I fly
-  there?" with 3,262 is badly wrong.
-- **Every stargate appears as two rows**, one per direction -- verified 100%
-  symmetric with no one-way edges. A directed adjacency list is therefore safe,
-  but do not assume it for a hand-built graph.
-- **`space` has five values**, not four: `kspace`, `wormhole`, `abyssal`, `void`
-  and `other` (GPMS-01 alone). `WHERE space != 'kspace'` to mean "j-space and
-  friends" quietly includes the dev system.
-- **`security` has mixed storage classes.** 121 rows are INTEGER (the clamped
-  `1` and `-1` values), 8,369 are REAL. Comparisons are unaffected, but
-  `typeof()`, string formatting and JSON export will show `1` rather than `1.0`.
-- **GPMS-01 sits at coordinates `(1, 1, 1)`** -- one metre from the origin. Any
+- **Three counting traps compound, and all inflate nullsec.** The three unused
+  regions `UUA-F4` (107), `J7HZ-F` (77) and `A821-A` (46) are `kspace` with
+  ordinary nullsec security -- 230 systems nobody can reach, so nullsec is 3,552
+  with them and **3,322** without. **Pochven**'s 27 systems are also `kspace`, at
+  security exactly -1.0, and land in nullsec aggregates unless excluded; they
+  have 60 internal gates and **zero** external ones (Niarja is inside, which is
+  why the old Jita-Amarr high-sec route is gone). And `space` has **five**
+  values, not four -- `kspace`, `wormhole`, `abyssal`, `void` and `other`
+  (GPMS-01 alone), so `space != 'kspace'` quietly includes the dev system.
+- **"Unreachable" has three meanings -- do not conflate them.** 3,222 systems
+  have no stargates; 3,262 are gate-unreachable from Jita; only **231** are
+  unreachable by any means. Wormhole, abyssal, void and Pochven are
+  gate-unreachable yet entirely flyable. Answering "can I fly there?" with 3,262
+  is badly wrong.
+- **Every stargate appears as two rows**, one per direction -- 100% symmetric,
+  no one-way edges -- so a directed adjacency list is safe here, though not
+  something to assume in general.
+- **`security` has mixed storage classes**: 121 INTEGER rows (the clamped ±1),
+  8,369 REAL. Comparisons are unaffected; `typeof()` and JSON export are not.
+- **GPMS-01 sits at `(1, 1, 1)`**, one metre from the origin, so any
   nearest-neighbour query that does not exclude `space = 'other'` finds it
-  closest to everything near the centre of the map.
-- **Pochven is sealed.** Its 27 systems have 60 internal stargates and **zero**
-  to anywhere else -- filament access only. Niarja is now inside it, which is
-  why the old short Jita-Amarr high-sec route no longer exists. Pochven systems
-  are `space = 'kspace'` with security exactly -1.0, so they land in nullsec
-  aggregates unless excluded.
+  closest to everything near the map's centre.
 
 ## Routing
 

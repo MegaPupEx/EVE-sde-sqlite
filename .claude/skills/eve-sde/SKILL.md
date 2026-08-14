@@ -11,16 +11,13 @@ player state. This skill covers getting it into SQLite and querying it.
 **Not in the SDE:** market prices, kills, sovereignty, character or corp data.
 Those are live data — use ESI (`https://esi.evetech.net`) instead.
 
-**Two failure modes.** The first is wrong answers rather than errors — see
-below. The second is answering the query instead of the player; see "Answering a
-player, not a query".
-
-**The failure mode here is wrong answers, not errors.** The SDE is full of
-columns that look like the thing you want and are not: resonance is inverted,
-`security` alone does not mean nullsec, a millisecond column displays as "s".
-Almost every trap returns a plausible number rather than raising. So read the
-relevant `references/gotchas-*.md` **before** trusting a result, not after one
-looks odd.
+**Two failure modes.** First, **wrong answers rather than errors**: the SDE is
+full of columns that look like the thing you want and are not — resonance is
+inverted, `security` alone does not mean nullsec, a millisecond column displays
+as "s". Almost every trap returns a plausible number rather than raising, so
+read the relevant `references/gotchas-*.md` **before** trusting a result.
+Second, answering the query instead of the player — see "Answering a player, not
+a query".
 
 ## Files
 
@@ -30,9 +27,9 @@ looks odd.
 | `references/gotchas-types.md` | **which rows belong** — `published`, tech level, volume vs `packagedVolume`, `basePrice`, planet type names, duplicate names |
 | `references/gotchas-universe.md` | any system, planet, moon, star, security, region or routing question |
 | `references/gotchas-industry.md` | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
-| `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the ~11 generic tables worth knowing (of 81), plus `factions` and `races` |
-| `references/schema.md` (world section) | missions, agents, NPC corporations, dungeons, DED ratings, certificates, factions or races — the traps there are severe and live nowhere else |
-| `references/examples.md` | **try this first for any straightforward stat, blueprint, reprocessing, planet, gate or security query** — its first example is the reusable shape for plain "what is X's Y" stat questions, though its attribute list is only nine scalars — anything outside them needs the ID block below |
+| `references/schema.md` | you need column names, are joining a table you have not used, **or need to find which table holds something** |
+| `references/schema.md` (world section) | missions, agents, NPC corps, dungeons, DED ratings, certificates, factions, races — severe traps, documented nowhere else |
+| `references/examples.md` | **try first** for a straightforward stat, blueprint, invention, reprocessing, planet, gate or security query — 10 worked queries, each naming the parts it needs |
 | `references/acquisition.md` | no database is present and none was uploaded — how to fetch or build one |
 
 The `gotchas-*` files follow the download parts, so fetching usually decides
@@ -44,17 +41,14 @@ reading too: fetch `universe`, read `gotchas-universe.md`. Two exceptions —
 **Coverage is not uniform.** `items`, `universe` and `industry` are documented
 in depth. The `world` part has traps but no gotcha file — they are in
 `schema.md`'s world section. **`cosmetic` and `misc` are documented nowhere**:
-skins, graphics, icons, `fighterAbilities` and roughly 60 other generically
-ingested tables have no notes at all. (`misc.dbuffCollections` is the one
-exception — its ID-collision trap is in `gotchas-universe.md`.) For those, list
-`sqlite_master`, `PRAGMA table_info`, and say plainly that the shape is
-unverified rather than inferring it.
+skins, graphics, icons and `fighterAbilities` have no notes at all
+(`misc.dbuffCollections` excepted — its ID-collision trap is in
+`gotchas-universe.md`). There, inspect with `sqlite_master` and `PRAGMA
+table_info` and say the shape is unverified rather than inferring it.
 
-**Tables you would not guess exist**, all indexed in `schema.md`: ship traits
-(`typeBonus`), mutaplasmid roll ranges (`dynamicItemAttributes`), PI chains
-(`planetSchematics`), wormhole system effects (`mapSecondarySuns`), star class
-(`mapStars`), ore compression (`compressibleTypes`), NPC agents
-(`npcCharacters`), missions, dungeons and certificates.
+**If you cannot find where something lives, `schema.md` indexes the tables you
+would not guess** — ship traits, mutaplasmid ranges, PI chains, wormhole
+effects, star class, ore compression, agents, missions, dungeons, certificates.
 
 ## Answering a player, not a query
 
@@ -120,10 +114,10 @@ Two conventions, and guessing wrong costs a turn every time:
   `groups_.name`, `systems.name`, `regions.name`.
 - **The other 81** were ingested generically, keep CCP's camelCase name, and are
   keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
-  `planetSchematics._key`, `mapStars._key`. By part: `cosmetic` 17 of 17, `world` 36 of 38,
-  `industry` 8 of 13, `universe` 7 of 14, `items` 8 of 18 — so it is the rule in
-  some parts and the exception in others. **Check, do not assume either way.** `JOIN typeBonus tb ON tb.typeID = t.typeID` fails
-  with `no such column`; the join is `ON tb._key = t.typeID`.
+  `planetSchematics._key`, `mapStars._key`. It is nearly every table in `world`
+  and `cosmetic`, a minority in `items`, and mixed elsewhere — **check with
+  `PRAGMA table_info`, do not assume**. `JOIN typeBonus tb ON tb.typeID =
+  t.typeID` fails with `no such column`; the join is `ON tb._key = t.typeID`.
 
   Two exceptions: **`factions` and `races` have no `_key`** — they use
   `factionID` and `raceID`.
@@ -172,28 +166,19 @@ any figure from the reference files, check what you actually have:
 SELECT key, value FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, source, complete, splitGroup, positions
 ```
 
-If you have ATTACHed several parts, **qualify this** — `universe.meta` — because
-every part has its own `meta` and an unqualified read silently picks one.
+**Qualify it as `universe.meta` if you have ATTACHed several parts** — every
+part has its own `meta` and an unqualified read silently picks one.
 
 If `sdeBuildNumber` differs from 3466501, **re-derive counts rather than quoting
-them**. The *shapes* — which column lies, which join silently drops rows, which ID
-space overlaps another — are stable across builds; the numbers are not.
+them**. The *shapes* — which column lies, which join silently drops rows — are
+stable across builds; the numbers are not.
 
-`positions = '1'` means coordinates are present. Anything else — the value `'0'`,
-or the key missing entirely because the build was not `--complete` — means
-**verify before promising a distance**, since the key is only written on complete
-builds and its absence proves nothing either way:
-
-```sql
-SELECT x FROM systems WHERE name = 'Jita';   -- NULL = no coordinates in this build
-```
-
-`complete = '1'` marks a full build; published parts always carry it.
-
-`portable = '1'` marks a hand-built slimmed database — see `acquisition.md`.
-Published releases never carry the key at all. On a portable build the `moons`
-table still **exists but is empty**, so moon questions return zero rows rather
-than raising `no such table`; check `meta` before reading absence as fact.
+Published parts carry `complete = '1'`, `positions = '1'` and no `portable` key.
+Anything else is a hand-built database: `positions` other than `'1'` means verify
+a coordinate before promising a distance (`SELECT x FROM systems WHERE
+name='Jita'`), and `portable = '1'` means the `moons` table **exists but is
+empty**, so moon questions return zero rows instead of raising — see
+`acquisition.md`.
 
 ## Get a database
 
@@ -215,39 +200,26 @@ release (fastest), building from CCP with `scripts/build_sde_db.py`
 
 ## Which parts a question needs
 
-The published parts are `universe`, `moons`, `items`, `world`, `industry`,
-`cosmetic` and `misc` — each a complete database. Fetch only what the question
-needs:
+Parts are `universe`, `moons`, `items`, `world`, `industry`, `cosmetic`, `misc`
+— each a complete database. Fetch only what the question needs:
 
-- Planets, routes, security — `universe` alone.
-- Stations — `universe` for where they are, but **`npc_stations` has no name
-  column**. Naming one, or listing its services or owner, needs `items.types`
-  (structure type), `world.stationOperations` / `world.stationServices` and
-  `world.npcCorporations`.
-- A specific moon's **physical stats** — gravity, radius, orbit — `moons` alone;
-  add `universe` only to name the system it is in. Moon *composition* is not in
-  the SDE at all.
-- Ship and module stats — `items` alone.
-- Build costs — `items` + `industry`.
-- Planet **types** (`Planet (Temperate)`) — `items` + `universe`; planets live in
-  one and their type names in the other. **Do not add `published = 1` to that
-  join**: every celestial type is `published = 0`, so it returns zero rows
-  silently. Full note in `gotchas-types.md`.
-- Reprocessing and ore yields — `items` for `type_materials`, plus `universe`
-  if you want a realistic yield (station rates are on `npc_stations`).
-  `type_materials` is **not** in `industry`.
-- Planetary industry chains — `industry` (`planetSchematics`) + `items` for the
-  input and output names.
-- Wormhole system effects — `universe` (`mapSecondarySuns`) + `items` for the
-  beacon's magnitudes.
-- Faction or race names — `world`, not `universe`.
-- Missions, agents, dungeons, certificates — `world`.
+| Question | Parts | Note |
+| --- | --- | --- |
+| Planets, routes, security | `universe` | |
+| Ship and module stats | `items` | |
+| Build costs | `items` + `industry` | |
+| Reprocessing / ore yields | `items` (+ `universe`) | `type_materials` is **not** in `industry`; station rates are on `npc_stations` |
+| Planet **types** (`Planet (Temperate)`) | `items` + `universe` | **never add `published = 1`** — every map typeID is `published = 0`, so it returns zero rows silently |
+| A specific moon's physical stats | `moons` | add `universe` only to name the system; moon *composition* is not in the SDE |
+| Stations | `universe` + `items` + `world` | `npc_stations` has **no name column**; names, services and owners come from `types`, `stationOperations`, `stationServices`, `npcCorporations` |
+| Planetary industry chains | `industry` + `items` | `planetSchematics` |
+| Wormhole system effects | `universe` + `items` | `mapSecondarySuns`, then the beacon's dogma |
+| Factions, races, missions, agents, dungeons | `world` | not `universe` |
 
-**`moons` is a separate part from `universe`.** Counting moons does not need it:
-`planets.moons` and `planets.belts` are denormalised counts, verified exact
-against the moon rows. Anything about a *specific* moon does, and without it the
-query raises `no such table: moons` — it fails loudly rather than answering
-wrongly.
+**`moons` is a separate part.** *Counting* moons does not need it —
+`planets.moons` and `planets.belts` are denormalised and exact. Anything about a
+specific moon does, and without it the query raises `no such table: moons`,
+failing loudly rather than answering wrongly.
 
 ## Attaching several parts
 
@@ -270,19 +242,12 @@ points at the schema when the real fault is the filename. Check the path exists
 first, or a typo costs you a long detour.
 
 **Unqualified table names resolve across attached databases**, in attach order,
-so `SELECT * FROM types` works even when `types` lives in an attached part. The
-examples in `references/` are written unqualified for that reason and need no
-rewriting. Prefixing is still clearer in a cross-part join, and is *required* in
-one case:
+so `SELECT * FROM types` works even when `types` lives in an attached part — the
+examples in `references/` are written unqualified for that reason. The one table
+you must always qualify is **`meta`**, which exists in all seven parts, so an
+unqualified read silently returns whichever attached first.
 
-**`meta` exists in all seven parts.** An unqualified `SELECT ... FROM meta`
-silently returns whichever part attached first — so a build check can report the
-wrong `splitGroup`, or read `positions` from a part that has coordinates while
-the one you are querying does not. Always qualify it: `SELECT key, value FROM
-universe.meta`.
-
-There is no `sqlite3` CLI on many systems; Python's built-in `sqlite3` module
-needs no install.
+There is no `sqlite3` CLI on many systems; Python's built-in module needs none.
 
 ## Coordinates
 

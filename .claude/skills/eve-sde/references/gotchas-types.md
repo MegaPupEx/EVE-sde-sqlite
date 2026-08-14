@@ -112,8 +112,7 @@ rather than quoting.
   For any "best X" question, say which set you used -- obtainable hulls or all
   of them.
 
-  **The align times above come from `gotchas-dogma.md`, not from this file.**
-  Align is `ln(4) * inertia * mass / 1e6` where `inertia` is attribute 70
+  **Align time itself is documented in `gotchas-dogma.md`.** It is `ln(4) * inertia * mass / 1e6` where `inertia` is attribute 70
   (named `agility`, which is not what it sounds like), and **SQLite's `LOG()` is
   base 10** -- using it makes every align time 2.3026x too fast while leaving the
   ranking intact, so the error is invisible. Do not recompute these numbers
