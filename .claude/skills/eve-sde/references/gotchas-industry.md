@@ -87,20 +87,26 @@ rather than quoting.
   cut more), and `bp_activity.time` is **TE 0** before rigs, structure and
   skills. Say "unresearched blueprint" when you quote either. Blueprint `time`
   values are seconds.
-- **`industry.controlTowerResources` is two columns, and its `quantity` means
-  two different things.** The table is `_key` (tower typeID) and a **`resources`
-  JSON array** -- `quantity`, `purpose`, `resourceTypeID`, `factionID` and
-  `minSecurityLevel` are fields inside it, not columns, so selecting them
-  directly fails; use `json_each(resources)`. `purpose` is an undocumented
-  two-value enum with no lookup table anywhere in the SDE:
-  **`purpose = 1` is units per hour** (an Amarr Control Tower burns 40 Helium
-  Fuel Blocks/hr; medium 20, small 10) and **`purpose = 4` is strontium bay
-  capacity**, which scales the same way -- 400 / 200 / 100, not a flat 400. Each
-  of the 44 towers has exactly one `purpose = 4` entry. Of the 295 `purpose = 1`
-  entries, **252 are charters**: `quantity = 1`, gated on `factionID` with
-  `minSecurityLevel` 0.45 on every one, so they apply only in that faction's
-  high-sec. Filter them out with `factionID IS NULL` before quoting a fuel
-  figure, or a tower reads as burning seven things an hour instead of one.
+- **`industry.controlTowerResources` is two columns, and `quantity` is always
+  per hour -- `purpose` picks the mode, not the meaning.** The table is `_key`
+  (tower typeID) and a **`resources` JSON array** -- `quantity`, `purpose`,
+  `resourceTypeID`, `factionID` and `minSecurityLevel` are fields inside it, not
+  columns, so selecting them directly fails; use `json_each(resources)`.
+  `purpose` is an undocumented two-value enum with no lookup table anywhere in
+  the SDE: **`purpose = 1` is normal-operation fuel** (an Amarr Control Tower
+  burns 40 Helium Fuel Blocks/hr; medium 20, small 10) and **`purpose = 4` is
+  strontium burned per hour while reinforced** -- 400 / 200 / 100 by size, one
+  entry per tower. The mode semantics are the known POS mechanic, not stated in
+  the data; the numbers are. **Do not read the purpose-4 quantity as the
+  strontium bay** -- that is the natural wrong guess, off by more than a unit
+  mix-up: the bay is the tower's `capacitySecondary` dogma attribute,
+  **50,000 / 25,000 / 12,500 m³** by size (Strontium Clathrates are 3 m³, so a
+  large tower holds 16,666 units and reinforces for ~41 hours at 400/hr).
+  Of the 295 `purpose = 1` entries, **252 are charters**: `quantity = 1`, gated
+  on `factionID` with `minSecurityLevel` 0.45 on every one, so they apply only
+  in that faction's high-sec. Filter them out with `factionID IS NULL` before
+  quoting a fuel figure, or a tower reads as burning seven things an hour
+  instead of one.
 - **Reprocessing yields are the theoretical 100% refine, which no player gets.**
   `type_materials` gives the perfect-refine output; what you actually receive is
   that multiplied by the facility rate, your skills and your implants. The

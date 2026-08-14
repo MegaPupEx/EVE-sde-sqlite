@@ -941,10 +941,18 @@ CHECKS = [
               (SELECT 1 FROM types t WHERE t.typeID = m.typeID))"""),
     C("gotchas-industry.md",
       "control towers: 44 rows; purpose 1:295 / 4:44; 252 charters at 0.45; "
-      "Amarr burns 40 Helium; stront bays 100/200/400",
+      "Amarr burns 40 Helium; reinforced stront burn 100/200/400 per hour",
       "industry items",
       ({1: 295, 4: 44}, 252, [0.45], [100, 200, 400],
        [("Helium Fuel Block", 40)]), fn=fn_control_towers),
+    C("gotchas-industry.md",
+      "stront bay is capacitySecondary: 12,500 x14 / 25,000 x14 / 50,000 x16 m3",
+      "industry items", [(12500.0, 14), (25000.0, 14), (50000.0, 16)], sql="""
+      SELECT d.value, COUNT(*) FROM type_dogma d
+      JOIN dogma_attributes a ON a.attributeID = d.attributeID
+      WHERE a.name = 'capacitySecondary'
+        AND d.typeID IN (SELECT _key FROM controlTowerResources)
+      GROUP BY 1 ORDER BY 1"""),
     C("gotchas-industry.md", "industryModifierSources: 13 of 371 mfg references resolve",
       "industry items", (371, 13), fn=fn_modifier_sources),
     C("gotchas-industry.md", "'Capital Ships' filter: 6 groups, neither 30 nor 659",
