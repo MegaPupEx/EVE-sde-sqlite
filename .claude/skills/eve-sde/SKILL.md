@@ -31,24 +31,23 @@ already integrity checked, no build step):
 
 ```bash
 BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
-curl -sSLo eve-sde-full.sqlite.xz $BASE/eve-sde-full.sqlite.xz     # whole thing, ~27 MB
-xz -d eve-sde-full.sqlite.xz && mv eve-sde-full.sqlite sde.sqlite
+curl -sSLo eve-sde.sqlite.xz $BASE/eve-sde.sqlite.xz     # whole thing, ~27 MB
+xz -d eve-sde.sqlite.xz && mv eve-sde.sqlite sde.sqlite
 ```
 
 Or fetch only the domains a question needs -- `items`, `universe`, `industry`,
 `world`, `cosmetic`, `misc` -- and ATTACH them (see "Split databases" below):
 
 ```bash
-curl -sSLo universe.xz $BASE/eve-sde-full-universe.sqlite.xz       # ~18 MB
-curl -sSLo items.xz    $BASE/eve-sde-full-items.sqlite.xz          # ~6 MB
+curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz       # ~18 MB
+curl -sSLo items.xz    $BASE/eve-sde-items.sqlite.xz          # ~6 MB
 ```
 
 The `latest` in that URL always resolves to the newest release; a workflow
-republishes within hours of each CCP build. **A 404 here does not mean the file
-is missing** — GitHub returns 404 rather than 403 for private repositories, so
-if this repo is private an unauthenticated fetch fails exactly as though the
-release did not exist. Treat 404 as "cannot reach it, move on", not as evidence
-the release is gone.
+republishes within hours of each CCP build. The repository is public, so no
+authentication is needed. If a fetch still fails, treat it as "cannot reach it,
+move on" and fall through to building -- GitHub answers 404 rather than 403 for
+anything it will not serve, so a failure here never proves the release is gone.
 
 **4. Build from CCP** — authoritative, ~20 s, downloads ~99 MB. Needs
 `developers.eveonline.com`:
@@ -90,7 +89,7 @@ db = sqlite3.connect("sde.sqlite")
 Produce that upload file with:
 
 ```bash
-python3 build_sde_db.py --db eve-sde-full.sqlite --compress xz   # ~14 MB, complete
+python3 build_sde_db.py --db eve-sde.sqlite --complete --compress xz   # ~27 MB
 ```
 
 ### Split databases
@@ -111,9 +110,10 @@ moons and stargates; `items` covers types, dogma and reprocessing; `industry`
 covers blueprints and schematics; `world` covers missions, dungeons, agents and
 certificates.
 
-**Use xz, not gzip.** It takes the full ~93 MB database to ~14 MB, comfortably
-under the 30 MB per-file limit on claude.ai, so nothing has to be stripped to
-make it fit. `--portable` exists for tighter limits, but is rarely needed.
+**Use xz, not gzip.** It takes the complete ~147 MB database to ~27 MB, inside
+the 30 MB per-file limit on claude.ai, where gzip does not fit at all. If a
+build ever outgrows that, upload the split parts instead -- the cap is per
+file. `--portable` exists for tighter limits, but is rarely needed.
 
 If a database *was* built with `--portable` it sets `meta.portable = '1'` and
 omits item descriptions, unpublished types, and the `moons` table. On such a

@@ -9,7 +9,7 @@ indexed SQLite database, and documents the traps in the data.
 within hours of each CCP release:
 
 ```bash
-curl -sSLo sde.xz https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download/eve-sde-full.sqlite.xz
+curl -sSLo sde.xz https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download/eve-sde.sqlite.xz
 xz -d sde.xz
 ```
 
