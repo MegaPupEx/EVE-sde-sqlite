@@ -357,40 +357,74 @@ them before trusting a result. Verified against build 3466501.
   is **`unitID = 108`**, not the name -- see "Units" above; 19 inverted
   attributes have no "resonance" anywhere in the name (58 carry unitID 108, of
   which 24 end in `DamageResonance` and 39 contain "resonance" somewhere).
-- **Structure resistance is 0% on every ship, and the SDE will not tell you
-  that directly.** This is the trap that costs the most time, because both ways
-  of asking return something that looks like an answer:
+- **A ship's structure resistance is the bare set (109, 110, 111, 113), and it
+  is 33% on every published ship.** The `hull*DamageResonance` family (974-977)
+  is **not** the ship-side attribute, despite the name and the identical
+  `displayName`. It is the *module* side of a modifier: a Damage Control's own
+  `hull*` values are the bonus it grants, and the effect writes them onto the
+  ship's bare attributes. `dogma_effects.modifierInfo` for effect 2302
+  (`damageControl`) says so outright:
 
-  | attributeID | name | on a Rifter | on a Vexor |
-  | --- | --- | --- | --- |
-  | 974-977 | `hull*DamageResonance` | 1.0 -> 0% | **no row at all** |
-  | 109, 110, 111, 113 | bare `emDamageResonance` etc. | 0.67 -> 33% | 0.67 -> 33% |
-
-  Only **9 of 423 published ships** carry the `hull*` set. Follow "use `hull*`
-  for structure" on a Vexor, a Megathron, or any battleship and you get **zero
-  rows** -- which reads as missing data, not as an answer. The legacy set is on
-  all 423 but is a uniform stub: the only value it ever takes across every
-  published ship is `0.67`, so "33% structure EM resist" is the same wrong
-  number for the whole game.
-
-  The correct read is the attribute default. All four `hull*` attributes have
-  `defaultValue = 1.0`, meaning **0% base structure resistance for every hull**
-  -- which is what the client shows. Query it so a missing row still answers:
-
-  ```sql
-  SELECT a.name, ROUND((1 - COALESCE(d.value, a.defaultValue)) * 100, 1) AS pct
-  FROM dogma_attributes a
-  LEFT JOIN type_dogma d
-    ON d.attributeID = a.attributeID
-   AND d.typeID = (SELECT typeID FROM types WHERE name = 'Vexor')
-  WHERE a.attributeID IN (974, 975, 976, 977);   -- 0.0 on every line
+  ```
+  113 (emDamageResonance)        <- 974 (hullEmDamageResonance)
+  111 (explosiveDamageResonance) <- 975 (hullExplosiveDamageResonance)
+  109 (kineticDamageResonance)   <- 976 (hullKineticDamageResonance)
+  110 (thermalDamageResonance)   <- 977 (hullThermalDamageResonance)
   ```
 
-  Armor and shield are ordinary -- those rows exist per ship. Only structure
-  needs the `COALESCE`. Two independent testers hit this; one reported it as
-  "the single most consequential thing I had to work out myself".
-- **Four families of resonance attribute exist.** Always anchor the layer
-  prefix -- `armor%`, `shield%`, `hull%` -- because a bare
+  23 of the 24 effects that touch structure resonance target the bare set --
+  Damage Control, Bastion, hull resistance bonuses, system-wide storms. Only
+  `moduleBonusAssaultDamageControl` targets `hull*`, and it is modifying an
+  Assault Damage Control module, not a hull.
+
+  All **423 of 423** published ships carry the bare set at exactly `0.67`, none
+  missing -> **33% structure resist to all four damage types, on every ship**,
+  which is what the client and every fitting tool show. By category, `hull*` is
+  carried by 42 starbases, 34 modules, 9 ships and 1 celestial -- those 9 ships
+  are the anomaly, not the rule, and their `1.0` is not what the client
+  displays. **Do not use 974-977 for a ship**, and do not read a missing `hull*`
+  row as 0% structure resistance.
+
+  The three layers therefore live in different ID blocks, and structure's is not
+  contiguous:
+
+  | Layer | EM | Thermal | Kinetic | Explosive |
+  | --- | --- | --- | --- | --- |
+  | Shield | 271 | 274 | 273 | 272 |
+  | Armor | 267 | 270 | 269 | 268 |
+  | Structure | 113 | 110 | 109 | **111** |
+
+  112 is `energyDamageAbsorptionFactor` and is not a resonance, so
+  `BETWEEN 109 AND 112` silently swaps one real value for a junk row.
+- **The client's damage-type order is not the attributeID order.** Every EVE UI
+  lists resists **EM, Thermal, Kinetic, Explosive**. The IDs run **EM,
+  Explosive, Kinetic, Thermal** (267/268/269/270). Selecting
+  `BETWEEN 267 AND 270` and labelling the results in the client's order swaps
+  thermal and explosive -- a Rifter's armor becomes 60/10/25/35 instead of
+  60/35/25/10. Label from `a.name`, or order explicitly.
+- **Some hulls have an always-on role bonus that is not in the resonance
+  value.** An Onyx's stored shield resonances are byte-identical to an Eagle's
+  and a Cerberus's, but the client shows 20/84/76/60 where the raw values give
+  0/80/70/50. The difference is `rookieShieldResistBonus` (1829) = `-20` plus
+  four passive `ItemModifier` effects, applied as
+  `resonance * (1 + bonus/100)`. Affected hulls -- the name "rookie" is
+  misleading, four of the six are Heavy Interdiction Cruisers:
+
+  | Attribute | Hulls |
+  | --- | --- |
+  | 1829 shield | Onyx, Broadsword, Fiend, Laelaps, Taipan (-20/-12), Ibis (-8) |
+  | 1825 armor | Devoter, Phobos, Gold Magnate, Silver Magnate (-20), Impairor (-8) |
+
+  The general rule, which covers more than resistances: **`typeBonus.roleBonuses`
+  is always on and is already reflected in what the client shows; the per-skill
+  bonuses in `typeBonus.types` scale with skill level and are not.** 89 published
+  ships carry an effect that modifies a resonance attribute, but the other 78 are
+  per-skill-level ship bonuses (a Damnation gets 4% armor resist per level of
+  Amarr Cruiser) and correctly do not apply to a base hull. Reading
+  `roleBonuses` in prose is the fastest check: the Onyx's says "20.0 bonus to
+  all shield resistances", the Damnation's does not mention resists at all.
+- **Four families of resonance attribute exist.** Always anchor the layer --
+  by attributeID, per the table above -- because a bare
   `LIKE '%DamageResonance'` returns 16 rows for one ship. There is also a
   `passive*DamageResonance` family (1418-1429) whose display names differ from
   the active ones only in capitalisation; note that its four **`passiveHull*`
@@ -669,17 +703,28 @@ SELECT CASE WHEN security >= 0.45 THEN 'high'
 FROM systems WHERE space = 'kspace'
 GROUP BY band;
 
--- resistances, converting resonance to the percentage shown in game.
--- Select the attributeID family deliberately -- a bare '%DamageResonance' name
--- match returns 16 rows across four competing families, not the 4 you want.
--- 267-270 armor, 271-274 shield, 974-977 structure.
-SELECT a.name, ROUND((1 - d.value) * 100, 1) AS resist_pct
-FROM type_dogma d
-JOIN dogma_attributes a ON a.attributeID = d.attributeID
-JOIN types t ON t.typeID = d.typeID
-WHERE t.name = 'Rifter' AND a.attributeID BETWEEN 267 AND 270;
--- For structure (974-977) most ships have no rows: LEFT JOIN from
--- dogma_attributes and COALESCE to defaultValue -- see Gotchas.
+-- Resistances as the client shows them: all three layers, client damage-type
+-- order, and the always-on role bonus applied. Verified against the in-game
+-- fitting window for the Rifter (0/20/40/50, 60/35/25/10, 33/33/33/33) and the
+-- Onyx (20/84/76/60, 50/86/63/10, 33/33/33/33).
+WITH layer(attributeID, layer, dmg, ord) AS (
+  VALUES (271,'Shield','EM',1),   (274,'Shield','Thermal',2),
+         (273,'Shield','Kinetic',3), (272,'Shield','Explosive',4),
+         (267,'Armor','EM',1),    (270,'Armor','Thermal',2),
+         (269,'Armor','Kinetic',3),  (268,'Armor','Explosive',4),
+         (113,'Structure','EM',1),(110,'Structure','Thermal',2),
+         (109,'Structure','Kinetic',3), (111,'Structure','Explosive',4)
+)
+SELECT l.layer, l.dmg,
+       ROUND((1 - d.value * (1 + COALESCE(rb.value, 0) / 100.0)) * 100, 2) AS resist_pct
+FROM types t
+CROSS JOIN layer l
+JOIN type_dogma d ON d.typeID = t.typeID AND d.attributeID = l.attributeID
+LEFT JOIN type_dogma rb ON rb.typeID = t.typeID       -- always-on role bonus
+     AND rb.attributeID = CASE l.layer WHEN 'Armor'  THEN 1825
+                                       WHEN 'Shield' THEN 1829 END
+WHERE t.name = 'Onyx'
+ORDER BY CASE l.layer WHEN 'Shield' THEN 1 WHEN 'Armor' THEN 2 ELSE 3 END, l.ord;
 
 -- what skills a ship requires (dogma, not bp_skills)
 SELECT sk.name, lvl.value AS level
