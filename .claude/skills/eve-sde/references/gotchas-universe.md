@@ -115,6 +115,24 @@ rather than quoting.
   smallest -- but `ASC` puts 1,364 NULLs at the top of a "lowest gravity"
   query, and `AVG()` silently skips them.
 
+- **Faction ownership: `systems.factionID` is 99.2% NULL** -- only 70 of 8,490
+  systems carry it, because ownership inherits upward exactly like wormhole
+  class does: 386 of 1,184 constellations and 33 of 114 regions have it.
+  Querying the system column alone answers "which faction holds the most
+  systems?" with *CONCORD Assembly, 26*. The real answer is **Amarr Empire,
+  706** (then Caldari 422, Gallente 390, Minmatar 285). This is static NPC
+  empire ownership -- live nullsec sovereignty and faction-warfare front lines
+  are ESI, not the SDE -- but the NPC map itself is right here; do not refuse
+  the question as "live data". Needs `world` attached for the faction names:
+
+  ```sql
+  SELECT f.name, COUNT(*) FROM systems s
+  JOIN constellations c ON c.constellationID = s.constellationID
+  JOIN regions        r ON r.regionID = s.regionID
+  JOIN world.factions f ON f.factionID = COALESCE(s.factionID, c.factionID, r.factionID)
+  WHERE s.space = 'kspace' GROUP BY 1 ORDER BY 2 DESC;
+  ```
+
 **Geography -- counting systems, and what "unreachable" means:**
 
 - **`planets.moons` and `planets.belts` are denormalised counts, and they are

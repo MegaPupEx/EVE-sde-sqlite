@@ -819,7 +819,7 @@ CHECKS = [
       SELECT (SELECT COUNT(*) FROM systems WHERE factionID IS NOT NULL),
              (SELECT COUNT(*) FROM constellations WHERE factionID IS NOT NULL),
              (SELECT COUNT(*) FROM regions WHERE factionID IS NOT NULL)"""),
-    C("schema.md", "system-column-only faction count: CONCORD Assembly 26; real: Amarr 706",
+    C("gotchas-universe.md", "system-column-only faction count: CONCORD Assembly 26; real: Amarr 706",
       "universe world", (("CONCORD Assembly", 26), ("Amarr Empire", 706)),
       fn=lambda conn: (
           conn.execute("""SELECT f.name, COUNT(*) FROM systems s

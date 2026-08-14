@@ -143,5 +143,6 @@ here, to avoid a copy drifting out of sync:
 
 - **Shortest-route BFS over the stargate graph** — `gotchas-universe.md`, beside
   the warning that the graph is disconnected and a route may not exist.
-- **Resolving `systems.factionID` / `types.raceID` to a name** — `schema.md`.
+- **Faction ownership via COALESCE inheritance** — `gotchas-universe.md`, beside
+  the warning that `systems.factionID` is 99.2% NULL.
 

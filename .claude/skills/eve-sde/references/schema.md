@@ -66,19 +66,9 @@ was derived.
 also the only two `world` tables keyed on something other than `_key`: join on
 `factions.factionID` and `races.raceID`.
 
-**`systems.factionID` is 99.2% NULL** -- only 70 of 8,490 systems carry it.
-Faction ownership inherits upward exactly like wormhole class does: 386 of 1,184
-constellations and 33 of 114 regions have it. Querying the system column alone
-answers "which faction holds the most systems?" with *CONCORD Assembly, 26*.
-The real answer is **Amarr Empire, 706**:
-
-```sql
-SELECT f.name, COUNT(*) FROM systems s
-JOIN constellations c ON c.constellationID = s.constellationID
-JOIN regions        r ON r.regionID = s.regionID
-JOIN world.factions f ON f.factionID = COALESCE(s.factionID, c.factionID, r.factionID)
-WHERE s.space = 'kspace' GROUP BY 1 ORDER BY 2 DESC;
-```
+**`systems.factionID` is 99.2% NULL** -- faction ownership inherits upward from
+constellation and region. The trap, the counts and the COALESCE query are in
+`gotchas-universe.md` ("Faction ownership").
 
 `activity` values: `manufacturing`, `copying`, `invention`,
 `research_material`, `research_time`, `reaction`.
