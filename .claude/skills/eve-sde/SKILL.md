@@ -32,6 +32,37 @@ looks odd.
 These map onto the download parts below, so the routing is the same decision:
 fetch `universe`, read `gotchas-universe.md`.
 
+## Table names and keys
+
+Two conventions, and guessing wrong costs a turn every time:
+
+- **26 hand-shaped tables** use snake_case names and real ID columns:
+  `types.typeID`, `type_dogma.attributeID`, `market_groups.marketGroupID`,
+  `systems.solarSystemID`. Note `groups_` has a trailing underscore (`group` is
+  reserved in SQL), and multi-word names are snake_case — it is `market_groups`,
+  not `marketGroups`.
+- **Everything else** was ingested generically, keeps CCP's camelCase name, and
+  is keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
+  `planetSchematics._key`, `mapStars._key`. This is most tables —
+  8 of 19 in `items`, 8 of 14 in `industry`, 7 of 15 in `universe`, 36 of 39 in
+  `world`. `JOIN typeBonus tb ON tb.typeID = t.typeID` fails with
+  `no such column`; the join is `ON tb._key = t.typeID`.
+
+  Two exceptions: **`factions` and `races` have no `_key`** — they use
+  `factionID` and `raceID`.
+
+  `_key` is not always a typeID. `planetSchematics._key` is a schematicID and
+  `planetResources._key` is a mixed planetID/starID space — see the gotchas.
+
+When unsure, ask the database rather than guessing:
+
+```python
+db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+db.execute("PRAGMA table_info(typeBonus)").fetchall()
+```
+
+Full column reference is in `references/schema.md`.
+
 ## Check the build first
 
 Every count in this skill was verified against build **3466501**. Before quoting

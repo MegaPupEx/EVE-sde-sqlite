@@ -228,6 +228,29 @@ literal `1.386294`.
   no invention path at all. **`metaGroupID = 2` is the one to trust** for "is
   this T2".
 
+  But `metaGroupID = 2` is not the same as "a ship a player can fly". **7 of the
+  121 published T2 hulls are Alliance Tournament and CONCORD special editions** --
+  Chameleon, Enforcer, Hydra, Marshal, Pacifier, Tiamat, Whiptail. They are
+  genuinely `metaGroupID = 2`, so "the fastest-aligning T2 frigate" answers
+  *Hydra*, a tournament prize almost nobody owns, instead of the Ares. Their
+  market group path runs through **`Special Edition Ships`** where a normal T2
+  runs through `Frigates > Advanced Frigates`, so walk the tree to exclude them:
+
+  ```sql
+  WITH RECURSIVE up(typeID, mg) AS (
+    SELECT typeID, marketGroupID FROM types WHERE categoryID = 6 AND published = 1
+    UNION ALL
+    SELECT u.typeID, g.parentGroupID FROM up u
+    JOIN market_groups g ON g.marketGroupID = u.mg
+  )
+  SELECT DISTINCT up.typeID FROM up
+  JOIN market_groups g ON g.marketGroupID = up.mg
+  WHERE g.name = 'Special Edition Ships';        -- the 7 to exclude
+  ```
+
+  For any "best X" question, say which set you used -- obtainable hulls or all
+  of them.
+
 - **Names are not unique.** 12 published type names, 6 group names and 2
   attribute names are shared by more than one ID. Joining on name can duplicate
   rows -- resolve to an ID first when a query must return exactly one thing.

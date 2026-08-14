@@ -31,7 +31,20 @@ anything about build costs, blueprints, invention or ore yields.
   invention rows** -- so `WHERE probability IS NOT NULL` silently drops eight
   inventable blueprints.
 
-- Blueprint `time` values are seconds.
+- **Every industry number in the SDE is the unmodified base.** `bp_materials`
+  quantities are **ME 0** (research cuts up to 10%, and structure and rig bonuses
+  cut more), and `bp_activity.time` is **TE 0** before rigs, structure and
+  skills. Say "unresearched blueprint" when you quote either. Blueprint `time`
+  values are seconds.
+- **Reprocessing yields are the theoretical 100% refine, which no player gets.**
+  `type_materials` gives the perfect-refine output; what you actually receive is
+  that multiplied by the facility rate, your skills and your implants. The
+  facility half *is* in the SDE --
+  `universe.npc_stations.reprocessingEfficiency` runs 0.25 to 0.50, and 4,649 of
+  5,210 stations sit at **0.50**. So quote the 100% figure as a ceiling, halve it
+  for a realistic NPC-station estimate, and say plainly that the SDE holds no
+  skill or implant data. Reporting the raw number as "what you get" overstates a
+  refine by roughly 2x.
 
 - **4 products are made by more than one blueprint** ('Firewall' Signal
   Amplifier has 5). `bp_products -> blueprints` is not one-to-one.
