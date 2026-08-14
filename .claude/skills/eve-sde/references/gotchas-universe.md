@@ -34,8 +34,9 @@ rather than quoting.
   **That 50 is one beacon's value, not the attribute's.** The shield bonus is
   carried only by the six Wolf-Rayet beacons and scales by class --
   **15 / 22 / 29 / 36 / 43 / 50** for C1-C6 -- so a C3 hole is -29%, not -50%.
-  The armor equivalent is on the Pulsars only, and most beacons carry no
-  resistance bonus at all. Read the magnitude off the beacon you actually have.
+  The armor equivalent is on the six Pulsars, scaling identically
+  (15/22/29/36/43/50), and **24 of the 36 beacons carry no resistance bonus at
+  all**. Read the magnitude off the beacon you actually have.
   `signatureRadiusMultiplier` is the same trap in both directions: it ranges
   **0.5 to 2.0**, so a Wolf-Rayet halves your signature while a **Class 6 Pulsar
   doubles it** -- `highIsGood = 1` on an attribute where the good direction
