@@ -73,10 +73,12 @@ rather than quoting.
 
   **Two beacon attributes whose names invite over-broad glosses** -- three
   graded sessions made both mistakes: `rechargeRateMultiplier` writes
-  `rechargeRate` (attribute 55), which is **capacitor** recharge time only
-  (a multiplier *below* 1, so it speeds your cap) -- shield recharge is
-  attribute 479 and no wormhole beacon touches that one, so do not say
-  "shield/cap recharge". And `energyWarfareStrengthMultiplier` is **NOS and
+  `rechargeRate` (attribute 55), which is **capacitor recharge TIME** --
+  despite the name, it is not a rate, so **below 1 = faster cap (Pulsar 0.71)
+  and above 1 = slower cap (Cataclysmic Variable 1.5)**; a session read the
+  CV's 1.5 as "1.5x faster", exactly backwards. Shield recharge is attribute
+  479 and no wormhole beacon touches that one, so do not say "shield/cap
+  recharge". And `energyWarfareStrengthMultiplier` is **NOS and
   neutralizer drain amount only** -- not damps, ECM, webs or scrams, so do not
   gloss it as "e-war strength".
 
