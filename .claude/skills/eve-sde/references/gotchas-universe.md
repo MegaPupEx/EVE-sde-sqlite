@@ -48,9 +48,12 @@ rather than quoting.
   `mapSecondarySuns` actually references, the shield bonus is carried only by
   the six Wolf-Rayet beacons and scales by class --
   **15 / 22 / 29 / 36 / 43 / 50** for C1-C6 -- so a C3 hole is -29%, not -50%.
-  The armor equivalent is on the six Pulsars, scaling identically
-  (15/22/29/36/43/50), and **24 of the 36 beacons carry no resistance bonus at
-  all** (other effect beacons outside those 36 -- incursions, Metaliminal storms
+  The armor equivalent is on the six Pulsars, scaling identically -- **and it is
+  the same penalty, not a buff**: a C3 Pulsar is **-29% to all four armor
+  resists**, despite the attribute reading `armor*DamageResistanceBonus = 29`.
+  Do not let "armor equivalent" read as "armor bonus" -- Pulsars help your
+  shield pool and hurt your armor resists. **24 of the 36 beacons carry no
+  resistance bonus at all** (other effect beacons outside those 36 -- incursions, Metaliminal storms
   -- carry their own). Read the magnitude off the beacon you actually have.
   `signatureRadiusMultiplier` scales by class too, in both directions:
   **0.85 / 0.78 / 0.71 / 0.64 / 0.57 / 0.50** for C1-C6 Wolf-Rayet and
