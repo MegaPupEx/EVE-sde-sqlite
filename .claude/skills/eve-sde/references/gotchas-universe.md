@@ -150,28 +150,33 @@ rather than quoting.
 - **Abyssal and insurgency weather live in `misc.appliedProximityEffects`, and
   the SDE has only some of it.** The rows are group **`Cloud`** -- the group
   actually named `Abyssal Hazards` holds Proving Ground beacons, not weather.
-  In game each abyssal weather has three strengths (**-30 / -50 / -70%** to one
-  resist, with a **+50%** bonus), rolled by tier: 30 or 50 through tier 3, 50 or
-  70 at tier 4+. **The SDE ships only a subset**, and nothing marks the gaps:
+  Each abyssal weather is one **penalty that rolls** with a **fixed bonus that
+  does not**: the penalty is -30/-50/-70%, rolled by tier (**30 or 50 through
+  tier 3, 50 or 70 at tier 4+** -- the roll is not in the SDE, so these numbers
+  are the only source), while the paired bonus stays the same at every
+  strength. Per weather, read off the present rows' `dbuffs` ->
+  `dbuffCollections.itemModifiers`:
 
-  | | rows present | strengths |
-  | --- | --- | --- |
-  | Electric | 3 | all three -- but the suffixes are not in order: base = **50**, `2` = **30**, `3` = **70** |
-  | Exotic | 1 | 30 only |
-  | Firestorm | 1 | 70 only |
-  | Gamma | 1 | 50 only |
-  | Dark | **0** | absent entirely |
+  | Weather | Penalty (all three layers) | Fixed bonus | rows present |
+  | --- | --- | --- | --- |
+  | Electric | EM resist | capacitor recharge | 3 -- all strengths, but the suffixes are not in order: base = **50**, `2` = **30**, `3` = **70** |
+  | Exotic | Kinetic resist | +50% scan resolution | 1 (30 only) |
+  | Firestorm | Thermal resist | +50% armor HP | 1 (70 only) |
+  | Gamma | Explosive resist | +50% shield HP | 1 (50 only) |
+  | Dark | *no rows* | *no rows* | **0** -- absent entirely; its velocity-bonus / turret-range-penalty pair is game knowledge, not data |
 
-  **Answer tier questions with the roll, not the row.** The correct shape is
-  "a Tier 4 Firestorm rolls **-50% or -70%** thermal; the SDE carries only the
-  -70 row" -- leading with the lone row's value as "the" penalty is the
-  single most-repeated mistake sessions make with this table, and it reads as
-  authoritative precisely because the row is real. The tier -> strength roll is
-  not in the SDE at all, so the roll numbers above are the only source.
-  Separately, the 15 **`[HF] Weather Effect - *`** rows are a different,
-  non-abyssal system at -10/-20/-30% with a +20% bonus -- do not mix them in.
-  Magnitude signs do not encode direction: a resistance *penalty* is stored
-  positive, because it is postPercent onto an inverted resonance.
+  **Answer any tier question with the roll, not the row** -- "a Tier 4
+  <weather> rolls **-50% or -70%** <its resist>; the SDE carries only the <n>
+  row". Leading with a lone row's value as "the" penalty is the most-repeated
+  mistake sessions make with this table, and it reads as authoritative
+  precisely because the row is real. Two sign traps in the modifiers: a
+  resistance *penalty* is stored **positive** (postPercent onto an inverted
+  resonance), and Electric's capacitor bonus is stored as **-50 on
+  `rechargeRate`**, because a shorter recharge time is better -- read the
+  attribute, not the sign, in both directions. The penalty writes all three
+  layers (hull, armor, shield resonances). Separately, the 15
+  **`[HF] Weather Effect - *`** rows are a different, non-abyssal system at
+  -10/-20/-30% with a +20% bonus -- do not mix them in.
 - **`asteroid_belts` says nothing about what is in a belt either.** All 40,928
   rows carry `typeID = 15`. Same shape as moons: the column exists and never
   varies, so composition is game knowledge, not data.

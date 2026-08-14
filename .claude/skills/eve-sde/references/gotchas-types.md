@@ -106,23 +106,31 @@ rather than quoting.
   `metaGroupID = 1` silently drops a Tech I titan (`techLevel` is 1 on all
   eight).
 
-  But `metaGroupID = 2` is not the same as "a ship a player can fly". **7 of the
-  121 published T2 hulls are special editions** -- and they split into two kinds
-  that deserve different treatment. **Four are Alliance Tournament prizes**
-  (Chameleon, Hydra, Tiamat, Whiptail): a handful exist, so exclude them from
-  any "best X I can actually get" answer. **Three are the CONCORD line**
-  (Pacifier, Enforcer, Marshal): ordinary purchasable ships -- keep them in
-  obtainable-hull answers, they are just not part of a standard T2 line. The
-  distinction matters because the AT four are what break rankings:
-  "the fastest-aligning T2 frigate" answers *Hydra* (4.148 s) unless the AT
-  prizes are dropped; the right obtainable answer is the **Nergal at 4.193 s**
-  -- not the Ares, which is third at 4.544 s and is only the answer if the
-  question is restricted to Interceptors. (The CONCORD three change nothing
-  here -- the Pacifier aligns at 6.99 s -- but on other stats they can lead, so
-  do not blanket-exclude them.) All seven share a market group path through
-  **`Special Edition Ships`** where a normal T2 runs through
-  `Frigates > Advanced Frigates`, so walk the tree to *identify* them, then
-  decide which of the two kinds to drop:
+  But `metaGroupID = 2` is not the same as "a ship a player can fly", and
+  **obtainability is not a column** -- no flag marks it, so derive candidates
+  from two partial signals and say which set you excluded. Signal one: a market
+  group path through **`Special Edition Ships`** (where a normal T2 runs
+  through `Frigates > Advanced Frigates`) marks a hull as outside the standard
+  lines -- the walk below. Signal two: `description LIKE '%Alliance
+  Tournament%'` marks a hull as a **tournament prize**, of which only a handful
+  exist -- these are the ones to drop from any "best X I can actually get"
+  answer. **Neither signal is complete, and the tree does not encode the
+  difference**: prize and purchasable hulls share Special Edition subgroups
+  (on this build, the prize Hydra and the ordinary-purchasable CONCORD
+  Pacifier are both under `Special Edition Covert Ops`), several older prize
+  hulls carry pure lore text with no tournament mention (Chameleon, Whiptail,
+  Freki, Mimir on this build), and special-edition-in-spirit hulls can sit in
+  the *normal* tree entirely (the Monitor, `metaGroupID = 2`, files under
+  `Flag Cruisers > CONCORD`). So: union both signals for candidates, drop the
+  prize hulls, keep the purchasable ones, and treat any name list -- including
+  the ones in this paragraph -- as a snapshot of this build, not a rule.
+  The distinction is what breaks rankings: "the fastest-aligning T2 frigate"
+  answers *Hydra* (4.148 s) unless prize hulls are dropped; the right
+  obtainable answer is the **Nergal at 4.193 s** -- not the Ares, which is
+  third at 4.544 s and only the answer if the question is restricted to
+  Interceptors. (The purchasable specials change nothing here -- the Pacifier
+  aligns at 6.99 s -- but on other stats they can lead, so never
+  blanket-exclude them.) The identification walk:
 
   ```sql
   WITH RECURSIVE up(typeID, mg) AS (
@@ -134,10 +142,10 @@ rather than quoting.
   )
   SELECT DISTINCT up.typeID FROM up
   JOIN market_groups g ON g.marketGroupID = up.mg
-  WHERE g.name = 'Special Edition Ships';        -- the 7 to exclude
-  -- Drop the metaGroupID filter and this returns 68 -- every published ship
-  -- sold under Special Edition, at all tech levels. Used as a blanket exclusion
-  -- list it removes ten times what you meant.
+  WHERE g.name = 'Special Edition Ships';   -- candidates, not an exclusion list
+  -- 7 rows with the metaGroupID filter; drop it and this returns 68 -- every
+  -- published ship sold under Special Edition, at all tech levels. Cross with
+  -- the description signal to decide which are prizes.
   ```
 
   For any "best X" question, say which set you used -- obtainable hulls or all

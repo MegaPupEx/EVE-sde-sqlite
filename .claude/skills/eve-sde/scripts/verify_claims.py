@@ -234,6 +234,30 @@ def fn_wh_signature(conn):
     return (wr, pulsar)
 
 
+def fn_weather_pairs(conn):
+    # Per present weather row: (penalty displayName, n resonance attrs, bonus displayName)
+    out = set()
+    for pat, in rows(conn, "SELECT DISTINCT t.name FROM appliedProximityEffects e "
+                           "JOIN types t ON t.typeID = e._key "
+                           "JOIN groups_ g ON g.groupID = t.groupID "
+                           "WHERE g.name = 'Cloud' AND t.name LIKE 'CD %'"):
+        db = one(conn, "SELECT dbuffs FROM appliedProximityEffects WHERE _key = "
+                       "(SELECT typeID FROM types WHERE name = ?)", pat)
+        effs = []
+        for e in json.loads(db):
+            d = conn.execute("SELECT displayName, itemModifiers FROM dbuffCollections "
+                             "WHERE _key = ?", (e["_key"],)).fetchone()
+            n_res = sum(1 for m in json.loads(d[1] or "[]")
+                        if "Resonance" in (one(conn, "SELECT name FROM dogma_attributes "
+                                                     "WHERE attributeID = ?",
+                                               m["dogmaAttributeID"]) or ""))
+            effs.append((d[0], n_res, e["_value"]))
+        pen = [x for x in effs if "penalty" in (x[0] or "")]
+        bon = [x for x in effs if x not in pen]
+        out.add((pen[0][0], pen[0][1], bon[0][0], bon[0][2]))
+    return sorted(out)
+
+
 def fn_weather(conn):
     out = []
     for pat in ("%Electric%", "%Exotic%", "%Firestorm%", "%Gamma%", "%Dark%"):
@@ -649,8 +673,23 @@ CHECKS = [
       fn=fn_special_edition),
     C("gotchas-types.md", "T2 frigate aligns: Nergal 4.193, Hydra 4.148, Ares 4.544",
       "items", (4.193, 4.148, 4.544), fn=fn_align_t2),
-    C("gotchas-types.md", "the Pacifier aligns at 6.99 s (CONCORD, obtainable)",
+    C("gotchas-types.md", "the Pacifier aligns at 6.99 s (purchasable special)",
       "items", 6.99, fn=lambda conn: align(conn, "Pacifier", 2)),
+    C("gotchas-types.md",
+      "prize signal: 15 published ships mention the Alliance Tournament; "
+      "Chameleon/Whiptail/Freki/Mimir do not",
+      "items", (15, 0), sql="""
+      SELECT (SELECT COUNT(*) FROM types WHERE published = 1 AND categoryID = 6
+              AND description LIKE '%lliance Tournament%'),
+             (SELECT COUNT(*) FROM types WHERE published = 1 AND categoryID = 6
+              AND name IN ('Chameleon', 'Whiptail', 'Freki', 'Mimir')
+              AND description LIKE '%lliance Tournament%')"""),
+    C("gotchas-types.md",
+      "the Monitor is metaGroupID 2 in the normal tree (market group CONCORD)",
+      "items", (2, "CONCORD"), sql="""
+      SELECT t.metaGroupID, m.name FROM types t
+      JOIN market_groups m ON m.marketGroupID = t.marketGroupID
+      WHERE t.name = 'Monitor' AND t.published = 1"""),
     C("gotchas-types.md", "duplicate names: 12 types, 6 groups, 2 attributes",
       "items", (12, 6, 2), sql="""
       SELECT (SELECT COUNT(*) FROM (SELECT name FROM types WHERE published = 1
@@ -799,6 +838,15 @@ CHECKS = [
     C("gotchas-universe.md",
       "abyssal weather rows: Electric 3, Exotic 1, Firestorm 1, Gamma 1, Dark 0; 15 [HF]",
       "misc items", ((3, 1, 1, 1, 0), 15), fn=fn_weather),
+    C("gotchas-universe.md",
+      "weather pairs: each penalty hits 3 resonance layers; bonuses fixed "
+      "(Electric's stored as rechargeRate -50)",
+      "misc items",
+      [("EM Resistance penalty", 3, "Capacitor Recharge bonus", -50.0),
+       ("Explosive Resistance penalty", 3, "Shield HP bonus", 50.0),
+       ("Kinetic Resistance penalty", 3, "Scan Resolution bonus", 50.0),
+       ("Thermal Resistance penalty", 3, "Armor HP bonus", 50.0)],
+      fn=fn_weather_pairs),
     C("gotchas-universe.md", "sovereigntyUpgrades: 49 rows; 44/4/1 split; 14 fuel; 5 unpublished",
       "universe items", (49, 44, 4, 1, 14, 5), sql="""
       SELECT COUNT(*),
