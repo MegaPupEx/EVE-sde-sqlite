@@ -220,6 +220,13 @@ literal `1.386294`.
   so a Miner I at 10 m3 / `15000` is **0.67 m3/s**, not 0.00067. Ship mining
   bonuses are per-skill-level prose in `typeBonus`, and the Venture's +100% is a
   role bonus -- always on.
+- **A fighter's high-sec restriction is not on the fighter.** It lives on the
+  *ability*: `misc.fighterAbilitiesByType` (`_key` = typeID, all 94 published
+  fighters) gives three JSON `abilitySlot0..2` columns, and
+  `misc.fighterAbilities.disallowInHighSec` carries the flag. Exactly one
+  ability is restricted -- **`Launch bomb` (7), barred in high *and* low sec,
+  on 16 of 94 fighters**. Read the fighter's own dogma and you find no
+  restriction and report "usable anywhere" for all 16.
 - **The 5-active-drone cap is not in the SDE.** `maxActiveDrones` (352) has
   `defaultValue = 0` and **zero rows on any ship** -- the limit comes from the
   character's Drones skill. Compute from `droneBandwidth` alone and an Ishtar

@@ -116,6 +116,27 @@ rather than quoting.
   only. Ranking moons by `surfaceGravity` or `radius` produces a fluent,
   well-sourced and completely useless answer to "which moon should we mine" --
   moon composition comes from an in-game survey, not the SDE.
+- **Abyssal and insurgency weather live in `misc.appliedProximityEffects`, and
+  the SDE has only some of it.** The rows are group **`Cloud`** -- the group
+  actually named `Abyssal Hazards` holds Proving Ground beacons, not weather.
+  In game each abyssal weather has three strengths (**-30 / -50 / -70%** to one
+  resist, with a **+50%** bonus), rolled by tier: 30 or 50 through tier 3, 50 or
+  70 at tier 4+. **The SDE ships only a subset**, and nothing marks the gaps:
+
+  | | rows present | strengths |
+  | --- | --- | --- |
+  | Electric | 3 | all three -- but the suffixes are not in order: base = **50**, `2` = **30**, `3` = **70** |
+  | Exotic | 1 | 30 only |
+  | Firestorm | 1 | 70 only |
+  | Gamma | 1 | 50 only |
+  | Dark | **0** | absent entirely |
+
+  So quoting the single row you find as "the" penalty is wrong for Exotic,
+  Firestorm and Gamma, and the tier -> strength roll is not in the SDE at all.
+  Separately, the 15 **`[HF] Weather Effect - *`** rows are a different,
+  non-abyssal system at -10/-20/-30% with a +20% bonus -- do not mix them in.
+  Magnitude signs do not encode direction: a resistance *penalty* is stored
+  positive, because it is postPercent onto an inverted resonance.
 - **`asteroid_belts` says nothing about what is in a belt either.** All 40,928
   rows carry `typeID = 15`. Same shape as moons: the column exists and never
   varies, so composition is game knowledge, not data.

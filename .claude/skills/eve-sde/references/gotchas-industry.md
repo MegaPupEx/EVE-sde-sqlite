@@ -36,6 +36,28 @@ rather than quoting.
 - **`bp_skills` mixes activities.** The Dominix blueprint has 1 manufacturing
   skill and 3 invention skills; without `AND activity = '...'` you get both and
   report the wrong set.
+- **Structure and rig ME/TE bonuses *are* in the SDE, but not where the routing
+  table points.** `industryModifierSources` (`_key` = typeID) names, per
+  activity, which channel a structure or rig affects -- but the
+  `dogmaAttributeID` it cites is an abstract channel, **not an attribute on that
+  type**: it resolves in `type_dogma` for only **13 of 371** manufacturing
+  references, which reads exactly like "the data is missing". The magnitudes are
+  on the type itself under different attributes:
+
+  | Source | material | time |
+  | --- | --- | --- |
+  | Engineering complexes | `strEngMatBonus` (Raitaru/Azbel/Sotiyo all 0.99) | `strEngTimeBonus` 0.85 / 0.80 / 0.70 |
+  | Upwell engineering rigs | `attributeEngRigMatBonus` | `attributeEngRigTimeBonus` |
+  | Reactor rigs | `RefRigMatBonus` | `RefRigTimeBonus` |
+  | Tatara (reactions) | -- | `strReactionTimeMultiplier` 0.75 |
+
+  Rig values are percentages scaled at runtime by `hiSecModifier` /
+  `lowSecModifier` / `nullSecModifier` on the same rig (typically 1 / 1.9 / 2.1).
+- **`industryTargetFilters` "Capital Ships" excludes Titans and Supercarriers.**
+  That filter lists 6 groups and neither group 30 nor 659 is among them, so an
+  L-Set capital rig does nothing for a supercapital; only the `Ships` filter
+  (categories 6 and 32) covers them. 427 products also match more than one
+  filter, so "which filter is this" has no single answer.
 - **For invention, `bp_products.quantity` is BPC *runs*, not items.** The
   divide-by-quantity rule that gives per-unit manufacturing cost silently
   changes meaning here: an Intact relic's `quantity = 20` means the invented

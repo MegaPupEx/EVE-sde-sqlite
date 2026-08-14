@@ -54,6 +54,13 @@ rather than quoting.
   typeIDs -- so joining planets to their type *by name* multiplies rows. `planets`
   references exactly 10 typeIDs; join on `typeID`.
 
+- **`world.shipTreeGroups._key` is not a `groupID`**, and the wrong join
+  succeeds. 30 of its 52 keys are also valid `groups_.groupID` values and the
+  names agree on **none** of them: key 4 is `Corvette` here and `Constellation`
+  there, 8 is `Frigate` vs `Moon`, 9 is `Navy Frigate` vs `Asteroid Belt`. You
+  get celestial-object names for 58% of rows, no error and no NULL.
+  `cosmetic.skinrTierThresholds._key` is the same ID space, so it inherits the
+  same trap.
 - **There is no hull-size column.** "Frigate", "cruiser", "battleship" exist
   only as `groups_.name` values, so a size class is a list of group names you
   curate. Cruiser-sized T2, for instance, is Heavy Assault Cruiser + Heavy

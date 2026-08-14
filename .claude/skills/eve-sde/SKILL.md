@@ -214,6 +214,8 @@ Parts are `universe`, `moons`, `items`, `world`, `industry`, `cosmetic`, `misc`
 | Stations | `universe` + `items` + `world` | `npc_stations` has **no name column**; names, services and owners come from `types`, `stationOperations`, `stationServices`, `npcCorporations` |
 | Planetary industry chains | `industry` + `items` | `planetSchematics` |
 | Wormhole system effects | `universe` + `items` | `mapSecondarySuns`, then the beacon's dogma |
+| Abyssal / insurgency weather | `misc` + `items` | `appliedProximityEffects`, group `Cloud` — the SDE has only some strengths, see `gotchas-universe.md` |
+| Fighter abilities, high-sec bans | `misc` + `items` | `fighterAbilitiesByType` → `fighterAbilities`; the restriction is on the ability, not the fighter |
 | Factions, races, missions, agents, dungeons | `world` | not `universe` |
 
 **`moons` is a separate part.** *Counting* moons does not need it —
