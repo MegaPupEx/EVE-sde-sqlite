@@ -25,6 +25,7 @@ import urllib.request
 import zipfile
 
 BASE = "https://developers.eveonline.com/static-data/tranquility"
+WANT_POSITIONS = False
 LATEST = f"{BASE}/latest.jsonl"
 
 
@@ -178,17 +179,31 @@ SCHEMA = """
 PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF;
 
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
-CREATE TABLE categories(categoryID INT PRIMARY KEY, name TEXT, published INT);
-CREATE TABLE groups_(groupID INT PRIMARY KEY, name TEXT, categoryID INT, published INT);
+CREATE TABLE categories(categoryID INT PRIMARY KEY, name TEXT, published INT, iconID INT);
+CREATE TABLE groups_(groupID INT PRIMARY KEY, name TEXT, categoryID INT, published INT,
+  anchorable INT, anchored INT, fittableNonSingleton INT, useBasePrice INT, iconID INT);
 CREATE TABLE types(
   typeID INT PRIMARY KEY, name TEXT, description TEXT, groupID INT, categoryID INT,
   mass NUMERIC, volume NUMERIC, capacity NUMERIC, radius NUMERIC, basePrice NUMERIC, published INT,
   marketGroupID INT, portionSize INT, raceID INT, factionID INT,
-  metaGroupID INT, metaLevel INT, techLevel INT, variationParentTypeID INT);
+  metaGroupID INT, metaLevel INT, techLevel INT, variationParentTypeID INT,
+  packagedVolume NUMERIC, isRepackable INT, shipTreeGroupID INT, graphicID INT,
+  iconID INT, soundID INT);
 CREATE TABLE dogma_attributes(
-  attributeID INT PRIMARY KEY, name TEXT, description TEXT,
-  defaultValue NUMERIC, highIsGood INT, stackable INT, published INT);
-CREATE TABLE dogma_effects(effectID INT PRIMARY KEY, name TEXT);
+  attributeID INT PRIMARY KEY, name TEXT, displayName TEXT, description TEXT,
+  defaultValue NUMERIC, highIsGood INT, stackable INT, published INT,
+  unitID INT, attributeCategoryID INT, dataType INT, displayWhenZero INT,
+  minAttributeID INT, maxAttributeID INT, chargeRechargeTimeID INT,
+  tooltipTitle TEXT, tooltipDescription TEXT, iconID INT);
+CREATE TABLE dogma_effects(
+  effectID INT PRIMARY KEY, name TEXT, displayName TEXT, description TEXT,
+  effectCategoryID INT, published INT, isOffensive INT, isAssistance INT,
+  isWarpSafe INT, disallowAutoRepeat INT, electronicChance INT, propulsionChance INT,
+  rangeChance INT, distribution INT, guid TEXT,
+  durationAttributeID INT, dischargeAttributeID INT, rangeAttributeID INT,
+  falloffAttributeID INT, trackingSpeedAttributeID INT, resistanceAttributeID INT,
+  fittingUsageChanceAttributeID INT, npcUsageChanceAttributeID INT,
+  npcActivationChanceAttributeID INT, modifierInfo TEXT, iconID INT);
 CREATE TABLE type_dogma(typeID INT, attributeID INT, value NUMERIC);
 CREATE TABLE type_effects(typeID INT, effectID INT, isDefault INT);
 CREATE TABLE blueprints(blueprintTypeID INT PRIMARY KEY, maxProductionLimit INT);
@@ -197,30 +212,43 @@ CREATE TABLE bp_materials(blueprintTypeID INT, activity TEXT, typeID INT, quanti
 CREATE TABLE bp_products(blueprintTypeID INT, activity TEXT, typeID INT, quantity INT, probability NUMERIC);
 CREATE TABLE bp_skills(blueprintTypeID INT, activity TEXT, typeID INT, level INT);
 CREATE TABLE type_materials(typeID INT, materialTypeID INT, quantity INT);
-CREATE TABLE market_groups(marketGroupID INT PRIMARY KEY, parentGroupID INT, name TEXT, hasTypes INT);
-CREATE TABLE meta_groups(metaGroupID INT PRIMARY KEY, name TEXT);
-CREATE TABLE regions(regionID INT PRIMARY KEY, name TEXT, factionID INT, wormholeClassID INT);
-CREATE TABLE constellations(constellationID INT PRIMARY KEY, name TEXT, regionID INT, factionID INT);
+CREATE TABLE market_groups(marketGroupID INT PRIMARY KEY, parentGroupID INT, name TEXT,
+  description TEXT, hasTypes INT, iconID INT);
+CREATE TABLE meta_groups(metaGroupID INT PRIMARY KEY, name TEXT, description TEXT,
+  color TEXT, iconID INT, iconSuffix TEXT);
+CREATE TABLE regions(regionID INT PRIMARY KEY, name TEXT, description TEXT,
+  factionID INT, wormholeClassID INT, nebulaID INT, x NUMERIC, y NUMERIC, z NUMERIC);
+CREATE TABLE constellations(constellationID INT PRIMARY KEY, name TEXT, regionID INT,
+  factionID INT, wormholeClassID INT, x NUMERIC, y NUMERIC, z NUMERIC);
 CREATE TABLE systems(
   solarSystemID INT PRIMARY KEY, name TEXT, constellationID INT, regionID INT,
   security NUMERIC, securityClass TEXT, luminosity NUMERIC, radius NUMERIC,
-  border INT, hub INT, regional INT, starID INT, space TEXT);
+  border INT, hub INT, regional INT, fringe INT, corridor INT, international INT,
+  starID INT, factionID INT, wormholeClassID INT, visualEffect TEXT, space TEXT,
+  x NUMERIC, y NUMERIC, z NUMERIC);
 CREATE TABLE planets(
   planetID INT PRIMARY KEY, solarSystemID INT, celestialIndex INT, typeID INT, radius NUMERIC,
   density NUMERIC, surfaceGravity NUMERIC, escapeVelocity NUMERIC, temperature NUMERIC, pressure NUMERIC,
   orbitRadius NUMERIC, orbitPeriod NUMERIC, rotationRate NUMERIC, eccentricity NUMERIC,
-  massDust NUMERIC, massGas NUMERIC, locked INT, moons INT, belts INT);
+  massDust NUMERIC, massGas NUMERIC, locked INT, fragmented INT, moons INT, belts INT,
+  orbitID INT, x NUMERIC, y NUMERIC, z NUMERIC);
 CREATE TABLE moons(moonID INT PRIMARY KEY, solarSystemID INT, planetID INT,
-  celestialIndex INT, orbitIndex INT, typeID INT, radius NUMERIC);
+  celestialIndex INT, orbitIndex INT, typeID INT, radius NUMERIC,
+  x NUMERIC, y NUMERIC, z NUMERIC);
 CREATE TABLE asteroid_belts(beltID INT PRIMARY KEY, solarSystemID INT, planetID INT,
-  celestialIndex INT, orbitIndex INT, typeID INT);
+  celestialIndex INT, orbitIndex INT, typeID INT, radius NUMERIC,
+  x NUMERIC, y NUMERIC, z NUMERIC);
 CREATE TABLE stargates(stargateID INT PRIMARY KEY, solarSystemID INT,
-  destStargateID INT, destSystemID INT, typeID INT);
+  destStargateID INT, destSystemID INT, typeID INT, x NUMERIC, y NUMERIC, z NUMERIC);
 CREATE TABLE npc_stations(stationID INT PRIMARY KEY, solarSystemID INT, ownerID INT,
-  typeID INT, operationID INT, reprocessingEfficiency NUMERIC);
+  typeID INT, operationID INT, reprocessingEfficiency NUMERIC,
+  reprocessingStationsTake NUMERIC, reprocessingHangarFlag INT, useOperationName INT,
+  orbitID INT, celestialIndex INT, orbitIndex INT, x NUMERIC, y NUMERIC, z NUMERIC);
 CREATE TABLE factions(factionID INT PRIMARY KEY, name TEXT, description TEXT,
-  corporationID INT, militiaCorporationID INT, solarSystemID INT);
-CREATE TABLE races(raceID INT PRIMARY KEY, name TEXT);
+  shortDescription TEXT, corporationID INT, militiaCorporationID INT, solarSystemID INT,
+  memberRaces TEXT, sizeFactor NUMERIC, uniqueName INT, iconID INT);
+CREATE TABLE races(raceID INT PRIMARY KEY, name TEXT, description TEXT,
+  shipTypeID INT, skills TEXT, iconID INT);
 """
 
 INDEXES = """
@@ -262,32 +290,68 @@ def build(raw, dbpath, build_no, released):
         ("source", BASE)])
 
     log("Loading static data ...")
-    ins("INSERT INTO categories VALUES (?,?,?)",
-        ((r["_key"], en(r.get("name")), r.get("published", 0)) for r in rows(raw, "categories")))
+    ins("INSERT INTO categories VALUES (?,?,?,?)",
+        ((r["_key"], en(r.get("name")), r.get("published", 0), r.get("iconID"))
+         for r in rows(raw, "categories")))
+
+    def xyz(r, key="position"):
+        """3D coordinates, only when asked for.
+
+        467,000 celestial positions are high-entropy floats that compress
+        badly: they add ~10 MB to the archive, which is 37% of the 30 MB
+        upload budget, to answer distance questions specifically. Off by
+        default; --positions turns them on.
+        """
+        if not WANT_POSITIONS:
+            return (None, None, None)
+        p = r.get(key) or {}
+        return (num(p.get("x")), num(p.get("y")), num(p.get("z")))
+
+    def js(v):
+        return None if v is None else json.dumps(v, separators=(",", ":"), ensure_ascii=False)
 
     gcat = {}
     grows = []
     for r in rows(raw, "groups"):
         gcat[r["_key"]] = r.get("categoryID")
-        grows.append((r["_key"], en(r.get("name")), r.get("categoryID"), r.get("published", 0)))
-    ins("INSERT INTO groups_ VALUES (?,?,?,?)", grows)
+        grows.append((r["_key"], en(r.get("name")), r.get("categoryID"), r.get("published", 0),
+                      r.get("anchorable", 0), r.get("anchored", 0),
+                      r.get("fittableNonSingleton", 0), r.get("useBasePrice", 0), r.get("iconID")))
+    ins("INSERT INTO groups_ VALUES (?,?,?,?,?,?,?,?,?)", grows)
     del grows
 
-    ins("INSERT INTO types VALUES (%s)" % ",".join("?" * 19),
+    ins("INSERT INTO types VALUES (%s)" % ",".join("?" * 25),
         ((r["_key"], en(r.get("name")), en(r.get("description")), r.get("groupID"),
-          gcat.get(r.get("groupID")), r.get("mass"), r.get("volume"), r.get("capacity"),
-          r.get("radius"), r.get("basePrice"), r.get("published", 0), r.get("marketGroupID"),
+          gcat.get(r.get("groupID")), num(r.get("mass")), num(r.get("volume")),
+          num(r.get("capacity")), num(r.get("radius")), num(r.get("basePrice")),
+          r.get("published", 0), r.get("marketGroupID"),
           r.get("portionSize"), r.get("raceID"), r.get("factionID"), r.get("metaGroupID"),
-          r.get("metaLevel"), r.get("techLevel"), r.get("variationParentTypeID"))
+          r.get("metaLevel"), r.get("techLevel"), r.get("variationParentTypeID"),
+          num(r.get("packagedVolume")), r.get("isRepackable"), r.get("shipTreeGroupID"),
+          r.get("graphicID"), r.get("iconID"), r.get("soundID"))
          for r in rows(raw, "types")))
 
-    ins("INSERT INTO dogma_attributes VALUES (?,?,?,?,?,?,?)",
-        ((r["_key"], r.get("name"), en(r.get("description")), r.get("defaultValue"),
-          r.get("highIsGood", 0), r.get("stackable", 0), r.get("published", 0))
+    ins("INSERT INTO dogma_attributes VALUES (%s)" % ",".join("?" * 18),
+        ((r["_key"], r.get("name"), en(r.get("displayName")), en(r.get("description")),
+          num(r.get("defaultValue")), r.get("highIsGood", 0), r.get("stackable", 0),
+          r.get("published", 0), r.get("unitID"), r.get("attributeCategoryID"),
+          r.get("dataType"), r.get("displayWhenZero"), r.get("minAttributeID"),
+          r.get("maxAttributeID"), r.get("chargeRechargeTimeID"),
+          en(r.get("tooltipTitle")), en(r.get("tooltipDescription")), r.get("iconID"))
          for r in rows(raw, "dogmaAttributes")))
 
-    ins("INSERT INTO dogma_effects VALUES (?,?)",
-        ((r["_key"], r.get("effectName") or en(r.get("name"))) for r in rows(raw, "dogmaEffects")))
+    ins("INSERT INTO dogma_effects VALUES (%s)" % ",".join("?" * 26),
+        ((r["_key"], r.get("effectName") or r.get("name"), en(r.get("displayName")),
+          en(r.get("description")), r.get("effectCategoryID"), r.get("published", 0),
+          r.get("isOffensive", 0), r.get("isAssistance", 0), r.get("isWarpSafe", 0),
+          r.get("disallowAutoRepeat", 0), r.get("electronicChance"), r.get("propulsionChance"),
+          r.get("rangeChance"), r.get("distribution"), r.get("guid"),
+          r.get("durationAttributeID"), r.get("dischargeAttributeID"), r.get("rangeAttributeID"),
+          r.get("falloffAttributeID"), r.get("trackingSpeedAttributeID"),
+          r.get("resistanceAttributeID"), r.get("fittingUsageChanceAttributeID"),
+          r.get("npcUsageChanceAttributeID"), r.get("npcActivationChanceAttributeID"),
+          js(r.get("modifierInfo")), r.get("iconID"))
+         for r in rows(raw, "dogmaEffects")))
 
     attrs, effs = [], []
     for r in rows(raw, "typeDogma"):
@@ -323,59 +387,78 @@ def build(raw, dbpath, build_no, released):
         ((r["_key"], m.get("materialTypeID"), m.get("quantity"))
          for r in rows(raw, "typeMaterials") for m in r.get("materials", [])))
 
-    ins("INSERT INTO market_groups VALUES (?,?,?,?)",
-        ((r["_key"], r.get("parentGroupID"), en(r.get("name")), r.get("hasTypes", 0))
-         for r in rows(raw, "marketGroups")))
-    ins("INSERT INTO meta_groups VALUES (?,?)",
-        ((r["_key"], en(r.get("name"))) for r in rows(raw, "metaGroups")))
-    ins("INSERT INTO factions VALUES (?,?,?,?,?,?)",
-        ((r["_key"], en(r.get("name")), en(r.get("description")), r.get("corporationID"),
-          r.get("militiaCorporationID"), r.get("solarSystemID")) for r in rows(raw, "factions")))
-    ins("INSERT INTO races VALUES (?,?)",
-        ((r["_key"], en(r.get("name"))) for r in rows(raw, "races")))
+    ins("INSERT INTO market_groups VALUES (?,?,?,?,?,?)",
+        ((r["_key"], r.get("parentGroupID"), en(r.get("name")), en(r.get("description")),
+          r.get("hasTypes", 0), r.get("iconID")) for r in rows(raw, "marketGroups")))
+    ins("INSERT INTO meta_groups VALUES (?,?,?,?,?,?)",
+        ((r["_key"], en(r.get("name")), en(r.get("description")), js(r.get("color")),
+          r.get("iconID"), r.get("iconSuffix")) for r in rows(raw, "metaGroups")))
+    ins("INSERT INTO factions VALUES (%s)" % ",".join("?" * 11),
+        ((r["_key"], en(r.get("name")), en(r.get("description")), en(r.get("shortDescription")),
+          r.get("corporationID"), r.get("militiaCorporationID"), r.get("solarSystemID"),
+          js(r.get("memberRaces")), num(r.get("sizeFactor")), r.get("uniqueName"), r.get("iconID"))
+         for r in rows(raw, "factions")))
+    ins("INSERT INTO races VALUES (?,?,?,?,?,?)",
+        ((r["_key"], en(r.get("name")), en(r.get("description")), r.get("shipTypeID"),
+          js(r.get("skills")), r.get("iconID")) for r in rows(raw, "races")))
 
     log("Loading universe ...")
-    ins("INSERT INTO regions VALUES (?,?,?,?)",
-        ((r["_key"], en(r.get("name")), r.get("factionID"), r.get("wormholeClassID"))
+    ins("INSERT INTO regions VALUES (?,?,?,?,?,?,?,?,?)",
+        ((r["_key"], en(r.get("name")), en(r.get("description")), r.get("factionID"),
+          r.get("wormholeClassID"), r.get("nebulaID")) + xyz(r)
          for r in rows(raw, "mapRegions")))
-    ins("INSERT INTO constellations VALUES (?,?,?,?)",
-        ((r["_key"], en(r.get("name")), r.get("regionID"), r.get("factionID"))
+    ins("INSERT INTO constellations VALUES (?,?,?,?,?,?,?,?)",
+        ((r["_key"], en(r.get("name")), r.get("regionID"), r.get("factionID"),
+          r.get("wormholeClassID")) + xyz(r)
          for r in rows(raw, "mapConstellations")))
     # Every system outside known space carries securityStatus -0.99, so security
     # alone cannot separate nullsec from wormhole/abyssal/void. The regionID
     # band is what actually distinguishes them.
     SPACE = {10: "kspace", 11: "wormhole", 12: "abyssal", 14: "void"}
-    ins("INSERT INTO systems VALUES (%s)" % ",".join("?" * 13),
+    ins("INSERT INTO systems VALUES (%s)" % ",".join("?" * 22),
         ((r["_key"], en(r.get("name")), r.get("constellationID"), r.get("regionID"),
-          r.get("securityStatus"), r.get("securityClass"), r.get("luminosity"), r.get("radius"),
+          r.get("securityStatus"), r.get("securityClass"), num(r.get("luminosity")),
+          num(r.get("radius")),
           int(bool(r.get("border"))), int(bool(r.get("hub"))), int(bool(r.get("regional"))),
-          r.get("starID"), SPACE.get((r.get("regionID") or 0) // 1000000, "other"))
+          int(bool(r.get("fringe"))), int(bool(r.get("corridor"))),
+          int(bool(r.get("international"))),
+          r.get("starID"), r.get("factionID"), r.get("wormholeClassID"), r.get("visualEffect"),
+          SPACE.get((r.get("regionID") or 0) // 1000000, "other")) + xyz(r)
          for r in rows(raw, "mapSolarSystems")))
 
     def planet_row(r):
         s = r.get("statistics") or {}
         return (r["_key"], r.get("solarSystemID"), r.get("celestialIndex"), r.get("typeID"),
-                r.get("radius"), s.get("density"), s.get("surfaceGravity"), s.get("escapeVelocity"),
-                s.get("temperature"), s.get("pressure"), s.get("orbitRadius"), s.get("orbitPeriod"),
-                s.get("rotationRate"), s.get("eccentricity"), s.get("massDust"), s.get("massGas"),
-                int(bool(s.get("locked"))), len(r.get("moonIDs") or []),
-                len(r.get("asteroidBeltIDs") or []))
-    ins("INSERT OR REPLACE INTO planets VALUES (%s)" % ",".join("?" * 19),
+                num(r.get("radius")), num(s.get("density")), num(s.get("surfaceGravity")),
+                num(s.get("escapeVelocity")), num(s.get("temperature")), num(s.get("pressure")),
+                num(s.get("orbitRadius")), num(s.get("orbitPeriod")),
+                num(s.get("rotationRate")), num(s.get("eccentricity")),
+                num(s.get("massDust")), num(s.get("massGas")),
+                int(bool(s.get("locked"))), int(bool(s.get("fragmented"))),
+                len(r.get("moonIDs") or []), len(r.get("asteroidBeltIDs") or []),
+                r.get("orbitID")) + xyz(r)
+    ins("INSERT OR REPLACE INTO planets VALUES (%s)" % ",".join("?" * 24),
         (planet_row(r) for r in rows(raw, "mapPlanets")))
 
-    ins("INSERT OR REPLACE INTO moons VALUES (?,?,?,?,?,?,?)",
+    ins("INSERT OR REPLACE INTO moons VALUES (?,?,?,?,?,?,?,?,?,?)",
         ((r["_key"], r.get("solarSystemID"), r.get("orbitID"), r.get("celestialIndex"),
-          r.get("orbitIndex"), r.get("typeID"), r.get("radius")) for r in rows(raw, "mapMoons")))
-    ins("INSERT OR REPLACE INTO asteroid_belts VALUES (?,?,?,?,?,?)",
+          r.get("orbitIndex"), r.get("typeID"), num(r.get("radius"))) + xyz(r)
+         for r in rows(raw, "mapMoons")))
+    ins("INSERT OR REPLACE INTO asteroid_belts VALUES (?,?,?,?,?,?,?,?,?,?)",
         ((r["_key"], r.get("solarSystemID"), r.get("orbitID"), r.get("celestialIndex"),
-          r.get("orbitIndex"), r.get("typeID")) for r in rows(raw, "mapAsteroidBelts")))
-    ins("INSERT OR REPLACE INTO stargates VALUES (?,?,?,?,?)",
+          r.get("orbitIndex"), r.get("typeID"), num(r.get("radius"))) + xyz(r)
+         for r in rows(raw, "mapAsteroidBelts")))
+    ins("INSERT OR REPLACE INTO stargates VALUES (?,?,?,?,?,?,?,?)",
         ((r["_key"], r.get("solarSystemID"), (r.get("destination") or {}).get("stargateID"),
-          (r.get("destination") or {}).get("solarSystemID"), r.get("typeID"))
+          (r.get("destination") or {}).get("solarSystemID"), r.get("typeID")) + xyz(r)
          for r in rows(raw, "mapStargates")))
-    ins("INSERT OR REPLACE INTO npc_stations VALUES (?,?,?,?,?,?)",
+    ins("INSERT OR REPLACE INTO npc_stations VALUES (%s)" % ",".join("?" * 15),
         ((r["_key"], r.get("solarSystemID"), r.get("ownerID"), r.get("typeID"),
-          r.get("operationID"), r.get("reprocessingEfficiency")) for r in rows(raw, "npcStations")))
+          r.get("operationID"), num(r.get("reprocessingEfficiency")),
+          num(r.get("reprocessingStationsTake")), r.get("reprocessingHangarFlag"),
+          int(bool(r.get("useOperationName"))), r.get("orbitID"), r.get("celestialIndex"),
+          r.get("orbitIndex")) + xyz(r)
+         for r in rows(raw, "npcStations")))
 
     log("Indexing ...")
     db.executescript(INDEXES)
@@ -617,6 +700,8 @@ def main():
     ap.add_argument("--db", default="sde.sqlite", help="output database path")
     ap.add_argument("--workdir", default=".sde-cache", help="download/extract cache")
     ap.add_argument("--keep-raw", action="store_true", help="keep extracted JSONL")
+    ap.add_argument("--positions", action="store_true",
+                    help="include 3D coordinates (+10 MB compressed; needed for distances)")
     ap.add_argument("--split", action="store_true",
                     help="also emit one database per domain group (items, universe, ...)")
     ap.add_argument("--complete", action="store_true",
@@ -628,6 +713,9 @@ def main():
     ap.add_argument("--gzip", action="store_true", help=argparse.SUPPRESS)  # back-compat
     a = ap.parse_args()
 
+    global WANT_POSITIONS
+    WANT_POSITIONS = a.positions
+
     os.makedirs(a.workdir, exist_ok=True)
     t0 = time.time()
     raw, build_no, released = download_sde(a.workdir)
@@ -638,6 +726,8 @@ def main():
         add_moon_statistics(raw, db)
         ingest_remaining(raw, db)
         db.execute("INSERT OR REPLACE INTO meta VALUES ('complete','1')")
+        db.execute("INSERT OR REPLACE INTO meta VALUES ('positions', ?)",
+                   ("1" if WANT_POSITIONS else "0",))
         db.commit()
         db.execute("VACUUM")
         n = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
