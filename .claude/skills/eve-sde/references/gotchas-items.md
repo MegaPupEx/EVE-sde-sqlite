@@ -242,7 +242,8 @@ literal `1.386294`.
 
   ```sql
   WITH RECURSIVE up(typeID, mg) AS (
-    SELECT typeID, marketGroupID FROM types WHERE categoryID = 6 AND published = 1
+    SELECT typeID, marketGroupID FROM types
+    WHERE categoryID = 6 AND published = 1 AND metaGroupID = 2   -- REQUIRED
     UNION ALL
     SELECT u.typeID, g.parentGroupID FROM up u
     JOIN market_groups g ON g.marketGroupID = u.mg
@@ -250,6 +251,9 @@ literal `1.386294`.
   SELECT DISTINCT up.typeID FROM up
   JOIN market_groups g ON g.marketGroupID = up.mg
   WHERE g.name = 'Special Edition Ships';        -- the 7 to exclude
+  -- Drop the metaGroupID filter and this returns 68 -- every published ship
+  -- sold under Special Edition, at all tech levels. Used as a blanket exclusion
+  -- list it removes ten times what you meant.
   ```
 
   For any "best X" question, say which set you used -- obtainable hulls or all

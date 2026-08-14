@@ -5,12 +5,20 @@ Build a queryable SQLite database from the EVE Online Static Data Export (SDE).
 Downloads the current SDE from CCP's official distribution, then flattens the
 JSONL files into a normalised SQLite database with indexes.
 
-    python3 build_sde_db.py                 # download + build ./sde.sqlite
+    python3 build_sde_db.py                 # 26 core tables -> ./sde.sqlite, ~92 MB
+    python3 build_sde_db.py --complete      # all 107 tables, ~137 MB
+    python3 build_sde_db.py --complete --positions          # + 3D coords, ~162 MB
+    python3 build_sde_db.py --complete --positions --split --parts-only --compress xz
+                                            # the published form: one .xz per domain
     python3 build_sde_db.py --db eve.sqlite # custom output path
     python3 build_sde_db.py --keep-raw      # don't delete the extracted JSONL
+    python3 build_sde_db.py --portable      # drop descriptions, unpublished types, moons
 
-Requires only the Python standard library. Takes ~2 minutes and ~1.5 GB of
-temporary disk; the resulting database is ~120 MB.
+The default build omits most tables. Anything that documents typeBonus,
+mapStars, planetSchematics, dogmaUnits or moon statistics assumes --complete.
+
+Requires only the Python standard library. Downloads ~99 MB, needs ~1.5 GB of
+temporary disk, and takes a couple of minutes end to end.
 
 Localised strings ({"en": ..., "de": ...}) are reduced to English.
 """

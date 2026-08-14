@@ -25,14 +25,21 @@ looks odd.
 | `references/gotchas-items.md` | any ship or module stat, resistance, dogma attribute, tech level, volume or hauling question |
 | `references/gotchas-universe.md` | any system, planet, moon, star, security, region or routing question |
 | `references/gotchas-industry.md` | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
-| `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it is the only index of the generically ingested tables |
+| `references/schema.md` | you need column names, you are joining tables you have not used before, **or you need to find which table holds something** — it indexes the 13 generic tables worth knowing, out of roughly 80 |
 | `references/schema.md` (world section) | missions, agents, NPC corporations, dungeons, DED ratings, certificates, factions or races — the traps there are severe and live nowhere else |
 | `references/examples.md` | a resistance, blueprint-material, reprocessing, ship-skill, planet, gate or security-band query — adapt one rather than composing from scratch |
 | `references/acquisition.md` | no database is present and none was uploaded — how to fetch or build one |
 
 The three `gotchas-*` files map onto the download parts, so it is one decision:
-fetch `universe`, read `gotchas-universe.md`. The `world`, `cosmetic` and `misc`
-parts have no gotcha file — what is known about them is in `schema.md`.
+fetch `universe`, read `gotchas-universe.md`.
+
+**Coverage is not uniform.** `items`, `universe` and `industry` are documented
+in depth. The `world` part has traps but no gotcha file — they are in
+`schema.md`'s world section. **`cosmetic` and `misc` are documented nowhere**:
+skins, graphics, icons, `fighterAbilities`, `dbuffCollections` and roughly 60
+other generically ingested tables have no notes at all. For those, list
+`sqlite_master`, `PRAGMA table_info`, and say plainly that the shape is
+unverified rather than inferring it.
 
 **Tables you would not guess exist**, all indexed in `schema.md`: ship traits
 (`typeBonus`), mutaplasmid roll ranges (`dynamicItemAttributes`), PI chains
@@ -49,10 +56,13 @@ treatment in the `gotchas-*` files.
 - Filter `space = 'kspace'` **before** any security comparison; wormhole, abyssal
   and void systems all store `security = -0.99`.
 - High-sec is `security >= 0.45`, not `>= 0.5` — `security` is unrounded.
-- Join gates on `stargates.destSystemID`, never `destStargateID` (that is the
-  peer *gate*, and the join returns zero rows).
+- Join gates on `stargates.destSystemID`, never `destStargateID` (the peer
+  *gate*). Note `destStargateID` comes **first** in the table, so `SELECT *` with
+  positional unpacking builds the graph on the wrong column.
 - Hauling uses `packagedVolume`, not `volume` (assembled, ~11x larger).
-- `groups_` has a trailing underscore.
+- Manufacturing cost per unit is `bp_materials.quantity / bp_products.quantity` —
+  a run can make 1 or 10,000, so reading materials alone is off by up to four
+  orders of magnitude.
 - **Every ship value is pre-skill.** A Rifter's 365 m/s and 4.73 s align are the
   untrained hull; a player reading their own ship sees different numbers. Say
   "base hull". Resistances are the exception — they are skill-independent.
@@ -68,10 +78,13 @@ Two conventions, and guessing wrong costs a turn every time:
   not `marketGroups`.
 - **Everything else** was ingested generically, keeps CCP's camelCase name, and
   is keyed on **`_key`**, not a named ID: `typeBonus._key`, `dogmaUnits._key`,
-  `planetSchematics._key`, `mapStars._key`. This is most tables —
-  8 of 19 in `items`, 8 of 14 in `industry`, 7 of 15 in `universe`, 36 of 39 in
-  `world`. `JOIN typeBonus tb ON tb.typeID = t.typeID` fails with
-  `no such column`; the join is `ON tb._key = t.typeID`.
+  `planetSchematics._key`, `mapStars._key`. Counting domain tables (excluding
+  `meta`, which every part has): 8 of 18 in `items`, 8 of 13 in `industry`,
+  7 of 14 in `universe`, 36 of 38 in `world`, 17 of 17 in `cosmetic`. So it is
+  nearly everything in `world` and `cosmetic` but a minority in the three parts
+  most questions touch — **check, do not assume either way**.
+  `JOIN typeBonus tb ON tb.typeID = t.typeID` fails with `no such column`; the
+  join is `ON tb._key = t.typeID`.
 
   Two exceptions: **`factions` and `races` have no `_key`** — they use
   `factionID` and `raceID`.
@@ -94,7 +107,7 @@ Every count in this skill was verified against build **3466501**. Before quoting
 any figure from the reference files, check what you actually have:
 
 ```sql
-SELECT key, value FROM meta;   -- (key, value): sdeBuildNumber, positions, portable, splitGroup
+SELECT key, value FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, source, complete, splitGroup, positions
 ```
 
 If you have ATTACHed several parts, **qualify this** — `universe.meta` — because
@@ -143,12 +156,10 @@ for src in pathlib.Path(".").glob("*.sqlite*"):        # adjust to the upload pa
             shutil.copyfileobj(f, o)                   # -> eve-sde-items.sqlite
 ```
 
-**Decompress every part and keep its published name.** Several parts are
-usually uploaded together, and everything downstream — the ATTACH block below,
-and every query in `references/examples.md` — expects `eve-sde-<group>.sqlite`.
-Renaming one to `sde.sqlite` produces `no such table` on the next query, which
-reads exactly like the mistyped-path failure warned about below and sends you
-hunting in the wrong place.
+**Decompress every part and keep its published name.** Several are usually
+uploaded together, and everything downstream expects `eve-sde-<group>.sqlite`.
+Renaming one to `sde.sqlite` is the same failure as a mistyped path, described
+under "Attaching several parts" below.
 
 **3-5. Fetch or build one.** If neither of the above worked and the sandbox has
 outbound network, read `references/acquisition.md`: it covers the prebuilt
@@ -163,15 +174,23 @@ needs:
 
 - Planets, routes, security — `universe` alone.
 - Stations — `universe` for where they are, but **`npc_stations` has no name
-  column**: naming one needs `items.types` (the station type) and
-  `world.stationOperations` (the operation name).
+  column**. Naming one, or listing its services or owner, needs `items.types`
+  (structure type), `world.stationOperations` / `world.stationServices` and
+  `world.npcCorporations`.
 - A specific moon's gravity, radius or orbit — `universe` + `moons`.
 - Ship and module stats — `items` alone.
 - Build costs — `items` + `industry`.
 - Planet **types** (`Planet (Temperate)`) — `items` + `universe`; planets live in
-  one and their type names in the other.
-- Reprocessing and ore yields — `items` alone (`type_materials` is **not** in
-  `industry`).
+  one and their type names in the other. **Do not add `published = 1` to that
+  join**: every celestial type is `published = 0`, so it returns zero rows
+  silently. Full note in `gotchas-items.md`.
+- Reprocessing and ore yields — `items` for `type_materials`, plus `universe`
+  if you want a realistic yield (station rates are on `npc_stations`).
+  `type_materials` is **not** in `industry`.
+- Planetary industry chains — `industry` (`planetSchematics`) + `items` for the
+  input and output names.
+- Wormhole system effects — `universe` (`mapSecondarySuns`) + `items` for the
+  beacon's magnitudes.
 - Faction or race names — `world`, not `universe`.
 - Missions, agents, dungeons, certificates — `world`.
 

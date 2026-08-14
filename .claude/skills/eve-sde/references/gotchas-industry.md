@@ -44,9 +44,10 @@ differs. The shapes stay true across builds, the numbers do not.
   skill or implant data. Reporting the raw number as "what you get" overstates a
   refine by roughly 2x.
 
-- **84 products are made by more than one blueprint** -- 4 for manufacturing
-  ('Firewall' Signal Amplifier has 5), the other 80 through invention, where many
-  T1 blueprints invent into one T2 blueprint. `bp_products -> blueprints` is not one-to-one.
+- **84 products are made by more than one blueprint**: 4 manufacturing
+  ('Firewall' Signal Amplifier has 5), **79 invention** (many T1 blueprints
+  invent into one T2 blueprint) and **1 reaction** (Tungsten Carbide). Always
+  filter by activity before assuming one blueprint per product. `bp_products -> blueprints` is not one-to-one.
 - **Blueprint lookups start from the product**, not the blueprint name. Join
   `bp_products` to find which blueprint makes a thing.
 

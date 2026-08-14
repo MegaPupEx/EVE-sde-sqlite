@@ -49,7 +49,7 @@ Universe:
 | `planets` | `planetID`, `solarSystemID`, `celestialIndex`, `typeID`, `radius`, `surfaceGravity`, `temperature`, `pressure`, `density`, `orbitRadius`, `orbitPeriod`, `eccentricity`, `moons`, `belts` |
 | `moons` | `moonID`, `solarSystemID`, `planetID`, `celestialIndex`, `orbitIndex`, `typeID`, `radius`, `density`, `surfaceGravity`, `escapeVelocity`, `orbitRadius`, `orbitPeriod`, `rotationRate`, `eccentricity`, `massDust`, `massGas`, `temperature`, `pressure`, `fragmented`, `locked`, `x`, `y`, `z` — same physical statistics as `planets` |
 | `asteroid_belts` | `beltID`, `solarSystemID`, `planetID` |
-| `stargates` | `stargateID`, `solarSystemID`, `destSystemID`, `destStargateID` |
+| `stargates` | `stargateID`, `solarSystemID`, `destStargateID`, `destSystemID`, `typeID`, `x`, `y`, `z` — **note the order**: `destStargateID` comes first, so `SELECT *` with positional unpacking silently builds the graph on gate IDs |
 | `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `typeID`, `operationID`, `reprocessingEfficiency`, `reprocessingStationsTake`, `useOperationName`, `orbitID`, `celestialIndex`, `x`, `y`, `z` — **no name column**: the station's name is built from `items.types.name` (the structure type) plus `world.stationOperations.operationName` |
 
 `factions` and `races` are in the **`world`** part, not `universe` -- resolving
@@ -89,9 +89,17 @@ source of confidently wrong answers in this dataset — see `gotchas-items.md`.
 Anchor on the attributeID for anything in a family: resistances, resonances,
 the four sensor-strength attributes, the three tech-level sources. Name joins
 are safe only for isolated scalars like `maxVelocity`, and even then two
-attribute names (`902`, `cynoJammerActivationDelay`) are shared by two IDs each,
-so add `AND published = 1` or resolve to an ID when a query must return exactly
-one row.
+attribute names are shared by two IDs each — and **`published = 1` does not
+separate them**, since all four rows are published:
+
+| attributeID | name | unitID |
+| --- | --- | --- |
+| 1847, 1848 | `902` | NULL |
+| 2794 | `cynoJammerActivationDelay` | 3 (seconds) |
+| 2795 | `cynoJammerActivationDelay` | 101 (**milliseconds**) |
+
+The cyno pair differs in unit, so picking the wrong ID is a 1000x error with no
+symptom. Resolve to an attributeID; nothing else works.
 
 ## The `world` part and other generic tables
 

@@ -53,7 +53,7 @@ differs. The shapes stay true across builds, the numbers do not.
   ```
 
   **The `space` filter is not optional.** k-space constellations carry classes
-  7 and 9 (high/low/null designations), so without it the same query answers
+  7 (1,880 systems), 9 (3,188), 10 (6), 11 (7) and 25 (Pochven's 27), so without it the same query answers
   "Jita is class 7" and "1DQ1-A is class 9". Class 8 never appears on a
   constellation at all -- it is system-level only, on 687 k-space systems.
   Classes 1-6 are the familiar
@@ -63,8 +63,9 @@ differs. The shapes stay true across builds, the numbers do not.
   systems all carry `security = -0.99`, so `WHERE security <= 0` sweeps in 3,004
   systems that are not nullsec. Filter `space = 'kspace'` first. Counts in known
   space (5,485 total): 1,246 high, 687 low, 3,552 null -- but that "high" figure
-  includes Exordium's 53 systems at security 1.0. Conventional New Eden high-sec
-  is **1,193**. Say which you mean.
+  includes Exordium's 53 systems at security 1.0; the legacy figure older
+  sources quote is **1,193**. Give **1,246** and name the Exordium caveat --
+  see "Highest security" below for why it is real content, not an artefact.
 - **`>= 0.5` instead of `>= 0.45` fails silently on routing.** A high-sec-only
   Jita-to-Amarr route is 34 jumps at the correct threshold and 39 at the wrong
   one -- a plausible answer either way, with no error to notice.
