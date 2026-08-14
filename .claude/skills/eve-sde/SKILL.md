@@ -146,7 +146,9 @@ and module questions want `items`; build costs want `items` + `industry`.
 limit on claude.ai; xz does, with room to spare per part.
 
 Coordinates (`x`, `y`, `z` on systems, planets, moons, belts, stargates) are
-present in the published parts, so distance questions are answerable. A build
+present in the published parts, so distance questions are answerable. They are
+in **metres**; divide by `9.4607304725808e15` for light years. Raw metres are
+meaningless to a player. A build
 made without `--positions` has them NULL -- check `meta.positions` before
 promising a distance.
 
@@ -209,7 +211,23 @@ Universe:
 | `npc_stations` | `stationID`, `solarSystemID`, `ownerID`, `reprocessingEfficiency` |
 
 `factions` and `races` are in the **`world`** part, not `universe` -- resolving
-`systems.factionID` or `types.raceID` to a name needs `world` attached.
+`systems.factionID` or `types.raceID` to a name needs `world` attached. They are
+also the only two `world` tables keyed on something other than `_key`: join on
+`factions.factionID` and `races.raceID`.
+
+**`systems.factionID` is 99.2% NULL** -- only 70 of 8,490 systems carry it.
+Faction ownership inherits upward exactly like wormhole class does: 386 of 1,184
+constellations and 33 of 114 regions have it. Querying the system column alone
+answers "which faction holds the most systems?" with *CONCORD Assembly, 26*.
+The real answer is **Amarr Empire, 706**:
+
+```sql
+SELECT f.name, COUNT(*) FROM systems s
+JOIN constellations c ON c.constellationID = s.constellationID
+JOIN regions        r ON r.regionID = s.regionID
+JOIN world.factions f ON f.factionID = COALESCE(s.factionID, c.factionID, r.factionID)
+WHERE s.space = 'kspace' GROUP BY 1 ORDER BY 2 DESC;
+```
 
 `activity` values: `manufacturing`, `copying`, `invention`,
 `research_material`, `research_time`, `reaction`.
@@ -232,9 +250,12 @@ query must return exactly one row.
 ## The `world` part and other generic tables
 
 Everything outside the 26 hand-shaped tables was ingested generically. Two
-consequences: the primary key is always **`_key`** (not `missionID`,
-`dungeonID`, etc.), and nested fields are JSON -- use `json_extract()` and
-`json_each()`.
+consequences: the primary key is **`_key`** rather than a domain-specific name
+(not `missionID`, `dungeonID`, etc.), and nested fields are JSON -- use
+`json_extract()` and `json_each()`.
+
+Two exceptions: **`factions` and `races` have no `_key`** -- they use
+`factionID` and `raceID`. They are the only two of 38 `world` tables that do.
 
 Table names do not match the casual descriptions:
 
@@ -381,6 +402,11 @@ them before trusting a result. Verified against build 3466501.
   Effects, Bonus, Placeables, Abstract). Joining `planets` to `types` with
   `published = 1` returns **zero rows**, silently. Scope the filter to the
   question.
+- **Planet type names are `Planet (Temperate)`, not `Temperate`.** Filtering on
+  the bare word returns zero rows with no error -- the same silent-zero shape as
+  the `published` mistake, and planetary-industry questions hit it constantly.
+  The ten values are `Planet (Barren)`, `(Gas)`, `(Ice)`, `(Lava)`, `(Oceanic)`,
+  `(Plasma)`, `(Shattered)`, `(Storm)`, `(Temperate)` and `(Scorched Barren)`.
 - **`volume` is the assembled volume; `packagedVolume` is what you haul.** A
   Rifter is 27,289 m3 assembled and **2,500 m3 packaged** -- 685 published types
   differ. Every "how many X fit in a Y" answer is ~10x wrong on the assembled
@@ -409,8 +435,10 @@ them before trusting a result. Verified against build 3466501.
 - **Invention runs T1 -> T2 blueprint.** Materials, skills and time live on the
   **T1** blueprint, and the product is the **T2 blueprint**, not the T2 item.
   Starting from the T2 blueprint finds no invention rows at all.
-  `bp_products.probability` is the *base* chance before decryptors and skills,
-  and is NULL for manufacturing rows.
+  `bp_products.probability` is the *base* chance before decryptors and skills.
+  It is NULL for all 4,848 manufacturing rows, all 120 reaction rows, **and 8
+  invention rows** -- so `WHERE probability IS NOT NULL` silently drops eight
+  inventable blueprints.
 - **`systems.security` is unrounded.** Jita is 0.9459, shown in-game as 0.9.
   High-sec is `security >= 0.45` (which rounds to 0.5), not `>= 0.5`.
 - Blueprint `time` values are seconds.
@@ -448,8 +476,10 @@ them before trusting a result. Verified against build 3466501.
   material) -- removed content whose blueprints remain. This is upstream data,
   not a build error; use inner joins so they drop out.
 - **"Highest security" has no clean answer.** 53 real k-space systems in the
-  region **Exordium** sit at security exactly `1.0` -- CONCORD-held content with
-  NPC stations and a gate to Genesis, not an artifact. `ORDER BY security DESC
+  region **Exordium** sit at security exactly `1.0`. It is real, flyable
+  new-player content -- 40 NPC stations including 13 AIR Laboratories, a single
+  gate to Yulai, 12 jumps from Jita -- so 1,246 is the correct current figure
+  and 1,193 is the legacy one every older source quotes. `ORDER BY security DESC
   LIMIT 5` therefore returns an arbitrary five of a 53-way tie. Outside
   Exordium the top is Tew (0.9498) and Eystur (0.9492), then a six-way tie at
   0.949 in The Forge. Say the tie exists rather than presenting five rows as
@@ -462,9 +492,16 @@ them before trusting a result. Verified against build 3466501.
   `A821-A` (46) -- 230 in all. Two have no stargates and the third forms an
   island unreachable from Jita. "How many nullsec systems does EVE have" is
   3,552 with them and **3,322** without.
-- **Some gate-connected systems are still unreachable from Jita** -- 27 Pochven
-  plus 13 in `UUA-F4`. "3,222 systems have no gates" is not the whole
-  disconnection story; a BFS must handle no-route between connected components.
+- **"Unreachable" has three different meanings -- do not conflate them.**
+  3,222 systems have no stargates; 3,262 are gate-unreachable from Jita; but
+  only **231** are unreachable by any means at all. Wormhole (2,604), abyssal
+  (200), void (200) and Pochven (27) are gate-unreachable yet entirely flyable
+  by wormholes or filaments. The genuinely dead ones are the 230 systems in
+  `UUA-F4`/`J7HZ-F`/`A821-A` plus GPMS-01. Answering a player's "can I fly
+  there?" with 3,262 is badly wrong.
+- **Every stargate appears as two rows**, one per direction -- verified 100%
+  symmetric with no one-way edges. A directed adjacency list is therefore safe,
+  but do not assume it for a hand-built graph.
 - **`space` has five values**, not four: `kspace`, `wormhole`, `abyssal`, `void`
   and `other` (GPMS-01 alone). `WHERE space != 'kspace'` to mean "j-space and
   friends" quietly includes the dev system.
