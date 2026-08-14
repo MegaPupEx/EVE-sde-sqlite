@@ -84,6 +84,20 @@ rather than quoting.
   cut more), and `bp_activity.time` is **TE 0** before rigs, structure and
   skills. Say "unresearched blueprint" when you quote either. Blueprint `time`
   values are seconds.
+- **`industry.controlTowerResources` is two columns, and its `quantity` means
+  two different things.** The table is `_key` (tower typeID) and a **`resources`
+  JSON array** -- `quantity`, `purpose`, `resourceTypeID`, `factionID` and
+  `minSecurityLevel` are fields inside it, not columns, so selecting them
+  directly fails; use `json_each(resources)`. `purpose` is an undocumented
+  two-value enum with no lookup table anywhere in the SDE:
+  **`purpose = 1` is units per hour** (an Amarr Control Tower burns 40 Helium
+  Fuel Blocks/hr; medium 20, small 10) and **`purpose = 4` is strontium bay
+  capacity**, which scales the same way -- 400 / 200 / 100, not a flat 400. Each
+  of the 44 towers has exactly one `purpose = 4` entry. Of the 295 `purpose = 1`
+  entries, **252 are charters**: `quantity = 1`, gated on `factionID` with
+  `minSecurityLevel` 0.45 on every one, so they apply only in that faction's
+  high-sec. Filter them out with `factionID IS NULL` before quoting a fuel
+  figure, or a tower reads as burning seven things an hour instead of one.
 - **Reprocessing yields are the theoretical 100% refine, which no player gets.**
   `type_materials` gives the perfect-refine output; what you actually receive is
   that multiplied by the facility rate, your skills and your implants. The

@@ -40,11 +40,13 @@ reading too: fetch `universe`, read `gotchas-universe.md`. Two exceptions —
 
 **Coverage is not uniform.** `items`, `universe` and `industry` are documented
 in depth. The `world` part has traps but no gotcha file — they are in
-`schema.md`'s world section. **`cosmetic` and `misc` are documented nowhere**:
-skins, graphics, icons and `fighterAbilities` have no notes at all
-(`misc.dbuffCollections` excepted — its ID-collision trap is in
-`gotchas-universe.md`). There, inspect with `sqlite_master` and `PRAGMA
-table_info` and say the shape is unverified rather than inferring it.
+`schema.md`'s world section. **`cosmetic` and `misc` are barely documented**:
+skins, graphics and icons have no notes at all. Two exceptions are indexed in
+`schema.md`, and both are misfiled by name — **`cosmetic.linkWithShip`** decides
+which hulls may link to a CRAB or skyhook beacon, and **`misc.dbuffCollections`**
+carries an ID-collision trap covered in `gotchas-universe.md`. For anything else
+in those two parts, inspect with `sqlite_master` and `PRAGMA table_info` and say
+the shape is unverified rather than inferring it.
 
 **If you cannot find where something lives, `schema.md` indexes the tables you
 would not guess** — ship traits, mutaplasmid ranges, PI chains, wormhole

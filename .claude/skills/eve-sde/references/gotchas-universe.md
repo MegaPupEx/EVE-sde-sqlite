@@ -11,6 +11,19 @@ types, k-space vs all systems, ships vs all categories. Where the population is
 not stated it is the whole table; if your query filters differently, re-derive
 rather than quoting.
 
+- **`universe.sovereigntyUpgrades` has two power columns pointing opposite
+  ways.** `power_allocation` is consumption, `power_production` is output, and
+  **no row sets both** -- 44 of the 49 rows allocate, 4 produce and 1 does
+  neither (`workforce_*` splits identically). So a budget is
+  `SUM(power_production) - SUM(power_allocation)`; summing one column alone, or
+  reading `power_allocation` as "power" generally, silently drops the producers.
+  14 of 49 rows carry `fuel` (`{hourly_upkeep, startup_cost, type_id}`, Magmatic
+  Gas or Superionic Ice); the other 35 are NULL meaning *free*, not unknown.
+  Five rows are unpublished placeholder/QA junk, and one of them -- QA Colony
+  Resources Management Enhancer, at 9,000 power and 90,000 workforce -- is a
+  *producer*, so it is one of only four and will wreck any max or mean taken
+  over that side. Filter on `types.published = 1`. `mutually_exclusive_group` is
+  free text (`Mining_A`, `PvE_C`, `Infrastructure_3`) with no lookup table.
 - **`universe.planetResources` is Equinox sovereignty, not planetary industry.**
   It holds `power` / `workforce` / `reagent` for the 2,712 sov-claimable nullsec
   systems. **`_key` is a mixed ID space**: 23,086 rows are `planets.planetID`

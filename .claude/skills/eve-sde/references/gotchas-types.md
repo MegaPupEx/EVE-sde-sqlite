@@ -31,6 +31,27 @@ rather than quoting.
   packaged ones. Freighter cargo figures in the SDE are also **pre-skill** --
   no Racial Freighter bonus applied.
 
+- **`items.contrabandTypes` fines are a multiplier, not ISK.** Only **eight**
+  cargoes are contraband anywhere (Slaves, Elite Slaves, Khumaak, Vitoc,
+  Plutonium, Toxic Waste, Small Arms, Protein Delicacies). The table is two
+  columns -- `_key` and a **`factions` JSON array** -- so the per-faction fields
+  need `json_each(factions)`; there is no `fineByValue` column to select. Across
+  the eight rows there are 50 faction entries.
+  **`fineByValue` multiplies `basePrice`**: 1,000 Slaves through Minmatar space
+  is 750 x 10.0 x 1000 = **7.5M ISK**, and the multiplier is per faction (Minmatar
+  10.0, Gallente 8.0, Caldari 5.0 on the same cargo). Amarr is simply absent from
+  the Slaves row -- legal there.
+- **Read `confiscateMinSec` as a security floor, and note `attackMinSec` never
+  fires.** `confiscateMinSec` takes graded values -- -1.0 on 21 entries and
+  0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0 and 1.1 across the other 29 -- so it
+  behaves as "enforced where security >= this", which makes **-1.0 the harshest
+  setting (everywhere), not a "never" sentinel**, and the single 1.1 entry
+  unenforceable. `attackMinSec` is **1.1 on all 50 entries**, above the 1.0
+  ceiling, so on the same reading no cargo is ever shot over. That reading is
+  inferred from the value distribution; the SDE states no semantics, so say so
+  rather than asserting the mechanic. Elite Slaves is the row to watch: all
+  eight of its entries are `confiscateMinSec` 1.0 with `fineByValue` 0.0 and
+  `standingLoss` 0.0, so it is listed as contraband and penalises nothing.
 - **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
   published types. It is an internal seed value. For real prices use ESI; the
   SDE has none.
