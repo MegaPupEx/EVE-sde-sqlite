@@ -55,7 +55,7 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         run: |
           set -euo pipefail
-          python3 build_sde_db.py --db eve-sde.sqlite --complete --split --compress xz
+          python3 build_sde_db.py --db eve-sde.sqlite --complete --positions --split --parts-only --compress xz
           rm -f eve-sde*.sqlite               # keep only the compressed copies
           ls -l eve-sde*.xz
 
@@ -64,41 +64,51 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import lzma, shutil, sqlite3, os, sys
-          with lzma.open("eve-sde.sqlite.xz") as f, open("rt.sqlite", "wb") as o:
-              shutil.copyfileobj(f, o)
-          db = sqlite3.connect("rt.sqlite")
-          assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok", "integrity check failed"
-          n = db.execute("SELECT COUNT(*) FROM types").fetchone()[0]
-          s = db.execute("SELECT COUNT(*) FROM systems").fetchone()[0]
-          m = db.execute("SELECT COUNT(*) FROM moons").fetchone()[0]
-          t = db.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
-          assert n > 40000 and s > 8000, f"suspiciously small: {n} types, {s} systems"
-          assert t >= 100, f"complete build should have ~107 tables, got {t}"
-          assert db.execute("SELECT value FROM meta WHERE key='complete'").fetchone(), "not a complete build"
-          size = os.path.getsize("eve-sde.sqlite.xz")
-          assert size < 30_000_000, f"archive is {size/1e6:.1f} MB, over the 30 MB upload limit"
-          print(f"verified: {t} tables, {n:,} types, {s:,} systems, {m:,} moons, "
-                f"{os.path.getsize('rt.sqlite')/1e6:.0f} MB uncompressed, "
-                f"{size/1e6:.1f} MB compressed")
-          os.remove("rt.sqlite")
+          import lzma, shutil, sqlite3, os, glob
 
-          # every split part must also open, and fit the upload limit on its own
-          import glob
           parts = sorted(glob.glob("eve-sde-*.sqlite.xz"))
           assert len(parts) >= 5, f"expected the split parts, found {len(parts)}"
+          seen, total = {}, 0
           for p in parts:
               psize = os.path.getsize(p)
-              assert psize < 30_000_000, f"{p} is {psize/1e6:.1f} MB, over the limit"
+              total += psize
+              assert psize < 30_000_000, f"{p} is {psize/1e6:.1f} MB, over the 30 MB upload limit"
               with lzma.open(p) as f, open("pt.sqlite", "wb") as o:
                   shutil.copyfileobj(f, o)
-              pdb = sqlite3.connect("pt.sqlite")
-              assert pdb.execute("PRAGMA integrity_check").fetchone()[0] == "ok", f"{p} corrupt"
-              grp = pdb.execute("SELECT value FROM meta WHERE key='splitGroup'").fetchone()
+              db = sqlite3.connect("pt.sqlite")
+              assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok", f"{p} corrupt"
+              grp = db.execute("SELECT value FROM meta WHERE key='splitGroup'").fetchone()
               assert grp, f"{p} has no splitGroup marker"
-              pdb.close()
-              print(f"  part {grp[0]:<10} {psize/1e6:>5.1f} MB  ok")
+              assert db.execute("SELECT value FROM meta WHERE key='complete'").fetchone(), \
+                  f"{p} is not from a complete build"
+              seen[grp[0]] = psize
+              db.close()
               os.remove("pt.sqlite")
+
+          # the parts must actually cover the data, not just exist
+          for need in ("items", "universe", "industry", "world"):
+              assert need in seen, f"missing the {need} part"
+          with lzma.open("eve-sde-universe.sqlite.xz") as f, open("u.sqlite", "wb") as o:
+              shutil.copyfileobj(f, o)
+          u = sqlite3.connect("u.sqlite")
+          s = u.execute("SELECT COUNT(*) FROM systems").fetchone()[0]
+          m = u.execute("SELECT COUNT(*) FROM moons").fetchone()[0]
+          xs = u.execute("SELECT COUNT(*) FROM planets WHERE x IS NOT NULL").fetchone()[0]
+          assert s > 8000 and m > 300000, f"universe looks short: {s} systems, {m} moons"
+          assert xs > 60000, f"positions missing: only {xs} planets have coordinates"
+          u.close(); os.remove("u.sqlite")
+
+          with lzma.open("eve-sde-items.sqlite.xz") as f, open("i.sqlite", "wb") as o:
+              shutil.copyfileobj(f, o)
+          i = sqlite3.connect("i.sqlite")
+          n = i.execute("SELECT COUNT(*) FROM types").fetchone()[0]
+          assert n > 40000, f"items looks short: {n} types"
+          i.close(); os.remove("i.sqlite")
+
+          print(f"verified {len(parts)} parts, {total/1e6:.1f} MB total, "
+                f"{s:,} systems, {m:,} moons, {n:,} types, positions present")
+          for g, sz in sorted(seen.items(), key=lambda kv: -kv[1]):
+              print(f"  {g:<10} {sz/1e6:>6.2f} MB")
           PY
 
       - name: Record the build number
@@ -128,7 +138,7 @@ jobs:
           set -euo pipefail
           tag="sde-${{ steps.check.outputs.build }}"
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" eve-sde*.sqlite.xz \
+          gh release create "$tag" eve-sde-*.sqlite.xz \
             --title "SDE build ${{ steps.check.outputs.build }}" \
             --notes "EVE Online SDE build \`${{ steps.check.outputs.build }}\`, released by CCP on \`${{ steps.check.outputs.released }}\`.
 

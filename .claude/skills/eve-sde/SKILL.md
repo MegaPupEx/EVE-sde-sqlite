@@ -29,19 +29,27 @@ costs nothing to check first.
 **3. Prebuilt release** — fastest when reachable (~27 MB, the complete build,
 already integrity checked, no build step):
 
+Releases carry the SDE **split by domain**. Fetch only the parts the question
+needs -- most questions need one or two:
+
 ```bash
 BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
-curl -sSLo eve-sde.sqlite.xz $BASE/eve-sde.sqlite.xz     # whole thing, ~27 MB
-xz -d eve-sde.sqlite.xz && mv eve-sde.sqlite sde.sqlite
+curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz && xz -d universe.xz  # ~28 MB
+curl -sSLo items.xz    $BASE/eve-sde-items.sqlite.xz    && xz -d items.xz     # ~7 MB
 ```
 
-Or fetch only the domains a question needs -- `items`, `universe`, `industry`,
-`world`, `cosmetic`, `misc` -- and ATTACH them (see "Split databases" below):
+| Part | Covers |
+| --- | --- |
+| `universe` | systems, planets, moons, belts, stargates, stations, coordinates |
+| `items` | types, dogma attributes and effects, reprocessing, market groups |
+| `industry` | blueprints, schematics, assembly lines |
+| `world` | missions, dungeons, agents, corporations, certificates |
+| `cosmetic` | skins, graphics, icons |
+| `misc` | the remainder |
 
-```bash
-curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz       # ~18 MB
-curl -sSLo items.xz    $BASE/eve-sde-items.sqlite.xz          # ~6 MB
-```
+There is no single combined download: one file only fits the 30 MB upload limit
+by dropping 3D coordinates, so the parts are the published form. ATTACH whatever
+you fetched (see "Split databases" below) and query across them normally.
 
 The `latest` in that URL always resolves to the newest release; a workflow
 republishes within hours of each CCP build. The repository is public, so no

@@ -5,17 +5,31 @@ indexed SQLite database, and documents the traps in the data.
 
 ## Download
 
-[**Releases**](../../releases/latest) carries the current build, republished
-within hours of each CCP release:
+[**Releases**](../../releases/latest) carries the SDE split by domain,
+republished within hours of each CCP release. Fetch only what a question needs:
+
+| Part | Size | Covers |
+| --- | --- | --- |
+| `eve-sde-universe.sqlite.xz` | ~28 MB | systems, planets, moons, belts, gates, stations, coordinates |
+| `eve-sde-items.sqlite.xz` | ~7 MB | types, dogma attributes and effects, reprocessing |
+| `eve-sde-world.sqlite.xz` | ~1.4 MB | missions, dungeons, agents, corps, certificates |
+| `eve-sde-industry.sqlite.xz` | ~0.5 MB | blueprints, schematics, assembly lines |
+| `eve-sde-cosmetic.sqlite.xz` | ~0.4 MB | skins, graphics, icons |
+| `eve-sde-misc.sqlite.xz` | ~0.01 MB | the remainder |
 
 ```bash
-curl -sSLo sde.xz https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download/eve-sde.sqlite.xz
-xz -d sde.xz
+BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
+curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz && xz -d universe.xz
 ```
 
-Also split by domain — `items`, `universe`, `industry`, `world`, `cosmetic`,
-`misc` — for when one file is inconvenient. Each part is a complete database;
-`ATTACH` several to join across them. Largest part is ~18 MB.
+Each part is a complete SQLite database. `ATTACH` several to join across them —
+splitting costs nothing at query time. Together they reassemble to the whole
+export exactly: same tables, same row counts.
+
+Split rather than one file because the 30 MB upload limit on claude.ai is **per
+file**. One combined archive fits only by dropping the 3D coordinates; as parts,
+everything fits with room to spare. Build one locally with
+`--complete --compress xz` if you would rather have a single file.
 
 ## Build
 

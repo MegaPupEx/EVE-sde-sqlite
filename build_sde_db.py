@@ -704,6 +704,8 @@ def main():
                     help="include 3D coordinates (+10 MB compressed; needed for distances)")
     ap.add_argument("--split", action="store_true",
                     help="also emit one database per domain group (items, universe, ...)")
+    ap.add_argument("--parts-only", action="store_true",
+                    help="with --split, do not compress the whole database (parts carry everything)")
     ap.add_argument("--complete", action="store_true",
                     help="also ingest every remaining SDE file and moon statistics")
     ap.add_argument("--portable", action="store_true",
@@ -739,7 +741,7 @@ def main():
     if a.split:
         log("Splitting by domain group ...")
         split_db(a.db, fmt)
-    if fmt:
+    if fmt and not (a.split and a.parts_only):
         compress(a.db, fmt)
     if not a.keep_raw:
         shutil.rmtree(raw, ignore_errors=True)
