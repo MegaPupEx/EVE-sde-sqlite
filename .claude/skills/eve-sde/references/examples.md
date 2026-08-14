@@ -59,9 +59,11 @@ JOIN systems s2 ON s2.solarSystemID = g.destSystemID
 JOIN regions  r ON r.regionID = s2.regionID
 WHERE s1.name = 'Jita';
 
--- all published ships in a hull class.            [needs: items] There is no hull-size column: "cruiser",
--- "battleship" etc. exist only as group names, so a class is a list of groups
--- (Battleship + Marauder + Black Ops + Force Auxiliary...) you curate yourself.
+-- all published ships in a hull class             [needs: items]
+-- There is no hull-size column -- "cruiser", "battleship" etc. exist only as
+-- group names, so a class is a list of groups you curate. Battleship-sized is
+-- Battleship + Marauder + Black Ops. Curated lists for the T2 cruiser and
+-- frigate classes are in gotchas-types.md; do not invent your own.
 SELECT t.name, t.mass, t.volume
 FROM types t
 JOIN groups_ g ON g.groupID = t.groupID

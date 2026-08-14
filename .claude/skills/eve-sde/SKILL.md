@@ -94,7 +94,8 @@ Two conventions, and guessing wrong costs a turn every time:
   `factionID` and `raceID`.
 
   `_key` is not always a typeID. `planetSchematics._key` is a schematicID and
-  `planetResources._key` is a mixed planetID/starID space — see the gotchas.
+  `planetResources._key` is a mixed planetID/starID space (`gotchas-universe.md`,
+  and `schema.md` for `planetSchematics`).
 
 When unsure, ask the database rather than guessing:
 

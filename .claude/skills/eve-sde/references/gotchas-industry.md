@@ -1,7 +1,8 @@
 # Gotchas: industry and reprocessing
 
 For the `industry` part and `items.type_materials`. Read before answering
-anything about build costs, blueprints, invention or ore yields.
+anything about build costs, blueprints, invention, ore yields, planetary
+industry chains or ore compression.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
 differs.

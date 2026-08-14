@@ -1,8 +1,8 @@
 # Getting a database when none is present
 
-Two things live here: the decompression loop for parts **uploaded to the
-conversation**, and how to **fetch or build** a database when none is present.
-SKILL.md points here for both. Work down and stop at the first that succeeds.
+Three things live here: the decompression loop for parts **uploaded to the
+conversation**, how to **fetch or build** a database when none is present, and
+what a `--portable` build leaves out. SKILL.md points here for all three. Work down and stop at the first that succeeds.
 
 **3. Prebuilt release** — fastest when reachable, already integrity checked, no
 build step. Releases carry the SDE **split by domain**; fetch only the parts the
@@ -89,6 +89,9 @@ the `moons` table, and sets `meta.portable = '1'`. Note *empties*, not drops:
 `moons` still exists and returns zero rows, so moon questions fail silently
 rather than raising `no such table`. On one, do **not** filter on
 `published` (everything present is published), do not promise moon data, and do
-not quote descriptions. Dropping unpublished types removes **every planet
+not quote descriptions from `types`, `dogma_attributes` or `factions` -- those
+are the three the builder nulls; `market_groups`, `regions`, `races`,
+`dogma_effects` and `dungeons` descriptions survive. Dropping unpublished types
+removes **every planet
 type** — all ten are `published = 0` — so planet-type questions cannot be
 answered from a portable build at all. Published releases are never portable.

@@ -154,11 +154,12 @@ literal `1.386294`.
 - **A few hulls sit far outside the normal resist range**, so "which ship
   resists X best" does not land where a player expects. The **Monitor** (T2 Flag
   Cruiser) carries **90% on all four shield layers** and tops every one of them.
-  **There is no single runner-up**: the best conventional hull differs per
-  damage type -- Broadsword 80% EM, Onyx 84% thermal, Onyx 76% kinetic, Vengeance
-  87.5% explosive (role bonuses applied). Do not quote one layer's ceiling as if
-  it held across the others, and re-derive per layer rather than assuming the
-  same hull wins twice. Report the outlier *and* the best normal hull.
+  **Below it there is no stable runner-up.** The next-best hull differs on every
+  damage type, and on three of the four it is a Faction or tournament hull
+  (Cybele, Utu, Malice) rather than anything a player flies. Do not quote one
+  layer's ceiling as if it held across the others, and do not assume the same
+  hull places twice: re-derive per layer, applying whatever eligibility filter
+  the question implies, and say which set you used.
 - **Ship/module skill requirements are in dogma, not `bp_skills`.** They live in
   `requiredSkill1..6` (a typeID) paired with `requiredSkill1Level..6`.
   `bp_skills` is what a *blueprint activity* needs -- a different question.

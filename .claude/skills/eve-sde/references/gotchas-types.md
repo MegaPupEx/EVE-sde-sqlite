@@ -2,7 +2,7 @@
 
 For the `items` part. Read before answering **which rows belong in the answer**
 — published flags, tech level, volumes, prices, planet type names, duplicate
-names. For what a dogma *value means*, read `gotchas-dogma.md`.
+names, hull-size group lists, ore variant names. For what a dogma *value means*, read `gotchas-dogma.md`.
 
 **"Best/fastest X hull" questions need both files.** Picking the hulls is here;
 what the stat means is there. The worked example below is one of them.
@@ -24,7 +24,6 @@ differs.
   only 58 Rifters, while a Charon's 465,000 m3 of ordinary cargo fits 186
   packaged ones. Freighter cargo figures in the SDE are also **pre-skill** --
   no Racial Freighter bonus applied.
-
 
 - **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
   published types. It is an internal seed value. For real prices use ESI; the
@@ -49,7 +48,8 @@ differs.
 - **There is no hull-size column.** "Frigate", "cruiser", "battleship" exist
   only as `groups_.name` values, so a size class is a list of group names you
   curate. Cruiser-sized T2, for instance, is Heavy Assault Cruiser + Heavy
-  Interdiction Cruiser + Logistics + Combat Recon + Force Recon + Flag Cruiser;
+  Interdiction Cruiser + Logistics + Combat Recon Ship + Force Recon Ship + Flag
+  Cruiser (note **`Ship`** on both Recon names -- omitting it returns zero rows);
   frigate-sized T2 is Assault Frigate + Covert Ops + Electronic Attack Ship +
   Expedition Frigate + Interceptor + Logistics Frigate + Stealth Bomber. Say
   which groups you used -- two correct answers can differ on whether Marauders

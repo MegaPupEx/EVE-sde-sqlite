@@ -2,7 +2,8 @@
 
 For the `universe` and `moons` parts. Read before answering anything of the
 form "how many systems...", "which system is the most/least...", "how do I get
-from A to B", or any question about planets, moons, stars or security.
+from A to B", or any question about planets, moons, stars, security or wormhole
+system effects.
 
 Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
 differs.
