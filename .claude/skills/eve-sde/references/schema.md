@@ -107,13 +107,20 @@ separate them**, since all four rows are published:
 The cyno pair differs in unit, so picking the wrong ID is a 1000x error with no
 symptom. Resolve to an attributeID; nothing else works.
 
-## The `world` part and other generic tables
+## Finding a generic table, in any part
 
 Everything outside the 25 hand-shaped tables was ingested generically -- 81 of
 the 106 domain tables. Two
 consequences: the primary key is **`_key`** rather than a domain-specific name
 (not `missionID`, `dungeonID`, etc.), and nested fields are JSON -- use
 `json_extract()` and `json_each()`.
+
+**This index spans every part, not just `world`.** Rows are qualified with the
+part that holds them (`items.typeBonus`, `misc.fighterAbilities`); an unqualified
+name means `world`, which owns most but nowhere near all of them. So this is the
+section to search whenever you cannot guess a table name -- it is the answer to
+"where does X live" for the whole database, and the `world`-specific traps that
+follow the table are a subsection of it rather than its subject.
 
 Table names do not match the casual descriptions:
 

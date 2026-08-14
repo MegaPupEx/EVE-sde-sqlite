@@ -27,8 +27,7 @@ a query".
 | `references/gotchas-types.md` | **which rows belong** — `published`, tech level, volume vs `packagedVolume`, `basePrice`, planet type names, duplicate names |
 | `references/gotchas-universe.md` | any system, planet, moon, star, security, region or routing question |
 | `references/gotchas-industry.md` | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
-| `references/schema.md` | you need column names, are joining a table you have not used, **or need to find which table holds something** |
-| `references/schema.md` (world section) | missions, agents, NPC corps, dungeons, DED ratings, certificates, factions, races — severe traps, documented nowhere else |
+| `references/schema.md` | you need column names, are joining a table you have not used, **or need to find which table holds something** — its second half indexes every generic table in every part, and is also the only home for the `world` traps (missions, agents, NPC corps, dungeons, DED ratings, certificates), which are severe and documented nowhere else |
 | `references/examples.md` | **try first** for a straightforward stat, blueprint, invention, reprocessing, planet, gate or security query — 10 worked queries, each naming the parts it needs |
 | `references/acquisition.md` | no database is present and none was uploaded — how to fetch or build one |
 
@@ -39,8 +38,10 @@ reading too: fetch `universe`, read `gotchas-universe.md`. Two exceptions —
 `gotchas-industry.md` although `type_materials` lives in the `items` part.
 
 **Coverage is not uniform.** `items`, `universe` and `industry` are documented
-in depth. The `world` part has traps but no gotcha file — they are in
-`schema.md`'s world section. **`cosmetic` and `misc` are barely documented**:
+in depth. The `world` part is 39 tables and has traps as severe as anything
+here, but no gotcha file — they sit at the end of `schema.md`, so a `world`
+question costs you that file whether or not you needed column names.
+**`cosmetic` and `misc` are barely documented**:
 skins, graphics and icons have no notes at all. Two exceptions are indexed in
 `schema.md`, and both are misfiled by name — **`cosmetic.linkWithShip`** decides
 which hulls may link to a CRAB or skyhook beacon, and **`misc.dbuffCollections`**
