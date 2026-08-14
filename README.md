@@ -23,8 +23,13 @@ data — and are asked about far less often than systems and planets.
 
 ```bash
 BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
-curl -sSLo universe.xz $BASE/eve-sde-universe.sqlite.xz && xz -d universe.xz
+curl -sSLO $BASE/eve-sde-universe.sqlite.xz
+curl -sSLO $BASE/eve-sde-items.sqlite.xz
+xz -d eve-sde-*.sqlite.xz
 ```
+
+Use `-O`, not `-o name.xz` — the examples below expect the files to keep their
+published names.
 
 Each part is a complete SQLite database. `ATTACH` several to join across them —
 splitting costs nothing at query time. Together they reassemble to the whole
@@ -59,13 +64,28 @@ query with `json_extract()`. The 26 core tables are hand-shaped either way.
 
 ## Query
 
-```sql
-SELECT p.celestialIndex, t.name, p.radius, p.surfaceGravity
-FROM planets p
-JOIN systems s ON s.solarSystemID = p.solarSystemID
-JOIN types   t ON t.typeID = p.typeID
-WHERE s.name = 'TK-DLH';
+Planet types live in `items` and planets live in `universe`, so this needs both
+parts attached — most real questions cross a part boundary:
+
+```python
+import sqlite3
+db = sqlite3.connect(":memory:")
+db.execute("ATTACH DATABASE 'eve-sde-universe.sqlite' AS universe")
+db.execute("ATTACH DATABASE 'eve-sde-items.sqlite'    AS items")
+
+db.execute('''
+  SELECT p.celestialIndex, t.name, p.radius, p.surfaceGravity
+  FROM universe.planets p
+  JOIN universe.systems s ON s.solarSystemID = p.solarSystemID
+  JOIN items.types      t ON t.typeID = p.typeID
+  WHERE s.name = 'TK-DLH'
+  ORDER BY p.celestialIndex''').fetchall()
 ```
+
+There is no `sqlite3` CLI on many systems; Python's built-in `sqlite3` module
+needs no install. **`ATTACH` on a path that does not exist silently creates an
+empty database** — so a mistyped filename surfaces later as `no such table`,
+pointing at your SQL instead of at the typo.
 
 Four things produce wrong answers rather than errors:
 

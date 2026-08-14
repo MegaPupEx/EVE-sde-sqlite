@@ -120,11 +120,23 @@ A build may arrive split by domain: `-universe`, `-moons`, `-items`,
 names the part. ATTACH the ones you need and join across them normally:
 
 ```python
+import os, sqlite3
 db = sqlite3.connect(":memory:")
 for g in ("items", "universe"):
-    db.execute(f"ATTACH DATABASE 'eve-sde-{g}.sqlite' AS {g}")
+    path = f"eve-sde-{g}.sqlite"
+    assert os.path.exists(path), path      # see the warning below
+    db.execute(f"ATTACH DATABASE '{path}' AS {g}")
 db.execute("SELECT t.name FROM universe.planets p JOIN items.types t ON t.typeID=p.typeID ...")
 ```
+
+**`ATTACH` on a missing file does not error -- it creates an empty database.**
+The failure then surfaces as `no such table: items.types` on the next query,
+which points at the schema when the real fault is the filename. Check the path
+exists first, or a typo costs you a long detour.
+
+Download with `curl -O` rather than `-o name.xz`: `xz -d` on a file called
+`universe.xz` yields `universe`, and every example here expects
+`eve-sde-universe.sqlite`.
 
 Only fetch the parts a question needs. Common pairings: planet or route
 questions want `universe` alone; moon questions want `universe` + `moons`; ship
