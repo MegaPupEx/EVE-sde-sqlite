@@ -34,10 +34,10 @@ a query".
 | `references/gotchas-world.md` | 1.1k | missions, agents, dungeons, DED ratings, NPC corps, certificates, clone grades, masteries — severe traps, documented nowhere else |
 | `references/schema.md` | 3.0k | you need column names, are joining a table you have not used, **or need to find which table holds something** — its second half indexes every generic table in every part |
 | `references/examples.md` | 1.8k | **try first** for a straightforward stat, blueprint, invention, reprocessing, planet, gate or security query — 10 worked queries, each naming the parts it needs |
-| `references/acquisition.md` | 1.3k | no database is present and none was uploaded — how to fetch or build one |
+| `references/acquisition.md` | 1.5k | no database is present and none was uploaded — how to fetch or build one |
 
 The token column is approximate (bytes/4), for budgeting context before
-opening a file; this file itself is ~4.0k.
+opening a file; this file itself is ~4.2k.
 
 The `gotchas-*` files follow the download parts, so fetching usually decides
 reading too: fetch `universe`, read `references/gotchas-universe.md`. Two
@@ -192,6 +192,12 @@ SELECT key, value FROM meta;   -- sdeBuildNumber, sdeReleaseDate, builtAt, sourc
 **Qualify it as `universe.meta` if you have ATTACHed several parts** — every
 part has its own `meta` and an unqualified read silently picks one.
 
+Note this check is against the **docs'** build, to know whether the documented
+counts still hold. Whether your *database* is current is a different check —
+CCP's `latest.jsonl` endpoint, in "Get a database" step 1. A long-lived
+session can pass the first check and still be answering from a build CCP has
+since replaced.
+
 If `sdeBuildNumber` differs from 3466501, **run
 `scripts/verify_claims.py --parts <dir>`** (or `--db <file>`): every hard number
 in these docs is encoded there as a query, and it prints exactly which
@@ -212,7 +218,16 @@ empty**, so moon questions return zero rows instead of raising — see
 Work down this list and stop at the first that succeeds. Environments differ in
 what they can reach, so do not assume any one of them works.
 
-**1. Already present.** If a `.sqlite` is on disk, use it. Check `meta` as above.
+**1. Already present.** If a `.sqlite` is on disk, use it — after a staleness
+check when the sandbox has network: CCP's current build is one GET away
+(`https://developers.eveonline.com/static-data/tranquility/latest.jsonl`,
+fields `buildNumber` / `releaseDate`). If it is newer than your
+`meta.sdeBuildNumber`, re-fetch the parts you need (seconds — see
+`references/acquisition.md`, including the two overwrite snags) and re-run
+`scripts/verify_claims.py`. If you stay on the older file — no network, or the
+user declines — **say which build and release date you are answering from**;
+never silently quote stale data as current. Check once per session, not per
+question.
 
 **2. Uploaded to the conversation.** The only option in a sandbox with no
 outbound access, and it costs nothing to check first. Decompress every

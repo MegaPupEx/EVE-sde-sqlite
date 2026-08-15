@@ -40,6 +40,24 @@ the one this skill's counts were verified against**. That is fine — run
 `scripts/verify_claims.py --parts .` and it prints which documented figures
 moved, if any (see "Check the build first" in SKILL.md).
 
+## Refreshing mid-session
+
+CCP's current build is always one GET away:
+`https://developers.eveonline.com/static-data/tranquility/latest.jsonl`
+(`buildNumber`, `releaseDate`). When it is newer than your
+`meta.sdeBuildNumber` — or the user asks for the newest SDE — re-fetching
+works at any point in a session; `latest` always serves the current release
+and the builder always builds it. Two snags make a naive refresh fail:
+
+1. **`xz -d` refuses to overwrite** an existing `.sqlite` — use `xz -df`, or
+   delete the old parts first.
+2. **Open connections keep the old file.** An ATTACHed database is the file as
+   it was opened; close and reopen every connection after replacing the parts,
+   or half your queries silently answer from the old build.
+
+After a refresh, re-run `scripts/verify_claims.py --parts .` so you know which
+documented counts moved on the new build.
+
 **Sizes are the compressed `.xz` download at the preset the builder uses**
 (`preset=9|PRESET_EXTREME`). This matters for `moons`, the only part near the
 30 MB cap: 20.5 MB at 9e but **24.0 MB at xz's default preset 6**, so
