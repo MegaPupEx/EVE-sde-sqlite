@@ -22,6 +22,7 @@ rather than quoting.
 | Alpha-clone skill list | `cloneGrades` | `_key` is a **raceID** (1/2/4/8), and although the four rows are named per race their `skills` JSON is **byte-identical** -- 175 skills, 23 of them to level V. "What can an Alpha Minmatar train that a Caldari can't" returns a confident empty answer |
 | Ship masteries | `masteries` | `_key` = typeID (476/476). `_value` is `[{_key: 0..4, _value:[certificateID]}]`, and the 0-4 index selects which **tier column** of `certificates.skillTypes` to read (`basic`..`elite`) -- the SDE never says so. **72 of 476 rows carry an identical cert list at every level**, so reading it wrong looks self-consistent |
 | NPC agents sitting in space | `agentsInSpace` | 360 rows, columns `_key`, `dungeonID`, `solarSystemID`, `spawnPointID`, `typeID`. `_key` is the agent's `npcCharacters._key`; **`dungeonID` resolves 0 of 360** (see below) |
+| Epic arcs | `epicArcs` | 21 rows but only **9 are epic arcs** -- the other 12 `Pilot Certification Course` rows are AIR career-program tutorials sharing the table. All 9 arcs tie at `arcRestartInterval = 129,600`, and **the unit is not stated in the data**: read as minutes it matches the known 90-day reset (as seconds it would be 36 hours, which is wrong) -- flag the unit as corroborated by game knowledge, not by the SDE. `missions` is a JSON chain of `{_key, agentID, nextMissions}` |
 
 **Mission dungeon references are almost all dangling.** 1,662 missions carry a
 `killMission` object; **1,661 of those name a `dungeonID` and only 3 of them

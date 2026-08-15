@@ -27,8 +27,13 @@ rather than quoting.
   Cynosural Suppression` (2001) are `published = 1` types with no
   `sovereigntyUpgrades` row**, so a *name*-based lookup ("the cyno nav
   upgrade") can land on a dead legacy type. Start from
-  `sovereigntyUpgrades._key` and join to `types`, never the other way. `mutually_exclusive_group` is
-  free text (`Mining_A`, `PvE_C`, `Infrastructure_3`) with no lookup table.
+  `sovereigntyUpgrades._key` and join to `types`, never the other way.
+  **`mutually_exclusive_group` gates installation, not just categorises** --
+  upgrades sharing a group cannot run at the same time, and all three tiers of
+  a Prospecting Array share one (Tritanium 1/2/3 are all `Mining_A`), so never
+  sum a tier ladder into a "cost to run all three": only one tier can ever be
+  live. The values are free text (`Mining_A`, `PvE_C`, `Infrastructure_3`)
+  with no lookup table.
 - **`universe.planetResources` is Equinox sovereignty, not planetary industry.**
   It holds `power` / `workforce` / `reagent` for the 2,712 sov-claimable nullsec
   systems. **`_key` is a mixed ID space**: 23,086 rows are `planets.planetID`

@@ -1204,6 +1204,20 @@ CHECKS = [
       "universe", 3262, fn=fn_jita_reachability),
     C("SKILL.md", "the Files table's token costs are within 15% of bytes/4",
       "", [], fn=fn_token_table),
+    C("schema.md", "metenoxMoonDrill: one row -- 3,600 s cycle, 0.4 efficiency, 200 reagents",
+      "industry", (1, 3600, 0.4, 200), sql="""
+      SELECT COUNT(*), MAX(miningCycleTime), MAX(miningEfficiency),
+             MAX(reagentsConsumedPerCycle) FROM metenoxMoonDrill"""),
+    C("gotchas-world.md", "epicArcs: 9 arcs tie at 129,600; 12 tutorial rows at 1",
+      "world", (9, 12), sql="""
+      SELECT SUM(arcRestartInterval = 129600), SUM(arcRestartInterval = 1)
+      FROM epicArcs"""),
+    C("gotchas-universe.md",
+      "Tritanium Prospecting Arrays 1-3 share one mutually_exclusive_group",
+      "universe items", 1, sql="""
+      SELECT COUNT(DISTINCT u.mutually_exclusive_group) FROM sovereigntyUpgrades u
+      JOIN types t ON t.typeID = u._key
+      WHERE t.name LIKE 'Tritanium Prospecting Array %'"""),
 ]
 
 
