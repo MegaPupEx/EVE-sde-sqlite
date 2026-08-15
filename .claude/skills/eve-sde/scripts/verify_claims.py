@@ -414,6 +414,41 @@ def fn_linkwithship(conn):
     return (total, out.get(946), out.get(300), out.get(602))
 
 
+def fn_token_table(conn):
+    # SKILL.md's Files table lists an approximate token cost per reference
+    # file (bytes/4). Those numbers rot as files grow -- this pins them to
+    # within 15% / 0.3k of the real size.
+    import re
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    skill = open(os.path.join(base, "SKILL.md")).read()
+    bad = []
+    for m in re.finditer(r"\| `references/([\w.-]+)` \| ([\d.]+)k \|", skill):
+        f, listed = m.group(1), float(m.group(2))
+        actual = os.path.getsize(os.path.join(base, "references", f)) / 4096
+        if abs(actual - listed) > max(0.3, 0.15 * actual):
+            bad.append((f, listed, round(actual, 1)))
+    return bad
+
+
+def fn_jita_reachability(conn):
+    sec_ids = set(col(conn, "SELECT solarSystemID FROM systems"))
+    adj = collections.defaultdict(list)
+    for a, b in rows(conn, "SELECT solarSystemID, destSystemID FROM stargates"):
+        adj[a].append(b)
+    jita = one(conn, "SELECT solarSystemID FROM systems WHERE name = 'Jita'")
+    seen = {jita}
+    frontier = [jita]
+    while frontier:
+        nxt = []
+        for n in frontier:
+            for m in adj[n]:
+                if m not in seen:
+                    seen.add(m)
+                    nxt.append(m)
+        frontier = nxt
+    return len(sec_ids) - len(seen)
+
+
 def fn_stargate_order(conn):
     cols = table_columns(conn, "stargates")
     return cols.index("destStargateID") < cols.index("destSystemID")
@@ -1154,6 +1189,21 @@ CHECKS = [
       "world cosmetic items universe", [], fn=fn_lowercase_generics),
     C("SKILL.md", "stargate rows: 13,978", "universe", 13978,
       sql="SELECT COUNT(*) FROM stargates"),
+    C("SKILL.md", "volume equals packagedVolume for 25,347 published types",
+      "items", 25347, sql="""
+      SELECT COUNT(*) FROM types WHERE published = 1
+      AND volume = packagedVolume"""),
+    C("gotchas-types.md",
+      "Bowhead ship bay 1,600,000 m3; Charon cargo 465,000 m3",
+      "items", (1600000.0, 465000.0), sql="""
+      SELECT (SELECT d.value FROM type_dogma d JOIN types t ON t.typeID = d.typeID
+              JOIN dogma_attributes a ON a.attributeID = d.attributeID
+              WHERE t.name = 'Bowhead' AND a.name = 'shipMaintenanceBayCapacity'),
+             (SELECT capacity FROM types WHERE name = 'Charon')"""),
+    C("gotchas-universe.md", "3,262 systems are gate-unreachable from Jita",
+      "universe", 3262, fn=fn_jita_reachability),
+    C("SKILL.md", "the Files table's token costs are within 15% of bytes/4",
+      "", [], fn=fn_token_table),
 ]
 
 
@@ -1196,8 +1246,11 @@ def main():
             builds[group] = one(conn, f"SELECT value FROM {group}.meta "
                                       "WHERE key = 'sdeBuildNumber'")
         if not have:
-            sys.exit(f"no eve-sde-*.sqlite parts found in {pdir!r} "
-                     "(use --parts DIR or --db FILE)")
+            # Exit 2 for setup failure, so automation can tell "could not
+            # run" apart from exit 1's "ran and found drift".
+            print(f"no eve-sde-*.sqlite parts found in {pdir!r} "
+                  "(use --parts DIR or --db FILE)", file=sys.stderr)
+            sys.exit(2)
 
     print(f"docs pinned to build {DOC_BUILD}")
     for k, v in sorted(builds.items()):

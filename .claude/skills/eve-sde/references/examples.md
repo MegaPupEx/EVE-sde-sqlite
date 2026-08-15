@@ -11,6 +11,11 @@ The one table you must always qualify is `meta`, which exists in every part.
 **Each example names the parts it needs.** A `no such table` here means a part
 is not open, not that the query is wrong.
 
+**Name matches are case-sensitive** -- the literals below work because the case
+is exact. For player-typed input, write `t.name = ? COLLATE NOCASE` and bind
+the value (`db.execute(sql, (name,))`); binding also survives the apostrophes
+in names like `'Firewall' Signal Amplifier`.
+
 ```sql
 -- ship fitting stats                              [needs: items]
 -- Safe to match on name here ONLY because these nine are isolated scalars.

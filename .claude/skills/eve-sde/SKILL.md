@@ -1,6 +1,6 @@
 ---
 name: eve-sde
-description: Query the EVE Online Static Data Export (SDE) - ships, modules, dogma attributes, blueprints and manufacturing, reprocessing yields, and the New Eden universe (regions, systems, planets, moons, stargates, stations). Use whenever a question involves EVE Online game data such as ship stats, fitting attributes, build materials, ore yields, system security, planet or moon data, jump routes, market groups, or type/group/category lookups. Covers building the local SQLite database and querying it with SQL.
+description: Query the EVE Online Static Data Export (SDE) - ships, modules, dogma attributes, blueprints and manufacturing, planetary industry (PI) schematics, reprocessing yields, and the New Eden universe (regions, systems, planets, moons, stargates, stations). Use whenever a question involves EVE Online game data such as ship stats, fitting attributes, build materials, ore yields, PI chains, system security, planet or moon data, jump routes, market groups, or type/group/category lookups. Covers building the local SQLite database and querying it with SQL.
 ---
 
 # EVE Online SDE
@@ -10,6 +10,10 @@ player state. This skill covers getting it into SQLite and querying it.
 
 **Not in the SDE:** market prices, kills, sovereignty, character or corp data.
 Those are live data — use ESI (`https://esi.evetech.net`) instead.
+
+**No database on disk?** That is step zero — jump to "Get a database" below.
+Fetching one part takes seconds; `references/acquisition.md` has the full
+ladder.
 
 **Two failure modes.** First, **wrong answers rather than errors**: the SDE is
 full of columns that look like the thing you want and are not — resonance is
@@ -24,35 +28,37 @@ a query".
 | File | ~tokens | Read it when |
 | --- | --- | --- |
 | `references/gotchas-dogma.md` | 3.8k | what a ship or module **value means** — resistances, units, capacitor, speed, sensors, skill requirements |
-| `references/gotchas-types.md` | 2.6k | **which rows belong** — `published`, tech level, volume vs `packagedVolume`, `basePrice`, planet type names, duplicate names |
-| `references/gotchas-universe.md` | 3.3k | any system, planet, moon, star, security, region or routing question |
-| `references/gotchas-industry.md` | 2.3k | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
+| `references/gotchas-types.md` | 2.9k | **which rows belong** — `published`, tech level, volume vs `packagedVolume`, `basePrice`, planet type names, duplicate names |
+| `references/gotchas-universe.md` | 4.4k | any system, planet, moon, star, security, region or routing question |
+| `references/gotchas-industry.md` | 2.4k | any build cost, blueprint or invention question — and reprocessing yields, which live in `items.type_materials` |
 | `references/gotchas-world.md` | 1.1k | missions, agents, dungeons, DED ratings, NPC corps, certificates, clone grades, masteries — severe traps, documented nowhere else |
 | `references/schema.md` | 3.0k | you need column names, are joining a table you have not used, **or need to find which table holds something** — its second half indexes every generic table in every part |
-| `references/examples.md` | 1.7k | **try first** for a straightforward stat, blueprint, invention, reprocessing, planet, gate or security query — 10 worked queries, each naming the parts it needs |
-| `references/acquisition.md` | 1.2k | no database is present and none was uploaded — how to fetch or build one |
+| `references/examples.md` | 1.8k | **try first** for a straightforward stat, blueprint, invention, reprocessing, planet, gate or security query — 10 worked queries, each naming the parts it needs |
+| `references/acquisition.md` | 1.3k | no database is present and none was uploaded — how to fetch or build one |
 
 The token column is approximate (bytes/4), for budgeting context before
-opening a file; this file itself is ~3.8k.
+opening a file; this file itself is ~4.0k.
 
 The `gotchas-*` files follow the download parts, so fetching usually decides
-reading too: fetch `universe`, read `gotchas-universe.md`. Two exceptions —
-`items` has **two** files (`gotchas-dogma.md` for what a value means,
-`gotchas-types.md` for which rows belong), and reprocessing is documented in
-`gotchas-industry.md` although `type_materials` lives in the `items` part.
+reading too: fetch `universe`, read `references/gotchas-universe.md`. Two
+exceptions — `items` has **two** files (`references/gotchas-dogma.md` for what
+a value means, `references/gotchas-types.md` for which rows belong), and
+reprocessing is documented in `references/gotchas-industry.md` although
+`type_materials` lives in the `items` part.
 
 **Coverage is not uniform.** `items`, `universe`, `industry` and `world` are
-documented in depth. **`cosmetic` and `misc` are barely documented**:
-skins, graphics and icons have no notes at all. Two exceptions are indexed in
-`schema.md`, and both are misfiled by name — **`cosmetic.linkWithShip`** decides
-which hulls may link to a CRAB or skyhook beacon, and **`misc.dbuffCollections`**
-carries an ID-collision trap covered in `gotchas-universe.md`. For anything else
-in those two parts, inspect with `sqlite_master` and `PRAGMA table_info` and say
-the shape is unverified rather than inferring it.
+documented in depth. In `cosmetic` and `misc`, six tables are covered —
+`linkWithShip`, `fighterAbilities`, `fighterAbilitiesByType`,
+`appliedProximityEffects`, `proximityTrap` and `dbuffCollections`, all indexed
+in `references/schema.md` and routed from the parts table below — but **skins,
+graphics and icons have no notes at all**. For anything uncovered in those two
+parts, inspect with `sqlite_master` and `PRAGMA table_info` and say the shape
+is unverified rather than inferring it.
 
-**If you cannot find where something lives, `schema.md` indexes the tables you
-would not guess** — ship traits, mutaplasmid ranges, PI chains, wormhole
-effects, star class, ore compression, agents, missions, dungeons, certificates.
+**If you cannot find where something lives, `references/schema.md` indexes the
+tables you would not guess** — ship traits, mutaplasmid ranges, PI chains,
+wormhole effects, star class, ore compression, agents, missions, dungeons,
+certificates.
 
 ## Answering a player, not a query
 
@@ -85,9 +91,14 @@ Two standing habits:
 
 ## If you read nothing else
 
-These seven prevent more wrong answers than anything else in the package. Full
+These eight prevent more wrong answers than anything else in the package. Full
 treatment in the `gotchas-*` files.
 
+- **Name matching is case-sensitive, and names contain apostrophes.**
+  `WHERE name = 'rifter'` returns zero rows, silently — write
+  `WHERE name = ? COLLATE NOCASE` and pass the name as a bound parameter
+  (`db.execute(sql, (name,))`), which also survives `'Firewall' Signal
+  Amplifier` and every `'Basic'` module.
 - `unitID = 108` means the value is **inverted** — `0.4` is 60% resist, not 40%.
 - Filter `space = 'kspace'` **before** any security comparison; wormhole, abyssal
   and void systems all store `security = -0.99`.
@@ -134,8 +145,9 @@ Two conventions, and guessing wrong costs a turn every time:
   `factionID` and `raceID`.
 
   `_key` is not always a typeID. `planetSchematics._key` is a schematicID and
-  `planetResources._key` is a mixed planetID/starID space (`gotchas-universe.md`,
-  and `schema.md` for `planetSchematics`).
+  `planetResources._key` is a mixed planetID/starID space
+  (`references/gotchas-universe.md`, and `references/schema.md` for
+  `planetSchematics`).
 
 When unsure, ask the database rather than guessing:
 
@@ -193,7 +205,7 @@ Anything else is a hand-built database: `positions` other than `'1'` means verif
 a coordinate before promising a distance (`SELECT x FROM systems WHERE
 name='Jita'`), and `portable = '1'` means the `moons` table **exists but is
 empty**, so moon questions return zero rows instead of raising — see
-`acquisition.md`.
+`references/acquisition.md`.
 
 ## Get a database
 
@@ -229,7 +241,7 @@ Parts are `universe`, `moons`, `items`, `world`, `industry`, `cosmetic`, `misc`
 | Stations | `universe` + `items` + `world` | `npc_stations` has **no name column**; names, services and owners come from `types`, `stationOperations`, `stationServices`, `npcCorporations` |
 | Planetary industry chains | `industry` + `items` | `planetSchematics` |
 | Wormhole system effects | `universe` + `items` | `mapSecondarySuns`, then the beacon's dogma |
-| Abyssal / insurgency weather | `misc` + `items` | `appliedProximityEffects`, group `Cloud` — the SDE has only some strengths, see `gotchas-universe.md` |
+| Abyssal / insurgency weather | `misc` + `items` | `appliedProximityEffects`, group `Cloud` — the SDE has only some strengths, see `references/gotchas-universe.md` |
 | Fighter abilities, high-sec bans | `misc` + `items` | `fighterAbilitiesByType` → `fighterAbilities`; the restriction is on the ability, not the fighter |
 | Factions, races, missions, agents, dungeons | `world` | not `universe` |
 
@@ -263,6 +275,11 @@ so `SELECT * FROM types` works even when `types` lives in an attached part — t
 examples in `references/` are written unqualified for that reason. The one table
 you must always qualify is **`meta`**, which exists in all seven parts, so an
 unqualified read silently returns whichever attached first.
+
+**Never pull a big table into your context.** `moons` is 344k rows, `types` 52k,
+`type_dogma` 645k — a bare `SELECT *` on any of them floods the conversation and
+buries the answer. Aggregate in SQL, `LIMIT` what you print, and report counts,
+not rows.
 
 There is no `sqlite3` CLI on many systems; Python's built-in module needs none.
 

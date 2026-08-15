@@ -2,7 +2,9 @@
 
 Three things live here: the decompression loop for parts **uploaded to the
 conversation**, how to **fetch or build** a database when none is present, and
-what a `--portable` build leaves out. SKILL.md points here for all three. Work down and stop at the first that succeeds.
+what a `--portable` build leaves out. Work down and stop at the first that
+succeeds — the numbering starts at 3 because steps **1** (already on disk) and
+**2** (uploaded) live in SKILL.md's "Get a database".
 
 **3. Prebuilt release** — fastest when reachable, already integrity checked, no
 build step. Releases carry the SDE **split by domain**; fetch only the parts the
@@ -52,7 +54,7 @@ the output is byte-for-byte the size of the release. Standard library only. Need
 `developers.eveonline.com`:
 
 ```bash
-python3 scripts/build_sde_db.py --complete --positions   # ~162 MB, all 107 tables
+python3 scripts/build_sde_db.py --complete --positions   # ~162 MB, 107 tables (106 domain + meta)
 ```
 
 To produce upload-sized files for a sandbox with no network:

@@ -119,6 +119,12 @@ rather than quoting.
   7 (1,880 systems), 9 (3,188), 10 (6), 11 (7) and 25 (Pochven's 27), so without it the same query answers
   "Jita is class 7" and "1DQ1-A is class 9". Class 8 never appears on a
   constellation at all -- it is system-level only, on 687 k-space systems.
+  **Classes 7/8/9 read as high-sec/low-sec/null-sec** (wormhole spawn
+  targeting). The SDE states no semantics, but the 687 class-8 systems are
+  *exactly* the low-sec count, which settles 8; 7 and 9 sit at constellation
+  level over mixed-security constellations, so their system counts (1,880 /
+  3,188) do **not** match the security bands -- never count high or null sec
+  from them.
   Classes 1-6 are the familiar
   wormhole classes, 12 is Thera, 13 shattered/frigate holes, 14-18 Drifter,
   19-25 abyssal/void/Pochven.

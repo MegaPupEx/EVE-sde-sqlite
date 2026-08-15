@@ -4,6 +4,11 @@ Column-level reference for the hand-shaped tables, plus how the generically
 ingested tables are keyed. `PRAGMA table_info(<table>)` lists every column; the
 tables here name the ones you will reach for.
 
+(The count reconciliation, so nobody hunts for "missing" tables: 25
+hand-shaped = the 23 tabled below plus `factions` and `races`, which are
+covered in prose because their whole point is being keyed differently. The
+complete build's "107 tables" = 106 domain tables + `meta`.)
+
 Names are English-only; the builder discards other locales.
 
 ## Hand-shaped tables
