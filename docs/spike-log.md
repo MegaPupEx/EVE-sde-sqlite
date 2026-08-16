@@ -1,0 +1,109 @@
+# Engine spike log
+
+Phase 1 of `docs/roadmap-fitting-mcp.md`. Timebox: one week per candidate,
+A first. This log is the record the decision gets made from.
+
+## 2026-08-16 — Candidate A (pyfa's embedded eos): extraction succeeded
+
+**Result: pyfa's eos runs fully headless.** One session took it from "unknown
+extraction depth" to the complete 10-fit reference battery computing every
+v1 stat-panel figure — EHP by layer with resists, burst/sustained/drone DPS,
+volley, cap stability from the event simulation, align/speed/sig, targeting,
+fitting headroom. Runner and battery live in `fitting/spike/`.
+
+### The entanglement map (the spike's central question, answered)
+
+The wx dependency is shallower than the roadmap feared:
+
+- **eos has zero top-level GUI imports.** The only `from gui` imports in the
+  whole package are three *lazy* imports inside functions in
+  `eos/effectHandlerHelpers.py` (fit-command helpers); none trigger on the
+  headless calculation path.
+- **One indirect wx reach**: `eos.db` → `eos/db/migration.py` →
+  root `config.py` → `import wx` — and root config uses wx only for
+  `wx.Colour` UI constants. A 3-line stub class satisfies it
+  (`fitting/spike/wxstub/`). Root config also needs `cryptography`
+  (ESI token storage) — a real pip dependency, installed not stubbed.
+- **saveddata goes in-memory** via pyfa's own CI hook: eos/config.py checks
+  `sys._called_from_test`.
+- **Two API sharp edges** (documented in the runner, cost ~20 min total):
+  `import eos.db` must precede any `eos.saveddata` import (circular
+  otherwise), and `module.owner`/`drone.owner` are ORM backrefs that must be
+  set manually when no saveddata session exists.
+- **`eve.db` builds headless** from the JSON static data bundled in pyfa's
+  repo (`python3 db_update.py`, ~1 min, 100 MB) — no GUI, no network beyond
+  the clone.
+- **Minimal dependency set**: sqlalchemy 1.4.50, logbook, python-dateutil,
+  pyyaml, roman, cryptography, requests. No wxPython, no matplotlib, no
+  numpy.
+
+**What did not extract cleanly: EFT import/export.** `service/port/eft.py`
+imports `service.fit`, `service.market` and `gui.fitCommands.helpers` —
+the service layer imports wx at top level. Options for v1: stub deeper, or
+write a thin EFT parser that builds `eos.saveddata` objects directly (the
+battery runner already shows the construction pattern; a parser over it is
+small). Leaning: own parser, revisit when the mutated-module EFT dialect
+lands.
+
+### The data-skew rule, vindicated immediately
+
+pyfa's bundled static data is **client build 3424810, dumped 2026-07-07**.
+CCP's current SDE (and our layer-1 database) is **build 3466501, released
+2026-08-13**. The skew the roadmap's data-sync rule exists to name is not
+hypothetical — it is present on day one of the spike. Every reference JSON
+carries `engine_client_build` so no number can be quoted without its data
+generation. Refreshing pyfa's staticdata (their Phobos dump pipeline) or
+feeding eos from our SQLite is the open v2 investigation, now with evidence.
+
+### The reference battery
+
+10 fits, all-V, uniform damage profile, chosen for effect-matrix coverage
+(`fitting/spike/battery.py` documents what each exercises; panels in
+`fitting/spike/reference/`):
+
+| fit | dps | sustained | volley | ehp | cap | align | m/s |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| rifter-ac-brawler | 172.3 | 164.1 | 213.9 | 2,955 | 22.5s | 4.69 | 3,213 |
+| punisher-pulse-armor | 91.6 | 91.6 | 206.6 | 6,682 | 87.7% | 5.10 | 1,071 |
+| merlin-blaster-shield | 227.0 | 220.9 | 512.0 | 6,538 | 540s | 5.04 | 2,930 |
+| caracal-rlml-shield | 298.0 | 178.7 | 780.9 | 16,943 | 80s | 6.27 | 2,078 |
+| vexor-drone-armor | 431.6 | 428.9 | 1,744.9 | 31,102 | 69.9% | 10.25 | 575 |
+| drake-ham-passive | 535.1 | 520.6 | 2,317.8 | 47,178 | 1,430s | 11.25 | 444 |
+| hurricane-arty-alpha | 554.1 | 525.9 | 4,066.9 | 37,541 | 200s | 9.40 | 1,557 |
+| abaddon-pulse-armor | 1,149.4 | 1,149.4 | 5,300.5 | 188,246 | 198.3s | 22.72 | 289 |
+| raven-cruise-active | 838.2 | 793.2 | 5,473.9 | 52,360 | 120s | 16.77 | 381 |
+| zealot-pulse-t2 | 442.4 | 442.4 | 1,360.2 | 44,572 | 77.7% | 10.93 | 593 |
+
+Spot checks that pass: the RLML burst/sustained split (298 → 179) shows clip
++ 35 s reload modeling; the Drake panel shows the hull resist bonus
+compounding with the hardener on shield only, DC II on hull, and 196.6 hp/s
+peak passive regen; MWD sig bloom and mass math visible on the Rifter
+(3,213 m/s, 210 m sig). Full battery computes in ~4 s.
+
+### Standing verdict and what would change it
+
+**Candidate A passes the extraction question and is the presumptive winner**
+— the decision criterion ("reproduces pyfa's stat panels within rounding,
+driven headless") is satisfied trivially: it *is* pyfa's engine, producing
+the panels headless. Per the roadmap tiebreak, A on language and trust.
+The B timebox becomes optional; worth a short look only if A develops a
+blocker, or to grade B against the battery for curiosity/backup.
+
+Before v1 closes over this engine, one human check is still wanted:
+open two of these fits in a desktop pyfa GUI (same commit or release build)
+and confirm the panels match the JSON — guards against a headless-vs-GUI
+divergence this environment cannot see.
+
+### Follow-ups carried out of the spike
+
+- Battery additions: implants + booster fit, alpha-clone skill set
+  (`cloneGrades` from layer 1), overheated states, a mutated-module fit,
+  non-uniform damage profiles.
+- Thin EFT parser over eos.saveddata construction (service-layer importer is
+  GUI-entangled).
+- License note: eos is GPL — fine while we run it as a local tool; if the
+  MCP server ships bundled with pyfa code, the server is GPL too. Flag at
+  MCP v1 packaging.
+- pyfa staticdata refresh cadence vs CCP builds (the observed 5-week skew):
+  investigate their Phobos pipeline before deciding the v2 one-data-source
+  question.

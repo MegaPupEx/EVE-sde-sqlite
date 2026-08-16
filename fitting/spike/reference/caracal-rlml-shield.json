@@ -1,0 +1,145 @@
+{
+ "name": "caracal-rlml-shield",
+ "ship": "Caracal",
+ "exercises": "rapid light launchers (clip+long reload \u2014 sustained vs burst DPS split)",
+ "meta": {
+  "engine": "pyfa-eos",
+  "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
+  "engine_client_build": "3424810",
+  "engine_dump_time": "1783448238",
+  "character": "all-5",
+  "damage_profile": "uniform",
+  "generated": "2026-08-16"
+ },
+ "modules": [
+  [
+   "Rapid Light Missile Launcher II",
+   "Caldari Navy Scourge Light Missile"
+  ],
+  [
+   "Rapid Light Missile Launcher II",
+   "Caldari Navy Scourge Light Missile"
+  ],
+  [
+   "Rapid Light Missile Launcher II",
+   "Caldari Navy Scourge Light Missile"
+  ],
+  [
+   "Rapid Light Missile Launcher II",
+   "Caldari Navy Scourge Light Missile"
+  ],
+  [
+   "Rapid Light Missile Launcher II",
+   "Caldari Navy Scourge Light Missile"
+  ],
+  [
+   "50MN Quad LiF Restrained Microwarpdrive",
+   null
+  ],
+  [
+   "Large Shield Extender II",
+   null
+  ],
+  [
+   "Multispectrum Shield Hardener II",
+   null
+  ],
+  [
+   "Warp Disruptor II",
+   null
+  ],
+  [
+   "Ballistic Control System II",
+   null
+  ],
+  [
+   "Ballistic Control System II",
+   null
+  ],
+  [
+   "Nanofiber Internal Structure II",
+   null
+  ],
+  [
+   "Medium Core Defense Field Extender I",
+   null
+  ]
+ ],
+ "drones": [],
+ "stats": {
+  "fitting": {
+   "cpu": [
+    409.25,
+    537.5
+   ],
+   "powergrid": [
+    620.5,
+    787.5
+   ],
+   "calibration": [
+    50.0,
+    400.0
+   ]
+  },
+  "defense": {
+   "hp": {
+    "shield": 6181.2,
+    "armor": 1500.0,
+    "hull": 1400.0
+   },
+   "resists": {
+    "shield": {
+     "em": 0.325,
+     "thermal": 0.46,
+     "kinetic": 0.595,
+     "explosive": 0.6625
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.45,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "ehp_uniform": {
+    "shield": 12630.9,
+    "armor": 2222.2,
+    "hull": 2089.6
+   },
+   "ehp_total_uniform": 16942.7,
+   "shield_regen_peak_hps": 16.48
+  },
+  "offense": {
+   "dps_burst": 297.97,
+   "dps_sustained": 178.66,
+   "dps_drones": 0,
+   "volley": 780.88
+  },
+  "capacitor": {
+   "capacity_gj": 1250.0,
+   "recharge_time_s": 333.75,
+   "stable": false,
+   "stable_pct_or_ttl_s": 80.0
+  },
+  "navigation": {
+   "max_velocity_ms": 2077.6,
+   "align_time_s": 6.266,
+   "signature_m": 860.9,
+   "mass_kg": 16910000.0,
+   "warp_speed_aus": 4.0
+  },
+  "targeting": {
+   "scan_resolution_mm": 337.5,
+   "lock_range_km": 71.88,
+   "sensor_strength": 19.2,
+   "max_targets": 6,
+   "lock_time_frigate_35m_s": 6.57
+  }
+ }
+}

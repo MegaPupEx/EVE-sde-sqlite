@@ -1,0 +1,10 @@
+# Minimal deps to drive pyfa's eos headless — deliberately NOT pyfa's full
+# requirements.txt: no wxPython (stubbed by headless.py), no matplotlib/numpy
+# (graph GUI only). Versions pinned where pyfa pins them.
+sqlalchemy==1.4.50
+logbook==1.7.0.post0
+python-dateutil==2.8.2
+pyyaml==6.0.1
+roman==4.1
+cryptography
+requests

@@ -1,0 +1,166 @@
+{
+ "name": "drake-ham-passive",
+ "ship": "Drake",
+ "exercises": "passive shield regen (purger rigs + SPRs), HAMs, hull resist bonus",
+ "meta": {
+  "engine": "pyfa-eos",
+  "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
+  "engine_client_build": "3424810",
+  "engine_dump_time": "1783448238",
+  "character": "all-5",
+  "damage_profile": "uniform",
+  "generated": "2026-08-16"
+ },
+ "modules": [
+  [
+   "Heavy Assault Missile Launcher II",
+   "Scourge Rage Heavy Assault Missile"
+  ],
+  [
+   "Heavy Assault Missile Launcher II",
+   "Scourge Rage Heavy Assault Missile"
+  ],
+  [
+   "Heavy Assault Missile Launcher II",
+   "Scourge Rage Heavy Assault Missile"
+  ],
+  [
+   "Heavy Assault Missile Launcher II",
+   "Scourge Rage Heavy Assault Missile"
+  ],
+  [
+   "Heavy Assault Missile Launcher II",
+   "Scourge Rage Heavy Assault Missile"
+  ],
+  [
+   "Heavy Assault Missile Launcher II",
+   "Scourge Rage Heavy Assault Missile"
+  ],
+  [
+   "Large Shield Extender II",
+   null
+  ],
+  [
+   "Large Shield Extender II",
+   null
+  ],
+  [
+   "Multispectrum Shield Hardener II",
+   null
+  ],
+  [
+   "10MN Afterburner II",
+   null
+  ],
+  [
+   "Shield Power Relay II",
+   null
+  ],
+  [
+   "Shield Power Relay II",
+   null
+  ],
+  [
+   "Shield Power Relay II",
+   null
+  ],
+  [
+   "Shield Power Relay II",
+   null
+  ],
+  [
+   "Medium Core Defense Field Purger I",
+   null
+  ],
+  [
+   "Medium Core Defense Field Purger I",
+   null
+  ],
+  [
+   "Medium Core Defense Field Purger I",
+   null
+  ]
+ ],
+ "drones": [
+  [
+   "Hobgoblin II",
+   5
+  ]
+ ],
+ "stats": {
+  "fitting": {
+   "cpu": [
+    459.0,
+    625.0
+   ],
+   "powergrid": [
+    906.2,
+    1037.5
+   ],
+   "calibration": [
+    150.0,
+    400.0
+   ]
+  },
+  "defense": {
+   "hp": {
+    "shield": 13375.0,
+    "armor": 4062.5,
+    "hull": 4687.5
+   },
+   "resists": {
+    "shield": {
+     "em": 0.46,
+     "thermal": 0.568,
+     "kinetic": 0.676,
+     "explosive": 0.73
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.45,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "ehp_uniform": {
+    "shield": 34163.5,
+    "armor": 6018.5,
+    "hull": 6996.3
+   },
+   "ehp_total_uniform": 47178.3,
+   "shield_regen_peak_hps": 196.58
+  },
+  "offense": {
+   "dps_burst": 535.15,
+   "dps_sustained": 520.65,
+   "dps_drones": 99.0,
+   "volley": 2317.84
+  },
+  "capacitor": {
+   "capacity_gj": 3125.0,
+   "recharge_time_s": 1556.96,
+   "stable": false,
+   "stable_pct_or_ttl_s": 1430.0
+  },
+  "navigation": {
+   "max_velocity_ms": 444.05,
+   "align_time_s": 11.252,
+   "signature_m": 388.8,
+   "mass_kg": 18500000.0,
+   "warp_speed_aus": 3.5
+  },
+  "targeting": {
+   "scan_resolution_mm": 243.8,
+   "lock_range_km": 81.25,
+   "sensor_strength": 22.8,
+   "max_targets": 8,
+   "lock_time_frigate_35m_s": 9.09
+  }
+ }
+}

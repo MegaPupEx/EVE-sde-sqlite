@@ -241,7 +241,9 @@ doc-owned misses get fixed and pinned in the harness.**
 
 ## Phasing
 
-1. **Engine spike** — the timeboxed A-vs-B bake-off; everything waits on this
+1. **Engine spike** — the timeboxed A-vs-B bake-off; everything waits on this.
+   *Started 2026-08-16; candidate A extracted successfully on day one — see
+   `docs/spike-log.md` and `fitting/spike/`.*
 2. MCP v1: lifecycle + `get_stats` + `validate_fit`; harness of ~10 reference
    fits
 3. Fitting-knowledge skill v1 + first eval generation

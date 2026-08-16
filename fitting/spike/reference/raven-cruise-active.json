@@ -1,0 +1,173 @@
+{
+ "name": "raven-cruise-active",
+ "ship": "Raven",
+ "exercises": "cruise missiles, active shield tank, ancillary-free sustain",
+ "meta": {
+  "engine": "pyfa-eos",
+  "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
+  "engine_client_build": "3424810",
+  "engine_dump_time": "1783448238",
+  "character": "all-5",
+  "damage_profile": "uniform",
+  "generated": "2026-08-16"
+ },
+ "modules": [
+  [
+   "Cruise Missile Launcher II",
+   "Mjolnir Fury Cruise Missile"
+  ],
+  [
+   "Cruise Missile Launcher II",
+   "Mjolnir Fury Cruise Missile"
+  ],
+  [
+   "Cruise Missile Launcher II",
+   "Mjolnir Fury Cruise Missile"
+  ],
+  [
+   "Cruise Missile Launcher II",
+   "Mjolnir Fury Cruise Missile"
+  ],
+  [
+   "Cruise Missile Launcher II",
+   "Mjolnir Fury Cruise Missile"
+  ],
+  [
+   "Cruise Missile Launcher II",
+   "Mjolnir Fury Cruise Missile"
+  ],
+  [
+   "X-Large Shield Booster II",
+   null
+  ],
+  [
+   "Multispectrum Shield Hardener II",
+   null
+  ],
+  [
+   "Multispectrum Shield Hardener II",
+   null
+  ],
+  [
+   "Shield Boost Amplifier II",
+   null
+  ],
+  [
+   "100MN Afterburner II",
+   null
+  ],
+  [
+   "Cap Recharger II",
+   null
+  ],
+  [
+   "Ballistic Control System II",
+   null
+  ],
+  [
+   "Ballistic Control System II",
+   null
+  ],
+  [
+   "Ballistic Control System II",
+   null
+  ],
+  [
+   "Capacitor Flux Coil II",
+   null
+  ],
+  [
+   "Capacitor Flux Coil II",
+   null
+  ],
+  [
+   "Large Capacitor Control Circuit I",
+   null
+  ],
+  [
+   "Large Capacitor Control Circuit I",
+   null
+  ],
+  [
+   "Large Capacitor Control Circuit I",
+   null
+  ]
+ ],
+ "drones": [],
+ "stats": {
+  "fitting": {
+   "cpu": [
+    872.25,
+    937.5
+   ],
+   "powergrid": [
+    9415.2,
+    13750.0
+   ],
+   "calibration": [
+    300.0,
+    400.0
+   ]
+  },
+  "defense": {
+   "hp": {
+    "shield": 9625.0,
+    "armor": 7975.0,
+    "hull": 8800.0
+   },
+   "resists": {
+    "shield": {
+     "em": 0.5157,
+     "thermal": 0.6125,
+     "kinetic": 0.7094,
+     "explosive": 0.7578
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.45,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "ehp_uniform": {
+    "shield": 27410.4,
+    "armor": 11814.8,
+    "hull": 13134.3
+   },
+   "ehp_total_uniform": 52359.5,
+   "shield_regen_peak_hps": 12.83
+  },
+  "offense": {
+   "dps_burst": 838.24,
+   "dps_sustained": 793.25,
+   "dps_drones": 0,
+   "volley": 5473.93
+  },
+  "capacitor": {
+   "capacity_gj": 4400.0,
+   "recharge_time_s": 157.68,
+   "stable": false,
+   "stable_pct_or_ttl_s": 120.0
+  },
+  "navigation": {
+   "max_velocity_ms": 380.73,
+   "align_time_s": 16.765,
+   "signature_m": 410.0,
+   "mass_kg": 149300000.0,
+   "warp_speed_aus": 3.0
+  },
+  "targeting": {
+   "scan_resolution_mm": 138.8,
+   "lock_range_km": 112.5,
+   "sensor_strength": 26.4,
+   "max_targets": 7,
+   "lock_time_frigate_35m_s": 15.97
+  }
+ }
+}

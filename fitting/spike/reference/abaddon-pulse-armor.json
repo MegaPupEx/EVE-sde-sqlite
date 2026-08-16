@@ -1,0 +1,177 @@
+{
+ "name": "abaddon-pulse-armor",
+ "ship": "Abaddon",
+ "exercises": "large energy turrets, deep armor buffer, hull resist bonus, cap-heavy fit",
+ "meta": {
+  "engine": "pyfa-eos",
+  "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
+  "engine_client_build": "3424810",
+  "engine_dump_time": "1783448238",
+  "character": "all-5",
+  "damage_profile": "uniform",
+  "generated": "2026-08-16"
+ },
+ "modules": [
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "Mega Pulse Laser II",
+   "Conflagration L"
+  ],
+  [
+   "100MN Afterburner II",
+   null
+  ],
+  [
+   "Cap Recharger II",
+   null
+  ],
+  [
+   "Cap Recharger II",
+   null
+  ],
+  [
+   "Cap Recharger II",
+   null
+  ],
+  [
+   "1600mm Steel Plates II",
+   null
+  ],
+  [
+   "1600mm Steel Plates II",
+   null
+  ],
+  [
+   "Multispectrum Energized Membrane II",
+   null
+  ],
+  [
+   "Multispectrum Energized Membrane II",
+   null
+  ],
+  [
+   "Damage Control II",
+   null
+  ],
+  [
+   "Heat Sink II",
+   null
+  ],
+  [
+   "Heat Sink II",
+   null
+  ],
+  [
+   "Large Trimark Armor Pump I",
+   null
+  ],
+  [
+   "Large Trimark Armor Pump I",
+   null
+  ]
+ ],
+ "drones": [],
+ "stats": {
+  "fitting": {
+   "cpu": [
+    633.75,
+    700.0
+   ],
+   "powergrid": [
+    21596.0,
+    26250.0
+   ],
+   "calibration": [
+    100.0,
+    400.0
+   ]
+  },
+  "defense": {
+   "hp": {
+    "shield": 9625.0,
+    "armor": 39261.7,
+    "hull": 11000.0
+   },
+   "resists": {
+    "shield": {
+     "em": 0.125,
+     "thermal": 0.3,
+     "kinetic": 0.475,
+     "explosive": 0.5625
+    },
+    "armor": {
+     "em": 0.8004,
+     "thermal": 0.7405,
+     "kinetic": 0.7006,
+     "explosive": 0.6807
+    },
+    "hull": {
+     "em": 0.598,
+     "thermal": 0.598,
+     "kinetic": 0.598,
+     "explosive": 0.598
+    }
+   },
+   "ehp_uniform": {
+    "shield": 15172.4,
+    "armor": 145709.9,
+    "hull": 27363.2
+   },
+   "ehp_total_uniform": 188245.5,
+   "shield_regen_peak_hps": 12.83
+  },
+  "offense": {
+   "dps_burst": 1149.39,
+   "dps_sustained": 1149.39,
+   "dps_drones": 0,
+   "volley": 5300.49
+  },
+  "capacitor": {
+   "capacity_gj": 7968.8,
+   "recharge_time_s": 480.0,
+   "stable": false,
+   "stable_pct_or_ttl_s": 198.3
+  },
+  "navigation": {
+   "max_velocity_ms": 289.18,
+   "align_time_s": 22.716,
+   "signature_m": 470.0,
+   "mass_kg": 158262500.0,
+   "warp_speed_aus": 3.0
+  },
+  "targeting": {
+   "scan_resolution_mm": 138.8,
+   "lock_range_km": 120.0,
+   "sensor_strength": 26.4,
+   "max_targets": 7,
+   "lock_time_frigate_35m_s": 15.97
+  }
+ }
+}

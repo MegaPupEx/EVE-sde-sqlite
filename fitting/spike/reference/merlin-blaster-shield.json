@@ -1,0 +1,133 @@
+{
+ "name": "merlin-blaster-shield",
+ "ship": "Merlin",
+ "exercises": "small hybrid turrets, shield buffer, hull resist bonus",
+ "meta": {
+  "engine": "pyfa-eos",
+  "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
+  "engine_client_build": "3424810",
+  "engine_dump_time": "1783448238",
+  "character": "all-5",
+  "damage_profile": "uniform",
+  "generated": "2026-08-16"
+ },
+ "modules": [
+  [
+   "Light Neutron Blaster II",
+   "Void S"
+  ],
+  [
+   "Light Neutron Blaster II",
+   "Void S"
+  ],
+  [
+   "Light Neutron Blaster II",
+   "Void S"
+  ],
+  [
+   "5MN Y-T8 Compact Microwarpdrive",
+   null
+  ],
+  [
+   "Medium Shield Extender II",
+   null
+  ],
+  [
+   "Warp Scrambler II",
+   null
+  ],
+  [
+   "X5 Enduring Stasis Webifier",
+   null
+  ],
+  [
+   "Magnetic Field Stabilizer II",
+   null
+  ],
+  [
+   "Damage Control II",
+   null
+  ],
+  [
+   "Small Core Defense Field Extender I",
+   null
+  ]
+ ],
+ "drones": [],
+ "stats": {
+  "fitting": {
+   "cpu": [
+    217.5,
+    225.0
+   ],
+   "powergrid": [
+    64.8,
+    50.0
+   ],
+   "calibration": [
+    50.0,
+    400.0
+   ]
+  },
+  "defense": {
+   "hp": {
+    "shield": 2300.0,
+    "armor": 437.5,
+    "hull": 500.0
+   },
+   "resists": {
+    "shield": {
+     "em": 0.3,
+     "thermal": 0.44,
+     "kinetic": 0.58,
+     "explosive": 0.65
+    },
+    "armor": {
+     "em": 0.575,
+     "thermal": 0.5325,
+     "kinetic": 0.3625,
+     "explosive": 0.235
+    },
+    "hull": {
+     "em": 0.598,
+     "thermal": 0.598,
+     "kinetic": 0.598,
+     "explosive": 0.598
+    }
+   },
+   "ehp_uniform": {
+    "shield": 4532.0,
+    "armor": 762.5,
+    "hull": 1243.8
+   },
+   "ehp_total_uniform": 6538.3,
+   "shield_regen_peak_hps": 12.27
+  },
+  "offense": {
+   "dps_burst": 227.02,
+   "dps_sustained": 220.9,
+   "dps_drones": 0,
+   "volley": 512.02
+  },
+  "capacitor": {
+   "capacity_gj": 328.1,
+   "recharge_time_s": 131.25,
+   "stable": false,
+   "stable_pct_or_ttl_s": 540.0
+  },
+  "navigation": {
+   "max_velocity_ms": 2930.06,
+   "align_time_s": 5.043,
+   "signature_m": 288.0,
+   "mass_kg": 1497000.0,
+   "warp_speed_aus": 5.0
+  },
+  "targeting": {
+   "scan_resolution_mm": 725.0,
+   "lock_range_km": 62.5,
+   "sensor_strength": 13.2,
+   "max_targets": 5,
+   "lock_time_frigate_35m_s": 3.06
+  }
+ }
+}
