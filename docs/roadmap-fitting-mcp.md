@@ -170,8 +170,11 @@ class this project exists to kill. Therefore:
   table.
 - The fitting-knowledge skill's build-check compares engine build vs SDE
   build vs CCP latest, and **names any skew** whenever layers disagree.
-- v2 investigation (not assumed): feed the engine from our SQLite so there is
-  one data source.
+- ~~v2 investigation (not assumed): feed the engine from our SQLite so there
+  is one data source.~~ Resolved early, 2026-08-16: `fitting/adapter/`
+  generates pyfa's staticdata inputs from CCP's current JSONL export, so
+  pyfa's own db builder produces `eve.db` at the skill's SDE build —
+  verified zero panel drift on the reference battery.
 
 ### The fitting-knowledge skill (the docs half)
 

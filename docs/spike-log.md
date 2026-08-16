@@ -110,11 +110,29 @@ Two small notes from the spot-check screenshots:
 - Battery additions: implants + booster fit, alpha-clone skill set
   (`cloneGrades` from layer 1), overheated states, a mutated-module fit,
   non-uniform damage profiles.
-- Thin EFT parser over eos.saveddata construction (service-layer importer is
-  GUI-entangled).
+- ~~Thin EFT parser over eos.saveddata construction~~ **Done 2026-08-16**:
+  `fitting/engine/eft.py` — parse/build/render; self-test proves the parsed
+  battery produces panels identical to the pinned references and survives a
+  render round-trip (10/10).
 - License note: eos is GPL — fine while we run it as a local tool; if the
   MCP server ships bundled with pyfa code, the server is GPL too. Flag at
   MCP v1 packaging.
-- pyfa staticdata refresh cadence vs CCP builds (the observed 5-week skew):
-  investigate their Phobos pipeline before deciding the v2 one-data-source
-  question.
+- ~~pyfa staticdata refresh cadence vs CCP builds~~ **Resolved 2026-08-16**,
+  and better than the v2 investigation hoped: `fitting/adapter/` generates
+  pyfa's staticdata inputs from CCP's current JSONL export, so pyfa's own
+  unmodified `db_update.py` builds `eve.db` at the skill's SDE build.
+  Verified: battery at build 3466501 vs pinned 3424810 references — 440
+  leaves, zero diffs. The engine and the skill now share one data source,
+  and the panel diff on future builds is the balance-change report.
+
+### 2026-08-16 — post-spike: EFT parser and data-sync adapter landed
+
+Both first work items for MCP v1 are in:
+- `fitting/engine/eft.py` — EFT parse (text-only, no eos) / build (eos
+  objects, category-classified like pyfa's importer, comma-in-name safe) /
+  render. Mutated modules fail loudly by design pending the dialect
+  decision. `fitting/engine/selftest.py` is the proof harness.
+- `fitting/adapter/make_staticdata.py` — see `fitting/adapter/README.md`
+  for the format notes (two real CCP-vs-pyfa divergences found and
+  handled: dynamicItemAttributes list-vs-dict, localized effect
+  descriptions).
