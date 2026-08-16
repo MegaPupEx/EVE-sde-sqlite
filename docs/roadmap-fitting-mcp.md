@@ -58,6 +58,12 @@ pyfa stat panels (EHP, DPS, cap stability, align) within rounding. If A's
 extraction is shallow, A wins on language and trust. If it is a tarpit, B.
 C only if both fail.
 
+Both candidates clone directly in remote sessions (verified 2026-08-16):
+`github.com/pyfa-org/Pyfa` and `github.com/eveshipfit/dogma-engine` (note the
+lowercase org — `EVEShip-fit` 404s). The formulas the harness checks by hand
+are pinned in `docs/fitting-formulas.md`, with pyfa/dogma-engine file and
+line references.
+
 **Ground truth = pyfa** for v1: it is what players compare against.
 Divergences from the live server get documented as gotchas when found, not
 silently corrected either way.
@@ -92,11 +98,13 @@ output, never silently ignored.
 - Mutated (abyssal) modules — rolled stats within mutaplasmid ranges;
   import/export must carry exact rolled values or real PvP fits cannot
   round-trip
+- Fighters (ability-level effects; the SDE work already mapped
+  `fighterAbilities`) — promoted from v2, 2026-08-16
+- Tactical destroyer modes (Confessor/Svipul/Hecate/Jackdaw) — promoted from
+  v2, 2026-08-16; modes are items applying ordinary dogma modifiers, no new
+  math
 
 **v2:**
-- Fighters (ability-level effects; the SDE work already mapped
-  `fighterAbilities`)
-- Tactical destroyer modes (Confessor/Svipul/Hecate/Jackdaw)
 - Siege-class states (siege, bastion, triage, industrial core)
 - Spool-up weapons (Triglavian ramp — makes DPS time-dependent; needs a
   spool parameter or time series)
@@ -179,8 +187,11 @@ following the SDE skill's structure. Content plan:
   stacking-penalty curve in plain terms (why the 4th damage mod gives ~28% of
   the 1st), env/burst effects being stacking-exempt
 - **Trap catalogue, built the proven way**: seed with known traps (stacking
-  exemptions, hull vs fitted resonance, env effects applying to NPCs too,
-  spool-up making "DPS" ambiguous), then let graded eval runs find the rest
+  exemptions — note command bursts are exempt via the warfare-buff system but
+  environmental beacons are category 2 and therefore penalized, see
+  `docs/fitting-formulas.md` §1; hull vs fitted resonance; env effects
+  applying to NPCs too; spool-up making "DPS" ambiguous), then let graded
+  eval runs find the rest
 - **"Fitting a player, not a spreadsheet"**: a max-DPS fit that caps out in
   90 seconds answers the query, not the pilot
 
@@ -247,6 +258,7 @@ doc-owned misses get fixed and pinned in the harness.**
 - Layer 3 is FTS over EVE Uni, built ourselves; category-scoped search;
   infobox numbers ignored
 - Monorepo with the SDE skill until layer 2 stabilizes (revisit at v1.5)
+- Fighters and tactical-destroyer modes are v1.5, not v2 (2026-08-16)
 
 ## Open questions (for the build sessions)
 
@@ -255,5 +267,3 @@ doc-owned misses get fixed and pinned in the harness.**
   (Lean: pyfa's exactly — interop is the point.)
 - Graph rendering: does the consuming session chart the series (artifacts)
   or reason over summaries only? Both should work; neither should be assumed.
-- Whether fighters/T3D modes deserve promotion to v1.5 once the external-
-  effects pipeline exists (they were deliberately left in v2).
