@@ -242,7 +242,9 @@ doc-owned misses get fixed and pinned in the harness.**
 ## Phasing
 
 1. **Engine spike** — the timeboxed A-vs-B bake-off; everything waits on this.
-   *Started 2026-08-16; candidate A extracted successfully on day one — see
+   *Done 2026-08-16, in one day instead of two weeks: candidate A (pyfa's
+   eos) extracted headless, produced the 10-fit reference battery, and was
+   confirmed against a desktop pyfa GUI panel-for-panel. See
    `docs/spike-log.md` and `fitting/spike/`.*
 2. MCP v1: lifecycle + `get_stats` + `validate_fit`; harness of ~10 reference
    fits
@@ -261,10 +263,13 @@ doc-owned misses get fixed and pinned in the harness.**
   infobox numbers ignored
 - Monorepo with the SDE skill until layer 2 stabilizes (revisit at v1.5)
 - Fighters and tactical-destroyer modes are v1.5, not v2 (2026-08-16)
+- **Engine: pyfa's eos, wrapped headless** (2026-08-16) — spike verdict,
+  GUI-confirmed panel-for-panel; dogma-engine stays the named fallback
 
 ## Open questions (for the build sessions)
 
-- How deep does pyfa's GUI entanglement go? (Answered by the spike.)
+- ~~How deep does pyfa's GUI entanglement go?~~ Answered: shallow — one
+  wx.Colour stub suffices; see the entanglement map in `docs/spike-log.md`.
 - EFT dialect for mutated modules: adopt pyfa's exactly, or document our own?
   (Lean: pyfa's exactly — interop is the point.)
 - Graph rendering: does the consuming session chart the series (artifacts)

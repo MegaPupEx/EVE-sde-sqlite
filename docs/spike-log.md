@@ -80,19 +80,30 @@ compounding with the hardener on shield only, DC II on hull, and 196.6 hp/s
 peak passive regen; MWD sig bloom and mass math visible on the Rifter
 (3,213 m/s, 210 m sig). Full battery computes in ~4 s.
 
-### Standing verdict and what would change it
+### Verdict: candidate A wins — spike closed 2026-08-16
 
-**Candidate A passes the extraction question and is the presumptive winner**
-— the decision criterion ("reproduces pyfa's stat panels within rounding,
-driven headless") is satisfied trivially: it *is* pyfa's engine, producing
-the panels headless. Per the roadmap tiebreak, A on language and trust.
-The B timebox becomes optional; worth a short look only if A develops a
-blocker, or to grade B against the battery for curiosity/backup.
+The human spot-check happened the same day: three battery fits (Rifter,
+Punisher, Raven) imported into a desktop pyfa GUI with an All-5 character
+and compared panel-by-panel against the reference JSONs. **Every figure
+matched at display precision** — EHP per layer and resists, DPS and volley,
+cap capacity plus stable-% / time-to-empty from the simulation (Raven
+"lasts 2m0s" = the JSON's 120.0 s), speed/align/sig, scan res, lock range,
+sensor strength, max targets, and CPU/PG including pyfa's two-decimal
+rounding. Headless eos and the GUI are the same engine producing the same
+numbers; the criterion ("reproduces pyfa's stat panels within rounding,
+driven headless") is satisfied with confirmation, not by construction alone.
 
-Before v1 closes over this engine, one human check is still wanted:
-open two of these fits in a desktop pyfa GUI (same commit or release build)
-and confirm the panels match the JSON — guards against a headless-vs-GUI
-divergence this environment cannot see.
+**The engine decision is made: wrap pyfa's eos.** The dogma-engine timebox
+is not needed; B remains the named fallback if A develops a blocker, and
+the battery JSONs are ready to grade it if that day comes.
+
+Two small notes from the spot-check screenshots:
+- The GUI's "Recharge rates" panel shows active rep rates (raw and
+  effective HP/s) that our stat panel does not yet capture — add
+  `fit.effectiveTank` rep rates to the `get_stats` schema at MCP v1.
+- The battery's Punisher uses 3 guns on a 4-hardpoint hull (visible as 3/4
+  in the GUI). Harmless for coverage; leave as-is since the references are
+  now pinned, fill the 4th slot only if the battery is ever regenerated.
 
 ### Follow-ups carried out of the spike
 
