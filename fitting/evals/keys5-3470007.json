@@ -1,0 +1,2523 @@
+[
+ {
+  "fit_id": "f1",
+  "ship": "Golem",
+  "name": "bast",
+  "cpu": [
+   51.5,
+   893.75
+  ],
+  "powergrid": [
+   101.0,
+   10625.0
+  ],
+  "slots": {
+   "high": [
+    1,
+    8
+   ],
+   "med": [
+    1,
+    7
+   ],
+   "low": [
+    0,
+    4
+   ],
+   "rig": [
+    0,
+    2
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "launcher": [
+    0.0,
+    4
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    51.5,
+    893.75
+   ],
+   "powergrid": [
+    101.0,
+    10625.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 35475,
+    "armor": 19385,
+    "hull": 20522,
+    "total": 75382
+   },
+   "resists": {
+    "shield": {
+     "em": 0.528,
+     "thermal": 0.716,
+     "kinetic": 0.752,
+     "explosive": 0.764
+    },
+    "armor": {
+     "em": 0.65,
+     "thermal": 0.711,
+     "kinetic": 0.541,
+     "explosive": 0.37
+    },
+    "hull": {
+     "em": 0.531,
+     "thermal": 0.531,
+     "kinetic": 0.531,
+     "explosive": 0.531
+    }
+   },
+   "hp": {
+    "shield": 11000,
+    "armor": 8375,
+    "hull": 9625
+   },
+   "reps_hps": {
+    "passiveShield": 52.0
+   }
+  },
+  "offense": {
+   "dps": 0.0,
+   "volley": 0.0
+  },
+  "capacitor": {
+   "capacity_gj": 7906.2,
+   "stable": true,
+   "stable_pct": 92.9
+  },
+  "navigation": {
+   "max_velocity_ms": 0.0,
+   "align_time_s": 11.31,
+   "signature_m": 450.0,
+   "warp_speed_aus": 3.0,
+   "mass_kg": 157000000
+  },
+  "targeting": {
+   "scan_resolution_mm": 175,
+   "lock_range_km": 154.4,
+   "sensor_strength": 55.2,
+   "max_targets": 10,
+   "lock_time_frigate_s": 12.66,
+   "lock_time_battleship_s": 5.12
+  },
+  "problems": [],
+  "notes": [
+   "Bastion Module I active: stats assume the state is running; ship is immobile and remote assistance is impeded for the duration"
+  ]
+ },
+ {
+  "fit_id": "f1",
+  "ship": "Golem",
+  "name": "bast",
+  "cpu": [
+   81.5,
+   893.75
+  ],
+  "powergrid": [
+   102.0,
+   10625.0
+  ],
+  "slots": {
+   "high": [
+    1,
+    8
+   ],
+   "med": [
+    1,
+    7
+   ],
+   "low": [
+    1,
+    4
+   ],
+   "rig": [
+    0,
+    2
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "launcher": [
+    0.0,
+    4
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    81.5,
+    893.75
+   ],
+   "powergrid": [
+    102.0,
+    10625.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 39799,
+    "armor": 22291,
+    "hull": 34204,
+    "total": 96294
+   },
+   "resists": {
+    "shield": {
+     "em": 0.579,
+     "thermal": 0.747,
+     "kinetic": 0.779,
+     "explosive": 0.789
+    },
+    "armor": {
+     "em": 0.696,
+     "thermal": 0.749,
+     "kinetic": 0.601,
+     "explosive": 0.452
+    },
+    "hull": {
+     "em": 0.719,
+     "thermal": 0.719,
+     "kinetic": 0.719,
+     "explosive": 0.719
+    }
+   },
+   "hp": {
+    "shield": 11000,
+    "armor": 8375,
+    "hull": 9625
+   },
+   "reps_hps": {
+    "passiveShield": 58.4
+   }
+  },
+  "offense": {
+   "dps": 0.0,
+   "volley": 0.0
+  },
+  "capacitor": {
+   "capacity_gj": 7906.2,
+   "stable": true,
+   "stable_pct": 92.9
+  },
+  "navigation": {
+   "max_velocity_ms": 0.0,
+   "align_time_s": 11.31,
+   "signature_m": 450.0,
+   "warp_speed_aus": 3.0,
+   "mass_kg": 157000000
+  },
+  "targeting": {
+   "scan_resolution_mm": 175,
+   "lock_range_km": 154.4,
+   "sensor_strength": 55.2,
+   "max_targets": 10,
+   "lock_time_frigate_s": 12.66,
+   "lock_time_battleship_s": 5.12
+  },
+  "problems": [],
+  "notes": [
+   "Bastion Module I active: stats assume the state is running; ship is immobile and remote assistance is impeded for the duration"
+  ]
+ },
+ {
+  "fit_id": "f2",
+  "ship": "Vedmak",
+  "name": "brawl",
+  "cpu": [
+   180.0,
+   475.0
+  ],
+  "powergrid": [
+   794.0,
+   1462.5
+  ],
+  "slots": {
+   "high": [
+    1,
+    4
+   ],
+   "med": [
+    0,
+    4
+   ],
+   "low": [
+    2,
+    6
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    1.0,
+    1
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    180.0,
+    475.0
+   ],
+   "powergrid": [
+    794.0,
+    1462.5
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 1379,
+    "armor": 6111,
+    "hull": 3731,
+    "total": 11222
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.35,
+     "kinetic": 0.25,
+     "explosive": 0.2
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 1000,
+    "armor": 4125,
+    "hull": 2500
+   },
+   "reps_hps": {
+    "passiveShield": 3.7
+   }
+  },
+  "offense": {
+   "dps": 908.9,
+   "dps_sustained": 908.9,
+   "volley": 3206.8,
+   "spool": {
+    "level": 1.0,
+    "dps_zero_spool": 290.8,
+    "time_to_full_s": 109.4
+   }
+  },
+  "capacitor": {
+   "capacity_gj": 1875.0,
+   "stable": true,
+   "stable_pct": 80.8
+  },
+  "navigation": {
+   "max_velocity_ms": 300.0,
+   "align_time_s": 4.01,
+   "signature_m": 110.0,
+   "warp_speed_aus": 4.0,
+   "mass_kg": 9530000
+  },
+  "targeting": {
+   "scan_resolution_mm": 375,
+   "lock_range_km": 68.8,
+   "sensor_strength": 24.0,
+   "max_targets": 7,
+   "lock_time_frigate_s": 5.91,
+   "lock_time_battleship_s": 2.39
+  },
+  "problems": [],
+  "notes": [
+   "spool-up weapons: dps/volley at 100% spool (floor 290.8, full ramp 109.4 s)"
+  ]
+ },
+ {
+  "fitting": {
+   "cpu": [
+    180.0,
+    475.0
+   ],
+   "powergrid": [
+    794.0,
+    1462.5
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 1379,
+    "armor": 6111,
+    "hull": 3731,
+    "total": 11222
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.35,
+     "kinetic": 0.25,
+     "explosive": 0.2
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 1000,
+    "armor": 4125,
+    "hull": 2500
+   },
+   "reps_hps": {
+    "passiveShield": 3.7
+   }
+  },
+  "offense": {
+   "dps": 290.8,
+   "dps_sustained": 290.8,
+   "volley": 1026.2,
+   "spool": {
+    "level": 0.0,
+    "dps_zero_spool": 290.8,
+    "time_to_full_s": 109.4
+   }
+  },
+  "capacitor": {
+   "capacity_gj": 1875.0,
+   "stable": true,
+   "stable_pct": 80.8
+  },
+  "navigation": {
+   "max_velocity_ms": 300.0,
+   "align_time_s": 4.01,
+   "signature_m": 110.0,
+   "warp_speed_aus": 4.0,
+   "mass_kg": 9530000
+  },
+  "targeting": {
+   "scan_resolution_mm": 375,
+   "lock_range_km": 68.8,
+   "sensor_strength": 24.0,
+   "max_targets": 7,
+   "lock_time_frigate_s": 5.91,
+   "lock_time_battleship_s": 2.39
+  },
+  "problems": [],
+  "notes": [
+   "spool-up weapons: dps/volley at 0% spool (floor 290.8, full ramp 109.4 s)"
+  ]
+ },
+ {
+  "x": "time_s",
+  "y": "dps",
+  "points": [
+   [
+    0.0,
+    290.8
+   ],
+   [
+    5.2,
+    311.2
+   ],
+   [
+    10.5,
+    331.6
+   ],
+   [
+    15.7,
+    372.3
+   ],
+   [
+    21.0,
+    392.6
+   ],
+   [
+    26.2,
+    433.4
+   ],
+   [
+    31.4,
+    453.7
+   ],
+   [
+    36.7,
+    494.4
+   ],
+   [
+    41.9,
+    514.8
+   ],
+   [
+    47.2,
+    555.5
+   ],
+   [
+    52.4,
+    575.9
+   ],
+   [
+    57.7,
+    616.6
+   ],
+   [
+    62.9,
+    636.9
+   ],
+   [
+    68.1,
+    677.7
+   ],
+   [
+    73.4,
+    698.0
+   ],
+   [
+    78.6,
+    738.7
+   ],
+   [
+    83.9,
+    759.1
+   ],
+   [
+    89.1,
+    799.8
+   ],
+   [
+    94.3,
+    820.2
+   ],
+   [
+    99.6,
+    860.9
+   ],
+   [
+    104.8,
+    881.2
+   ],
+   [
+    110.1,
+    908.9
+   ],
+   [
+    125.8,
+    908.9
+   ]
+  ],
+  "summary": {
+   "dps_zero_spool": 290.8,
+   "dps_full_spool": 908.9,
+   "time_to_full_s": 109.4
+  },
+  "assumptions": [
+   "continuous fire on one target, no reload",
+   "spool resets on target switch or cease-fire"
+  ]
+ },
+ {
+  "fit_id": "f2",
+  "distance_km": 5.0,
+  "target": {
+   "sig_m": 40,
+   "speed_ms": 700.0
+  },
+  "dps_raw": 908.9,
+  "dps_applied": 1.0,
+  "application_pct": 0.1,
+  "by_source": {
+   "turrets": [
+    908.9,
+    1.0
+   ]
+  }
+ },
+ {
+  "fit_id": "f3",
+  "ship": "Rifter",
+  "name": "brawl",
+  "cpu": [
+   160.5,
+   162.5
+  ],
+  "powergrid": [
+   28.67,
+   51.25
+  ],
+  "slots": {
+   "high": [
+    3,
+    3
+   ],
+   "med": [
+    3,
+    3
+   ],
+   "low": [
+    3,
+    4
+   ],
+   "rig": [
+    1,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    3.0,
+    3
+   ],
+   "launcher": [
+    0.0,
+    2
+   ]
+  }
+ },
+ {
+  "fit_id": "f4",
+  "ship": "Punisher",
+  "name": "duel",
+  "cpu": [
+   104.0,
+   175.0
+  ],
+  "powergrid": [
+   76.7,
+   83.75
+  ],
+  "slots": {
+   "high": [
+    3,
+    4
+   ],
+   "med": [
+    1,
+    2
+   ],
+   "low": [
+    4,
+    5
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    3.0,
+    4
+   ]
+  }
+ },
+ {
+  "distance_km": 2.0,
+  "a_vs_b": {
+   "attacker": "f3",
+   "victim": "f4",
+   "applied_dps": 45.6,
+   "raw_dps": 172.3,
+   "damage_mix_pct": {
+    "em": 75,
+    "kinetic": 8,
+    "explosive": 17
+   },
+   "victim_ehp_vs_this_mix": 8342,
+   "victim_reps_hps_total": 198.6,
+   "tanked": true
+  },
+  "b_vs_a": {
+   "attacker": "f4",
+   "victim": "f3",
+   "applied_dps": 38.4,
+   "raw_dps": 93.5,
+   "damage_mix_pct": {
+    "em": 58,
+    "thermal": 42
+   },
+   "victim_ehp_vs_this_mix": 3102,
+   "victim_reps_hps_total": 246.4,
+   "tanked": true
+  },
+  "assumptions": [
+   "victim moving at its current max speed, 90 deg (max transversal)",
+   "reps as one continuous pool across layers (favors the defender)",
+   "ewar/links only if already set via set_projected/set_booster",
+   "spool-up weapons at full spool (the ramp favors the Triglavian side)"
+  ]
+ },
+ {
+  "fit_id": "f5",
+  "ship": "Vigil",
+  "name": "w",
+  "cpu": [
+   25.0,
+   281.25
+  ],
+  "powergrid": [
+   1.0,
+   32.5
+  ],
+  "slots": {
+   "high": [
+    0,
+    2
+   ],
+   "med": [
+    1,
+    5
+   ],
+   "low": [
+    0,
+    2
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "launcher": [
+    0.0,
+    2
+   ]
+  }
+ },
+ {
+  "fit_id": "f3",
+  "projected_by": [
+   {
+    "fit_id": "f5"
+   }
+  ]
+ },
+ {
+  "distance_km": 2.0,
+  "a_vs_b": {
+   "attacker": "f3",
+   "victim": "f4",
+   "applied_dps": 45.6,
+   "raw_dps": 172.3,
+   "damage_mix_pct": {
+    "em": 75,
+    "kinetic": 8,
+    "explosive": 17
+   },
+   "victim_ehp_vs_this_mix": 8342,
+   "victim_reps_hps_total": 198.6,
+   "tanked": true
+  },
+  "b_vs_a": {
+   "attacker": "f4",
+   "victim": "f3",
+   "applied_dps": 74.8,
+   "raw_dps": 93.5,
+   "damage_mix_pct": {
+    "em": 58,
+    "thermal": 42
+   },
+   "victim_ehp_vs_this_mix": 3102,
+   "victim_reps_hps_total": 246.4,
+   "tanked": true
+  },
+  "assumptions": [
+   "victim moving at its current max speed, 90 deg (max transversal)",
+   "reps as one continuous pool across layers (favors the defender)",
+   "ewar/links only if already set via set_projected/set_booster",
+   "spool-up weapons at full spool (the ramp favors the Triglavian side)"
+  ]
+ },
+ {
+  "fit_id": "f3",
+  "projected_by": []
+ },
+ {
+  "fit_id": "f3",
+  "ship": "Rifter",
+  "name": "brawl",
+  "cpu": [
+   160.5,
+   162.5
+  ],
+  "powergrid": [
+   28.67,
+   51.25
+  ],
+  "slots": {
+   "high": [
+    3,
+    3
+   ],
+   "med": [
+    3,
+    3
+   ],
+   "low": [
+    3,
+    4
+   ],
+   "rig": [
+    1,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    3.0,
+    3
+   ],
+   "launcher": [
+    0.0,
+    2
+   ]
+  }
+ },
+ {
+  "distance_km": 7.0,
+  "a_vs_b": {
+   "attacker": "f3",
+   "victim": "f4",
+   "applied_dps": 94.2,
+   "raw_dps": 137.4,
+   "damage_mix_pct": {
+    "kinetic": 45,
+    "explosive": 55
+   },
+   "victim_ehp_vs_this_mix": 6999,
+   "victim_reps_hps_total": 148.5,
+   "tanked": true
+  },
+  "b_vs_a": {
+   "attacker": "f4",
+   "victim": "f3",
+   "applied_dps": 35.7,
+   "raw_dps": 93.5,
+   "damage_mix_pct": {
+    "em": 58,
+    "thermal": 42
+   },
+   "victim_ehp_vs_this_mix": 3102,
+   "victim_reps_hps_total": 246.4,
+   "tanked": true
+  },
+  "assumptions": [
+   "victim moving at its current max speed, 90 deg (max transversal)",
+   "reps as one continuous pool across layers (favors the defender)",
+   "ewar/links only if already set via set_projected/set_booster",
+   "spool-up weapons at full spool (the ramp favors the Triglavian side)"
+  ]
+ },
+ {
+  "fit_id": "f6",
+  "ship": "Astrahus",
+  "name": "home",
+  "cpu": [
+   3600.0,
+   24000.0
+  ],
+  "powergrid": [
+   220000.0,
+   1500000.0
+  ],
+  "slots": {
+   "high": [
+    1,
+    4
+   ],
+   "med": [
+    0,
+    4
+   ],
+   "low": [
+    1,
+    3
+   ],
+   "rig": [
+    0,
+    3
+   ],
+   "service": [
+    1,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "launcher": [
+    1.0,
+    2
+   ]
+  }
+ },
+ {
+  "fit_id": "f6",
+  "ship": "Astrahus",
+  "name": "home",
+  "cpu": [
+   5000.0,
+   24000.0
+  ],
+  "powergrid": [
+   350000.0,
+   1500000.0
+  ],
+  "slots": {
+   "high": [
+    1,
+    4
+   ],
+   "med": [
+    0,
+    4
+   ],
+   "low": [
+    1,
+    3
+   ],
+   "rig": [
+    0,
+    3
+   ],
+   "service": [
+    3,
+    3
+   ]
+  },
+  "problems": [
+   "Standup Market Hub I cannot be fitted to Astrahus"
+  ],
+  "hardpoints": {
+   "launcher": [
+    1.0,
+    2
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    5000.0,
+    24000.0
+   ],
+   "powergrid": [
+    350000.0,
+    1500000.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 18000000,
+    "armor": 9000000,
+    "hull": 2250000,
+    "total": 29250000
+   },
+   "resists": {
+    "shield": {
+     "em": 0.2,
+     "thermal": 0.2,
+     "kinetic": 0.2,
+     "explosive": 0.2
+    },
+    "armor": {
+     "em": 0.2,
+     "thermal": 0.2,
+     "kinetic": 0.2,
+     "explosive": 0.2
+    },
+    "hull": {
+     "em": 0.2,
+     "thermal": 0.2,
+     "kinetic": 0.2,
+     "explosive": 0.2
+    }
+   },
+   "hp": {
+    "shield": 14400000,
+    "armor": 7200000,
+    "hull": 1800000
+   },
+   "reps_hps": {
+    "passiveShield": 0.0
+   },
+   "incoming_dps_cap": {
+    "shield": 14400000,
+    "armor": 5000,
+    "hull": 5000
+   }
+  },
+  "offense": {
+   "dps": 1023.5,
+   "dps_sustained": 954.3,
+   "volley": 2824.8
+  },
+  "capacitor": {
+   "capacity_gj": 200000.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 0.0,
+   "align_time_s": 0.0,
+   "signature_m": 50000.0,
+   "warp_speed_aus": 3.0,
+   "mass_kg": 3000000000
+  },
+  "targeting": {
+   "scan_resolution_mm": 40,
+   "lock_range_km": 350.0,
+   "sensor_strength": 500.0,
+   "max_targets": 7,
+   "lock_time_frigate_s": 55.4,
+   "lock_time_battleship_s": 22.38
+  },
+  "services": {
+   "fitted": [
+    {
+     "name": "Standup Cloning Center I",
+     "fuel_hr": 10.0,
+     "fuel_to_online": 720,
+     "online": true
+    },
+    {
+     "name": "Standup Reprocessing Facility I",
+     "fuel_hr": 10.0,
+     "fuel_to_online": 720,
+     "online": true
+    },
+    {
+     "name": "Standup Market Hub I",
+     "fuel_hr": 40.0,
+     "fuel_to_online": 2880,
+     "online": true
+    }
+   ],
+   "fuel_blocks_per_hour": 60.0
+  },
+  "problems": [
+   "Standup Market Hub I cannot be fitted to Astrahus"
+  ]
+ },
+ {
+  "fit_id": "f7",
+  "ship": "Huginn",
+  "name": "web",
+  "cpu": [
+   16.0,
+   500.0
+  ],
+  "powergrid": [
+   1.0,
+   937.5
+  ],
+  "slots": {
+   "high": [
+    0,
+    5
+   ],
+   "med": [
+    1,
+    6
+   ],
+   "low": [
+    0,
+    4
+   ],
+   "rig": [
+    0,
+    2
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    0.0,
+    4
+   ],
+   "launcher": [
+    0.0,
+    1
+   ]
+  }
+ },
+ {
+  "fit_id": "f7",
+  "ship": "Huginn",
+  "name": "web",
+  "cpu": [
+   16.0,
+   500.0
+  ],
+  "powergrid": [
+   1.0,
+   937.5
+  ],
+  "slots": {
+   "high": [
+    0,
+    5
+   ],
+   "med": [
+    1,
+    6
+   ],
+   "low": [
+    0,
+    4
+   ],
+   "rig": [
+    0,
+    2
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    0.0,
+    4
+   ],
+   "launcher": [
+    0.0,
+    1
+   ]
+  }
+ },
+ {
+  "fit_id": "f7",
+  "modules": [
+   {
+    "item": "Abyssal Stasis Webifier",
+    "state": "overheated",
+    "attrs": {
+     "maxRange": 97500.0
+    }
+   }
+  ]
+ },
+ {
+  "fit_id": "f7",
+  "skills": {
+   "Minmatar Cruiser": 5,
+   "Propulsion Jamming": 4,
+   "Recon Ships": 1
+  },
+  "implied_prereqs": 9,
+  "alpha_blocked": {
+   "Cloaking": 4,
+   "Minmatar Cruiser": 5,
+   "Recon Ships": 1,
+   "Signature Analysis": 5,
+   "Spaceship Command": 5
+  },
+  "note": "minimums to use, not to use well"
+ },
+ {
+  "fit_id": "f8",
+  "ship": "Thanatos",
+  "name": "unnamed",
+  "cpu": [
+   0,
+   906.25
+  ],
+  "powergrid": [
+   0,
+   875000.0
+  ],
+  "slots": {
+   "high": [
+    0,
+    5
+   ],
+   "med": [
+    0,
+    5
+   ],
+   "low": [
+    0,
+    6
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": []
+ },
+ {
+  "fit_id": "f8",
+  "ship": "Thanatos",
+  "name": "unnamed",
+  "cpu": [
+   0,
+   906.25
+  ],
+  "powergrid": [
+   0,
+   875000.0
+  ],
+  "slots": {
+   "high": [
+    0,
+    5
+   ],
+   "med": [
+    0,
+    5
+   ],
+   "low": [
+    0,
+    6
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": []
+ },
+ {
+  "fitting": {
+   "cpu": [
+    0,
+    906.25
+   ],
+   "powergrid": [
+    0,
+    875000.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 95690,
+    "armor": 128704,
+    "hull": 155784,
+    "total": 380177
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.35,
+     "kinetic": 0.35,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 69375,
+    "armor": 86875,
+    "hull": 104375
+   },
+   "reps_hps": {
+    "passiveShield": 21.3
+   }
+  },
+  "offense": {
+   "dps": 521.1,
+   "dps_sustained": 399.0,
+   "volley": 4455.0,
+   "dps_fighters": 521.1
+  },
+  "capacitor": {
+   "capacity_gj": 68750.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 100.0,
+   "align_time_s": 25.04,
+   "signature_m": 9960.0,
+   "warp_speed_aus": 1.5,
+   "mass_kg": 1220000000
+  },
+  "targeting": {
+   "scan_resolution_mm": 81,
+   "lock_range_km": 375.0,
+   "sensor_strength": 91.2,
+   "max_targets": 12,
+   "lock_time_frigate_s": 27.27,
+   "lock_time_battleship_s": 11.02
+  },
+  "problems": []
+ },
+ {
+  "fit_id": "f8",
+  "ship": "Thanatos",
+  "name": "unnamed",
+  "cpu": [
+   0,
+   906.25
+  ],
+  "powergrid": [
+   0,
+   875000.0
+  ],
+  "slots": {
+   "high": [
+    0,
+    5
+   ],
+   "med": [
+    0,
+    5
+   ],
+   "low": [
+    0,
+    6
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": []
+ },
+ {
+  "fitting": {
+   "cpu": [
+    0,
+    906.25
+   ],
+   "powergrid": [
+    0,
+    875000.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 95690,
+    "armor": 128704,
+    "hull": 155784,
+    "total": 380177
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.35,
+     "kinetic": 0.35,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 69375,
+    "armor": 86875,
+    "hull": 104375
+   },
+   "reps_hps": {
+    "passiveShield": 21.3
+   }
+  },
+  "offense": {
+   "dps": 315.6,
+   "volley": 1577.8,
+   "dps_fighters": 315.6
+  },
+  "capacitor": {
+   "capacity_gj": 68750.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 100.0,
+   "align_time_s": 25.04,
+   "signature_m": 9960.0,
+   "warp_speed_aus": 1.5,
+   "mass_kg": 1220000000
+  },
+  "targeting": {
+   "scan_resolution_mm": 81,
+   "lock_range_km": 375.0,
+   "sensor_strength": 91.2,
+   "max_targets": 12,
+   "lock_time_frigate_s": 27.27,
+   "lock_time_battleship_s": 11.02
+  },
+  "problems": []
+ },
+ {
+  "fit_id": "f9",
+  "ship": "Incursus",
+  "name": "check",
+  "cpu": [
+   216.5,
+   168.75
+  ],
+  "powergrid": [
+   44.3,
+   56.25
+  ],
+  "slots": {
+   "high": [
+    3,
+    3
+   ],
+   "med": [
+    3,
+    3
+   ],
+   "low": [
+    3,
+    4
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [
+   "cpu over: 216.5 / 168.75"
+  ],
+  "hardpoints": {
+   "turret": [
+    3.0,
+    3
+   ]
+  }
+ },
+ {
+  "fit_id": "f9",
+  "legal": false,
+  "problems": [
+   "cpu over: 216.5 / 168.75"
+  ]
+ },
+ {
+  "fit_id": "f10",
+  "ship": "Cormorant",
+  "name": "rails",
+  "cpu": [
+   144.0,
+   250.0
+  ],
+  "powergrid": [
+   52.4,
+   85.0
+  ],
+  "slots": {
+   "high": [
+    7,
+    8
+   ],
+   "med": [
+    0,
+    3
+   ],
+   "low": [
+    2,
+    2
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    7.0,
+    7
+   ],
+   "launcher": [
+    0.0,
+    1
+   ]
+  }
+ },
+ {
+  "x": "range_km",
+  "y": "dps",
+  "points": [
+   [
+    0.0,
+    257.1
+   ],
+   [
+    1.2,
+    257.1
+   ],
+   [
+    2.5,
+    257.1
+   ],
+   [
+    3.7,
+    257.1
+   ],
+   [
+    4.9,
+    257.1
+   ],
+   [
+    6.1,
+    257.1
+   ],
+   [
+    7.4,
+    257.1
+   ],
+   [
+    8.6,
+    257.1
+   ],
+   [
+    9.8,
+    257.1
+   ],
+   [
+    11.1,
+    257.1
+   ],
+   [
+    12.3,
+    257.1
+   ],
+   [
+    13.5,
+    257.1
+   ],
+   [
+    14.7,
+    257.1
+   ],
+   [
+    16.0,
+    253.0
+   ],
+   [
+    17.2,
+    231.5
+   ],
+   [
+    18.4,
+    196.5
+   ],
+   [
+    19.7,
+    155.7
+   ],
+   [
+    20.9,
+    116.0
+   ],
+   [
+    22.1,
+    82.3
+   ],
+   [
+    23.3,
+    56.4
+   ],
+   [
+    24.6,
+    37.9
+   ],
+   [
+    25.8,
+    25.5
+   ],
+   [
+    27.0,
+    17.5
+   ],
+   [
+    28.3,
+    12.6
+   ],
+   [
+    29.5,
+    9.7
+   ],
+   [
+    30.7,
+    8.1
+   ],
+   [
+    31.9,
+    5.2
+   ],
+   [
+    33.2,
+    2.4
+   ],
+   [
+    34.4,
+    1.1
+   ],
+   [
+    35.6,
+    0.5
+   ]
+  ],
+  "summary": {
+   "peak_dps": 257.1,
+   "peak_at_km": 0.0,
+   "half_dps_km": 20.9
+  },
+  "assumptions": [
+   "stationary attacker and target",
+   "ideal target signature (no sig penalty); pass tgt_sig for a real hull",
+   "reload not factored (burst dps)"
+  ]
+ },
+ {
+  "fit_id": "f11",
+  "ship": "Tristan",
+  "name": "mutdrone",
+  "cpu": [
+   60.0,
+   162.5
+  ],
+  "powergrid": [
+   2.0,
+   43.75
+  ],
+  "slots": {
+   "high": [
+    0,
+    3
+   ],
+   "med": [
+    0,
+    3
+   ],
+   "low": [
+    2,
+    3
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    0.0,
+    2
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    60.0,
+    162.5
+   ],
+   "powergrid": [
+    2.0,
+    43.75
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 603,
+    "armor": 833,
+    "hull": 1026,
+    "total": 2463
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.35,
+     "kinetic": 0.35,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 438,
+    "armor": 562,
+    "hull": 688
+   },
+   "reps_hps": {
+    "passiveShield": 3.2
+   }
+  },
+  "offense": {
+   "dps": 161.0,
+   "dps_drones": 161.0,
+   "volley": 644.2
+  },
+  "capacitor": {
+   "capacity_gj": 437.5,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 393.8,
+   "align_time_s": 3.36,
+   "signature_m": 41.0,
+   "warp_speed_aus": 5.0,
+   "mass_kg": 1044000
+  },
+  "targeting": {
+   "scan_resolution_mm": 750,
+   "lock_range_km": 50.0,
+   "sensor_strength": 10.8,
+   "max_targets": 5,
+   "lock_time_frigate_s": 2.95,
+   "lock_time_battleship_s": 1.19
+  },
+  "problems": []
+ },
+ {
+  "error": "Error executing tool import_fit: unknown item: 'EM Ward Amplifier II'"
+ },
+ {
+  "error": "\"unresolved reference '$drk' \u2014 did its source call fail?\""
+ },
+ {
+  "error": "\"unresolved reference '$drk' \u2014 did its source call fail?\""
+ },
+ {
+  "fit_id": "f13",
+  "ship": "Confessor",
+  "name": "unnamed",
+  "cpu": [
+   0,
+   225.0
+  ],
+  "powergrid": [
+   0,
+   77.5
+  ],
+  "slots": {
+   "high": [
+    0,
+    6
+   ],
+   "med": [
+    0,
+    3
+   ],
+   "low": [
+    0,
+    5
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    0.0,
+    4
+   ]
+  }
+ },
+ {
+  "fit_id": "f13",
+  "ship": "Confessor",
+  "name": "unnamed",
+  "cpu": [
+   0,
+   225.0
+  ],
+  "powergrid": [
+   0,
+   77.5
+  ],
+  "slots": {
+   "high": [
+    0,
+    6
+   ],
+   "med": [
+    0,
+    3
+   ],
+   "low": [
+    0,
+    5
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    0.0,
+    4
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    0,
+    225.0
+   ],
+   "powergrid": [
+    0,
+    77.5
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 1200,
+    "armor": 2840,
+    "hull": 1399,
+    "total": 5439
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.55,
+     "explosive": 0.75
+    },
+    "armor": {
+     "em": 0.667,
+     "thermal": 0.567,
+     "kinetic": 0.625,
+     "explosive": 0.733
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 750,
+    "armor": 1000,
+    "hull": 938
+   },
+   "reps_hps": {
+    "passiveShield": 5.0
+   }
+  },
+  "offense": {
+   "dps": 0,
+   "volley": 0
+  },
+  "capacitor": {
+   "capacity_gj": 1000.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 312.5,
+   "align_time_s": 5.05,
+   "signature_m": 43.3,
+   "warp_speed_aus": 4.5,
+   "mass_kg": 1800000
+  },
+  "targeting": {
+   "scan_resolution_mm": 650,
+   "lock_range_km": 56.2,
+   "sensor_strength": 15.6,
+   "max_targets": 7,
+   "lock_time_frigate_s": 3.41,
+   "lock_time_battleship_s": 1.38
+  },
+  "problems": []
+ },
+ {
+  "fit_id": "f13",
+  "ship": "Confessor",
+  "name": "unnamed",
+  "cpu": [
+   0,
+   225.0
+  ],
+  "powergrid": [
+   0,
+   77.5
+  ],
+  "slots": {
+   "high": [
+    0,
+    6
+   ],
+   "med": [
+    0,
+    3
+   ],
+   "low": [
+    0,
+    5
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    0.0,
+    4
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    0,
+    225.0
+   ],
+   "powergrid": [
+    0,
+    77.5
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 1200,
+    "armor": 1893,
+    "hull": 1399,
+    "total": 4493
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.55,
+     "explosive": 0.75
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.35,
+     "kinetic": 0.438,
+     "explosive": 0.6
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 750,
+    "armor": 1000,
+    "hull": 938
+   },
+   "reps_hps": {
+    "passiveShield": 5.0
+   }
+  },
+  "offense": {
+   "dps": 0,
+   "volley": 0
+  },
+  "capacitor": {
+   "capacity_gj": 1000.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 312.5,
+   "align_time_s": 5.05,
+   "signature_m": 65.0,
+   "warp_speed_aus": 4.5,
+   "mass_kg": 1800000
+  },
+  "targeting": {
+   "scan_resolution_mm": 650,
+   "lock_range_km": 112.5,
+   "sensor_strength": 31.2,
+   "max_targets": 7,
+   "lock_time_frigate_s": 3.41,
+   "lock_time_battleship_s": 1.38
+  },
+  "problems": []
+ },
+ {
+  "fit_id": "f14",
+  "ship": "Caracal",
+  "name": "rlml",
+  "cpu": [
+   226.25,
+   537.5
+  ],
+  "powergrid": [
+   348.5,
+   787.5
+  ],
+  "slots": {
+   "high": [
+    5,
+    5
+   ],
+   "med": [
+    0,
+    5
+   ],
+   "low": [
+    2,
+    4
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "launcher": [
+    5.0,
+    5
+   ]
+  }
+ },
+ {
+  "fit_id": "f15",
+  "ship": "Enyo",
+  "name": "blaster",
+  "cpu": [
+   189.0,
+   193.75
+  ],
+  "powergrid": [
+   49.4,
+   77.5
+  ],
+  "slots": {
+   "high": [
+    4,
+    5
+   ],
+   "med": [
+    2,
+    3
+   ],
+   "low": [
+    3,
+    4
+   ],
+   "rig": [
+    0,
+    2
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    4.0,
+    4
+   ],
+   "launcher": [
+    0.0,
+    1
+   ]
+  }
+ },
+ {
+  "distance_km": 15.0,
+  "a_vs_b": {
+   "attacker": "f14",
+   "victim": "f15",
+   "applied_dps": 172.8,
+   "raw_dps": 298.0,
+   "damage_mix_pct": {
+    "kinetic": 100
+   },
+   "victim_ehp_vs_this_mix": 12093,
+   "victim_reps_hps_total": 16.5,
+   "time_to_kill_s": 77
+  },
+  "b_vs_a": {
+   "attacker": "f15",
+   "victim": "f14",
+   "applied_dps": 0.0,
+   "raw_dps": 434.4,
+   "damage_mix_pct": {
+    "thermal": 50,
+    "kinetic": 50
+   },
+   "victim_ehp_vs_this_mix": 7955,
+   "victim_reps_hps_total": 8.1,
+   "tanked": true
+  },
+  "assumptions": [
+   "victim moving at its current max speed, 90 deg (max transversal)",
+   "reps as one continuous pool across layers (favors the defender)",
+   "ewar/links only if already set via set_projected/set_booster",
+   "spool-up weapons at full spool (the ramp favors the Triglavian side)"
+  ]
+ },
+ {
+  "fit_id": "f16",
+  "ship": "Hurricane",
+  "name": "arty",
+  "cpu": [
+   204.0,
+   500.0
+  ],
+  "powergrid": [
+   1341.2,
+   1425.0
+  ],
+  "slots": {
+   "high": [
+    6,
+    7
+   ],
+   "med": [
+    0,
+    4
+   ],
+   "low": [
+    2,
+    6
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    6.0,
+    6
+   ],
+   "launcher": [
+    0.0,
+    3
+   ]
+  }
+ },
+ {
+  "fit_id": "f16",
+  "swapped_count": 2,
+  "rows": [
+   {
+    "candidate": "Gyrostabilizer II (fitted)",
+    "offense.dps": 473.7,
+    "cpu_free": 296.0,
+    "pg_free": 83.8,
+    "problems": 0
+   },
+   {
+    "candidate": "Gyrostabilizer II",
+    "offense.dps": 473.7,
+    "cpu_free": 296.0,
+    "pg_free": 83.8,
+    "problems": 0
+   }
+  ]
+ },
+ {
+  "fitting": {
+   "cpu": [
+    204.0,
+    500.0
+   ],
+   "powergrid": [
+    1341.2,
+    1425.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 7759,
+    "armor": 8333,
+    "hull": 6530,
+    "total": 22622
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.6,
+     "thermal": 0.35,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 5625,
+    "armor": 5625,
+    "hull": 4375
+   },
+   "reps_hps": {
+    "passiveShield": 18.5
+   }
+  },
+  "offense": {
+   "dps": 473.7,
+   "dps_sustained": 445.5,
+   "volley": 3745.2
+  },
+  "capacitor": {
+   "capacity_gj": 2875.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 225.0,
+   "align_time_s": 8.02,
+   "signature_m": 250.0,
+   "warp_speed_aus": 3.5,
+   "mass_kg": 12800000
+  },
+  "targeting": {
+   "scan_resolution_mm": 275,
+   "lock_range_km": 75.0,
+   "sensor_strength": 19.2,
+   "max_targets": 6,
+   "lock_time_frigate_s": 8.06,
+   "lock_time_battleship_s": 3.26
+  },
+  "problems": []
+ },
+ {
+  "fit_id": "f16",
+  "ship": "Hurricane",
+  "name": "arty",
+  "cpu": [
+   234.0,
+   500.0
+  ],
+  "powergrid": [
+   1342.2,
+   1425.0
+  ],
+  "slots": {
+   "high": [
+    6,
+    7
+   ],
+   "med": [
+    0,
+    4
+   ],
+   "low": [
+    3,
+    6
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    6.0,
+    6
+   ],
+   "launcher": [
+    0.0,
+    3
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    234.0,
+    500.0
+   ],
+   "powergrid": [
+    1342.2,
+    1425.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 7759,
+    "armor": 8333,
+    "hull": 6530,
+    "total": 22622
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.6,
+     "thermal": 0.35,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 5625,
+    "armor": 5625,
+    "hull": 4375
+   },
+   "reps_hps": {
+    "passiveShield": 18.5
+   }
+  },
+  "offense": {
+   "dps": 532.6,
+   "dps_sustained": 499.0,
+   "volley": 3958.8
+  },
+  "capacitor": {
+   "capacity_gj": 2875.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 225.0,
+   "align_time_s": 8.02,
+   "signature_m": 250.0,
+   "warp_speed_aus": 3.5,
+   "mass_kg": 12800000
+  },
+  "targeting": {
+   "scan_resolution_mm": 275,
+   "lock_range_km": 75.0,
+   "sensor_strength": 19.2,
+   "max_targets": 6,
+   "lock_time_frigate_s": 8.06,
+   "lock_time_battleship_s": 3.26
+  },
+  "problems": []
+ },
+ {
+  "fit_id": "f16",
+  "ship": "Hurricane",
+  "name": "arty",
+  "cpu": [
+   264.0,
+   500.0
+  ],
+  "powergrid": [
+   1343.2,
+   1425.0
+  ],
+  "slots": {
+   "high": [
+    6,
+    7
+   ],
+   "med": [
+    0,
+    4
+   ],
+   "low": [
+    4,
+    6
+   ],
+   "rig": [
+    0,
+    3
+   ]
+  },
+  "problems": [],
+  "hardpoints": {
+   "turret": [
+    6.0,
+    6
+   ],
+   "launcher": [
+    0.0,
+    3
+   ]
+  }
+ },
+ {
+  "fitting": {
+   "cpu": [
+    264.0,
+    500.0
+   ],
+   "powergrid": [
+    1343.2,
+    1425.0
+   ],
+   "calibration": [
+    0,
+    400
+   ]
+  },
+  "defense": {
+   "ehp": {
+    "shield": 7759,
+    "armor": 8333,
+    "hull": 6530,
+    "total": 22622
+   },
+   "resists": {
+    "shield": {
+     "em": 0.0,
+     "thermal": 0.2,
+     "kinetic": 0.4,
+     "explosive": 0.5
+    },
+    "armor": {
+     "em": 0.6,
+     "thermal": 0.35,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "hp": {
+    "shield": 5625,
+    "armor": 5625,
+    "hull": 4375
+   },
+   "reps_hps": {
+    "passiveShield": 18.5
+   }
+  },
+  "offense": {
+   "dps": 564.4,
+   "dps_sustained": 527.8,
+   "volley": 4070.9
+  },
+  "capacitor": {
+   "capacity_gj": 2875.0,
+   "stable": true,
+   "stable_pct": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 225.0,
+   "align_time_s": 8.02,
+   "signature_m": 250.0,
+   "warp_speed_aus": 3.5,
+   "mass_kg": 12800000
+  },
+  "targeting": {
+   "scan_resolution_mm": 275,
+   "lock_range_km": 75.0,
+   "sensor_strength": 19.2,
+   "max_targets": 6,
+   "lock_time_frigate_s": 8.06,
+   "lock_time_battleship_s": 3.26
+  },
+  "problems": []
+ }
+]
