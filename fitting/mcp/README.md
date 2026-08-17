@@ -98,6 +98,14 @@ silently ignored.
   local calc (eos consumes their bonuses during it), projected fits run
   AFTER it (the local calc's clear() would wipe them). `_recalc` is the
   single place that knows this.
+- Rack layout survives the round trip: within an EFT section, line order
+  is slot order (the game client fills slots in sequence) and
+  `[Empty ... slot]` placeholders hold gaps — players space overloaded
+  modules apart because heat damage spreads to adjacent slots. Import
+  preserves authored positions (`appendIgnoreEmpty`; eos's plain append
+  would fill the gaps); export re-emits them; `edit_fit` add
+  deliberately fills the first gap in the rack, like fitting in-game.
+  Stats are order-independent — this is interop fidelity only.
 - Mutated (abyssal) modules and drones use pyfa's EFT dialect: the fitted
   line carries the *base* item name plus an ` [N]` reference, and a
   trailing section maps each N to base item / mutaplasmid / rolled

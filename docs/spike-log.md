@@ -442,3 +442,22 @@ self-deadlocked: tools call tools). And the router's mutaplasmid recipe
 pointed at engine-db table names that don't exist in layer 1
 (`dynamicItemAttributes` JSON is the layer-1 home); fixed before
 subjects launched.
+
+### 2026-08-17 — EFT rack layout preserved (heat-conscious ordering)
+
+Within an EFT section, line order is slot order — the game client fills
+slots in sequence on import — and `[Empty ... slot]` placeholders hold
+gaps, which is how players space overloaded modules apart (heat damage
+spreads to *adjacent* slots, attenuated per hull). The parser used to
+skip placeholders, so a heat-planned layout round-tripped scrambled.
+
+Now: placeholders parse into positioned empty modules
+(`Module.buildEmpty`), build uses `appendIgnoreEmpty` — eos's plain
+`append()` fills the first empty position in the rack, which was
+silently swallowing authored gaps (found when the first test's Low and
+High placeholders vanished but Med survived: only gaps with no module
+after them lived) — and render re-emits `[Empty X slot]` in position.
+`edit_fit` add keeps the fill-the-gap behavior deliberately, matching
+what fitting a module in-game does. Stats are order-independent (heat
+over time unmodeled), so the smoke test pins: placeholders identical
+through export, dps identical with and without them, add fills the gap.

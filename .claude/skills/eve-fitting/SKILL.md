@@ -138,6 +138,12 @@ Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted
 resonance. Never guess a unit.
 
+EFT rack order is slot order, and `[Empty ... slot]` gaps survive
+import → export — heat-conscious layouts (modules spaced so overload
+damage doesn't chain to neighbors) come back un-scrambled. The gaps
+change no stats; `edit_fit` add fills the first gap, like fitting
+in-game.
+
 ## Answer economy
 
 Answers are read on a phone between undocks. Measured runs show the cost

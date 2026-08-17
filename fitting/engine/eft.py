@@ -11,8 +11,15 @@ Dialect: standard EFT as the game client and pyfa emit it. Lines are
 classified by item category (the pyfa approach), not by section position, so
 shuffled sections import fine. "Module, Charge" splits are resolved by
 lookup, trying rightmost commas first, which survives item names containing
-commas. "/offline" suffix and "[Empty ... slot]" placeholders are handled.
-Quantity lines ("Hobgoblin II x5") become drones/fighters/cargo by category.
+commas. "/offline" suffix is handled. Quantity lines ("Hobgoblin II x5")
+become drones/fighters/cargo by category.
+
+Rack layout is preserved: within a section, line order is slot order (the
+game client fills slots in sequence on import), and "[Empty ... slot]"
+placeholders hold gaps — players space overloaded modules apart because
+heat damage spreads to *adjacent* slots. The engine's numbers are
+order-independent (heat over time is unmodeled), so this is interop
+fidelity: an ordered fit survives import -> export un-scrambled.
 
 Mutated (abyssal) modules and drones use pyfa's dialect exactly, because
 interop is the point: the fitted line carries the BASE item name plus an
@@ -25,6 +32,7 @@ import re
 
 _MUTANT_HEAD = re.compile(r'^\[(\d+)\]\s+(.+)$')
 _MUTATION_REF = re.compile(r'\s*\[(\d+)\]$')
+_EMPTY_SLOT = re.compile(r'^\[Empty (Low|Med|High|Rig|Subsystem) slot\]$', re.IGNORECASE)
 
 
 class EftError(Exception):
@@ -57,7 +65,11 @@ def parse_eft(text):
             fits.append(fit)
             pending = None
             continue
-        if line.startswith('[') and line.endswith(']'):  # [Empty Low slot] etc.
+        empty = _EMPTY_SLOT.match(line)
+        if empty and fit is not None:
+            fit.entries.append({'empty': empty.group(1).lower()})
+            continue
+        if line.startswith('[') and line.endswith(']'):  # other bracketed noise
             continue
         mut_head = _MUTANT_HEAD.match(line)
         if mut_head and fit is not None:
@@ -171,7 +183,16 @@ def build_fit(spec):
     fit.character = Character.getAll5()
     fit.damagePattern = DamagePattern(emAmount=25, thermalAmount=25,
                                       kineticAmount=25, explosiveAmount=25)
+    from eos.const import FittingSlot
+    empty_slots = {'low': FittingSlot.LOW, 'med': FittingSlot.MED,
+                   'high': FittingSlot.HIGH, 'rig': FittingSlot.RIG,
+                   'subsystem': FittingSlot.SUBSYSTEM}
     for entry in spec.entries:
+        if entry.get('empty'):
+            placeholder = Module.buildEmpty(empty_slots[entry['empty']])
+            fit.modules.appendIgnoreEmpty(placeholder)
+            placeholder.owner = fit
+            continue
         item, charge = _resolve(entry)
         category = item.category.name
         if entry['mutation'] is None and getattr(item, 'isAbyssal', False):
@@ -220,7 +241,10 @@ def build_fit(spec):
                 mod.state = FittingModuleState.OFFLINE
             elif mod.isValidState(FittingModuleState.ACTIVE):
                 mod.state = FittingModuleState.ACTIVE
-            fit.modules.append(mod)
+            # appendIgnoreEmpty, not append: append() fills the first empty
+            # position in the rack, which would swallow authored [Empty ...]
+            # placeholders and scramble heat-conscious layouts
+            fit.modules.appendIgnoreEmpty(mod)
             mod.owner = fit
     return fit
 
@@ -243,6 +267,10 @@ def render_eft(fit):
     slots = {s: [] for s in order}
     for mod in fit.modules:
         if mod.isEmpty:
+            # placeholder from an imported layout: keep the gap in position
+            if mod.slot is not None:
+                slots.setdefault(mod.slot, []).append(
+                    f'[Empty {FittingSlot(mod.slot).name.capitalize()} slot]')
             continue
         # mutated modules export under the BASE item name; the [N] section
         # carries the mutaplasmid and rolls (pyfa's dialect)

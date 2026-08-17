@@ -343,6 +343,21 @@ async def main(pyfa):
                 'sweep must restore the fit'
             await call('delete_fit', fit_id=sw_fit['fit_id'])
 
+            # rack layout: [Empty ... slot] placeholders survive round-trip in
+            # position (heat-conscious layouts), and edit add fills the gap
+            lay = await call('import_fit', eft='[Rifter, layout]\n'
+                             '150mm Light AutoCannon II\n[Empty High slot]\n'
+                             '150mm Light AutoCannon II')
+            lx = await call('export_fit', fit_id=lay['fit_id'])
+            lay_lines = [l for l in lx.splitlines() if 'AutoCannon' in l or 'Empty High' in l]
+            assert lay_lines == ['150mm Light AutoCannon II', '[Empty High slot]',
+                                 '150mm Light AutoCannon II'], lay_lines
+            await call('edit_fit', fit_id=lay['fit_id'], ops=[
+                {'op': 'add', 'item': '150mm Light AutoCannon II'}])
+            lx2 = await call('export_fit', fit_id=lay['fit_id'])
+            assert '[Empty High slot]' not in lx2, 'edit add should fill the gap'
+            await call('delete_fit', fit_id=lay['fit_id'])
+
             info = await call('engine_info')
             assert info['engine_build'], info
             assert 'environment effects' not in info['unmodeled'], 'env is modeled now'
