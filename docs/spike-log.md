@@ -125,6 +125,29 @@ Two small notes from the spot-check screenshots:
   leaves, zero diffs. The engine and the skill now share one data source,
   and the panel diff on future builds is the balance-change report.
 
+### 2026-08-17 — MCP v1 server landed, token budget validated
+
+`fitting/mcp/server.py`: 11 tools over headless eos — lifecycle, EFT
+import/export, `edit_fit` ops, `set_skills` (all-5 and alpha, via eos's own
+AlphaClone data from `cloneGrades`), `get_stats` with damage-profile
+weights plus rep rates (closing the spot-check note), `compare_fits`
+(diff-only), `validate_fit` (named constraints: cpu/pg/calibration, slots,
+hardpoints, drone bandwidth/bay), `engine_info` with the explicit
+unmodeled list. `test_server.py` drives the whole surface over real stdio,
+asserting panel numbers against the pinned battery — passes on both the
+bundled data build and the adapter-generated current build.
+
+**Measured budget** (printed by every test run): ~880 tokens standing for
+all schemas, ~260 per stats panel, ~290 per edit+stats iteration — an
+order of magnitude inside the roadmap's envelope, sized for a Sonnet-class
+consumer going answer to answer.
+
+One engineering finding worth keeping: MCP tools execute on worker
+threads, and sqlite `:memory:` saveddata is per-connection — the server
+uses a temp-file saveddata DB plus `eos.db.saveddata_meta.create_all()`
+(pyfa.py's own startup call). Symptom if regressed: `no such table:
+overrides` on first import.
+
 ### 2026-08-16 — post-spike: EFT parser and data-sync adapter landed
 
 Both first work items for MCP v1 are in:

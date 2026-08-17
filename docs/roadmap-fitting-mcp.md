@@ -19,6 +19,14 @@ every claim.**
   when you combine things.
 - **Layer 3 — EVE knowledge base + strategy skill**: what players know.
 
+**Product target (stated 2026-08-17):** the end product is a skill stack a
+**Sonnet 5 medium-effort** chat runs well (high only if truly needed) —
+answering EVE questions quickly, generating fits, compiling accurate SDE
+data *with interpretation of what the numbers mean*, and going answer to
+answer with token counts low enough to never brush rate or context limits.
+Every design decision below serves that consumer; anything that costs
+standing tokens must earn them.
+
 Each layer is verified against the layer below it. Each has its own harness.
 Answer authority is strictly ordered: SDE data > engine output > wiki >
 model memory, and answers name the layer they came from.
@@ -161,6 +169,12 @@ Expected budget in a dedicated chat: ~8–10k standing (schemas + skill),
 comfortably inside rate limits. Without these rules the same conversation is
 300k+.
 
+**Measured (MCP v1, 2026-08-17):** the budget held with room to spare —
+~880 tokens standing for all 11 tool schemas, ~260 per full `get_stats`
+panel, ~290 per edit+stats iteration step. A thirty-step fitting session is
+~9k tokens of tool traffic. `fitting/mcp/test_server.py` prints these on
+every run, so schema bloat shows up as a diff.
+
 ### Data-sync rule (non-negotiable)
 
 Pyfa bundles its own SDE snapshot on its own cadence; the SDE skill tracks
@@ -250,7 +264,11 @@ doc-owned misses get fixed and pinned in the harness.**
    confirmed against a desktop pyfa GUI panel-for-panel. See
    `docs/spike-log.md` and `fitting/spike/`.*
 2. MCP v1: lifecycle + `get_stats` + `validate_fit`; harness of ~10 reference
-   fits
+   fits. *Landed 2026-08-17 (`fitting/mcp/`): all lifecycle tools, EFT
+   import/export, `edit_fit`, `set_skills` (all-5/alpha), `get_stats` with
+   damage profiles, `compare_fits`, `validate_fit`, `engine_info` — smoke
+   test drives the full surface over real stdio against the reference
+   battery, on both bundled and adapter-current data builds.*
 3. Fitting-knowledge skill v1 + first eval generation
 4. `compare_fits` + `graph` + v1.5 external-effects pipeline
 5. Layer 3: corpus build + search + knowledge skill

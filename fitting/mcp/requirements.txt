@@ -1,0 +1,3 @@
+# Server deps = the spike's headless-eos set + the MCP SDK (2.x).
+-r ../spike/requirements.txt
+mcp>=2.0
