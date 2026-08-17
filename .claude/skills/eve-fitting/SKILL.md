@@ -110,6 +110,8 @@ env on both sides of any comparison. `set_booster` attaches command-burst
 fits; the booster fit's own hull/skills scale the burst. `set_projected`
 applies enemy or friendly fits onto this one (webs, neuts, remote reps) at
 zero range — full strength, so quote it as the worst/best case it is.
+`required_skills` gives the fit-wide skill prerequisite closure ("can I
+even sit in this").
 
 Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted

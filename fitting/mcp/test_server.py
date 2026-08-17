@@ -234,6 +234,13 @@ async def main(pyfa):
                             target={'sig_m': 40}, distance_km=2)
             assert g3['points'][0][1] >= g3['points'][-1][1], 'dps must not rise with target speed'
 
+            # full-fit skill requirements, prerequisite chains included
+            req = await call('required_skills', fit_id=fid)
+            skills = req['skills']
+            assert skills.get('Small Projectile Turret') == 5, skills  # AC II prereq
+            assert 'Gunnery' in skills and 'Minmatar Frigate' in skills, skills
+            assert len(skills) > 8, f'prereq closure looks shallow: {len(skills)}'
+
             info = await call('engine_info')
             assert info['engine_build'], info
             assert 'environment effects' not in info['unmodeled'], 'env is modeled now'

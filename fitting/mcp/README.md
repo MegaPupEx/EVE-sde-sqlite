@@ -1,6 +1,6 @@
 # eve-fitting MCP server (v1.5)
 
-pyfa's engine behind 15 terse tools. A Claude session launches this process
+pyfa's engine behind 16 terse tools. A Claude session launches this process
 locally over stdio; fits live in the server's memory and travel as short IDs
 (`f1`, `f2`) — the conversation never carries a fit, only the numbers asked
 for. EFT text is the sole import/export payload.
@@ -9,7 +9,7 @@ for. EFT text is the sole import/export payload.
 
 | item | tokens |
 | --- | --- |
-| standing schema overhead (all 15 tools) | **~1,420** |
+| standing schema overhead (all 16 tools) | **~1,520** |
 | `get_stats` full panel | ~260 |
 | `graph` (≤30-point curve + summary) | ~110–190 |
 | `edit_fit` / `import_fit` / `clone_fit` summary | ~30 |
@@ -57,7 +57,8 @@ that fit only), `set_booster` (command-burst fits, computed recursively —
 the booster's own hull/skills scale the burst, strongest same buff wins),
 `set_projected` (other fits' remote reps/ewar/neuts applied at zero
 range).
-Read: `get_stats` (full panel, optional damage-profile weights), `graph`
+Read: `get_stats` (full panel, optional damage-profile weights),
+`required_skills` (fit-wide prerequisite closure with levels), `graph`
 (`dps_vs_range` / `dps_vs_target_speed` / `cap_vs_time` — ≤30 points +
 summary + named assumptions), `compare_fits` (differing figures only),
 `validate_fit` (named constraint violations), `engine_info` (data build +

@@ -461,6 +461,32 @@ def validate_fit(fit_id: str) -> dict:
 
 
 @mcp.tool()
+def required_skills(fit_id: str) -> dict:
+    """Every skill (with level) needed to use the whole fit — hull, modules, charges, drones, fighters, implants, drugs — including prerequisite chains. validate_fit does NOT check this."""
+    fit = _fit(fit_id)
+    need = {}
+
+    def walk(item):
+        for skill_item, level in item.requiredSkills.items():
+            name = skill_item.typeName
+            if need.get(name, 0) < int(level):
+                need[name] = int(level)
+                walk(skill_item)
+
+    walk(fit.ship.item)
+    for mod in fit.modules:
+        if not mod.isEmpty:
+            walk(mod.item)
+            if mod.charge is not None:
+                walk(mod.charge)
+    for group in (fit.drones, fit.fighters, fit.boosters, fit.implants):
+        for thing in group:
+            walk(thing.item)
+    return {'fit_id': fit_id, 'skills': dict(sorted(need.items())),
+            'note': 'prerequisite closure; levels are minimums to use, not to use well'}
+
+
+@mcp.tool()
 def engine_info() -> dict:
     """Engine + data build. Compare engine_build to the SDE skill's build; any skew means numbers may disagree with layer 1."""
     meta = dict(sqlite3.connect(os.path.join(ARGS.pyfa, 'eve.db'))

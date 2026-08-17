@@ -145,10 +145,13 @@ jobs:
         run: |
           set -euo pipefail
           tag="sde-${{ steps.check.outputs.build }}"
+          (cd .claude/skills && zip -qr ../../eve-sde-skill.zip eve-sde)
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" eve-sde-*.sqlite.xz \
+          gh release create "$tag" eve-sde-*.sqlite.xz eve-sde-skill.zip \
             --title "SDE build ${{ steps.check.outputs.build }}" \
             --notes "EVE Online SDE build \`${{ steps.check.outputs.build }}\`, released by CCP on \`${{ steps.check.outputs.released }}\`.
+
+          **Layer 1 in one download, no git needed:** \`eve-sde-skill.zip\` is the query skill — upload it under Settings → Capabilities → Skills in the Claude apps, then attach the \`.xz\` parts a question needs. Both are always from this repo's latest state at CCP's current build.
 
           The complete SDE as indexed SQLite, split by domain. Each part is a full database — fetch only what you need, and \`ATTACH\` several to join across them.
 
