@@ -50,8 +50,10 @@ Neutralizer II on me — am I still fine?"
 
 **Key (engine):** stable 87.7% → **dead in 12 s**. Projection is
 zero-range/full-strength — say so — but the teaching stands: a stability
-badge says nothing about energy warfare (traps §T5), and when cap dies
-this fit loses guns, prop *and* its armor repairer.
+badge says nothing about energy warfare (traps §T5). When cap dies this
+fit loses guns and prop; its *buffer* armor tank survives — noticing that
+this Punisher has no active rep to lose is part of the key (run 2's
+sim-only subject spotted it; the original key text had it wrong).
 
 ## G5 — burst source and stacking (any shield subject)
 
