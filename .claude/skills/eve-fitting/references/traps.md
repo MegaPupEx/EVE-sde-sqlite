@@ -128,12 +128,12 @@ levels or decline the single figure — pyfa's own NPC profiles ship as
 Presets: `all-0` (no skills — the floor), `alpha` (the byte-exact
 Alpha-clone set), `all-5` (the import default, pyfa's convention). The
 all-0-to-all-5 gap is double-digit on most panels (damage, fitting and
-cap skills all stack up), and alpha clones cannot *use* much T2 equipment
-at all. A number quoted without its preset is unanchored — name it every
-time, and re-run `set_skills` rather than estimating the delta. **When
-the asker's skills are unknown, the all-0 floor is the default answer**,
-with all-5 as the labeled ceiling — the all-V number alone is what their
-ship will *not* do. Note `validate_fit` checks fitting resources and slots only — it
+cap skills all stack up). A number quoted without its preset is
+unanchored — name it every time, and re-run `set_skills` rather than
+estimating the delta. **Default assumption: an omega pilot at all-V,
+labeled.** Switch to `alpha`/`all-0` when the question signals it
+("alpha friendly", "brand new character") — and for alpha requests,
+check `required_skills`' `alpha_blocked` before recommending modules. Note `validate_fit` checks fitting resources and slots only — it
 does **not** check skill prerequisites: `required_skills(fit)` returns
 the training-queue ends (implied prerequisites pruned; `full=true` for
 the whole closure) and flags `alpha_blocked` — skills an alpha clone

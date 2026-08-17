@@ -317,7 +317,7 @@ _all0_char = None
 
 @mcp.tool()
 def set_skills(fit_id: str, preset: str) -> dict:
-    """Set the pilot skills: 'all-0' | 'alpha' | 'all-5'. Import/create default is all-5; bracket all-0 vs all-5 for an unknown pilot."""
+    """Set the pilot skills: 'all-0' | 'alpha' | 'all-5'. Default on import/create is all-5 (omega assumption)."""
     # The alpha pilot must be its own Character: getAll5() returns a shared
     # saveddata object, and flipping alphaCloneID on it silently turns every
     # fit alpha (found by the eval harness, 2026-08-17).

@@ -38,10 +38,11 @@ confidently wrong. The engine computes; you interpret.
   projected fits (`set_projected` — remote reps/ewar/neuts, zero range),
   T3D modes (`mode` op), fighters, implants and drugs (`edit_fit` add).
 - **Skills are part of every number.** Presets: `all-0`, `alpha`, `all-5`
-  (import default: all-5, pyfa's convention). Say which preset a number is
-  for. **Unknown pilot? Default to the all-0 floor** and give all-5 as the
-  ceiling — quoting only the all-V number to a player of unknown skills
-  overpromises by double digits.
+  (import default: all-5). **Assume an omega pilot** and quote all-V,
+  labeled. Reach for `alpha`/`all-0` only when the question signals it —
+  "alpha friendly", "just started", a named low-SP situation — then the
+  alpha preset plus `required_skills`' `alpha_blocked` are the answer
+  ("can an alpha fly this" is data, not folklore).
 
 **No engine registered?** Setup is `fitting/mcp/README.md` (a local process +
 `.mcp.json` entry). Without it you may quote layer-1 base-hull values marked
