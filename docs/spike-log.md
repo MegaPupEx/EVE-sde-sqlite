@@ -616,3 +616,19 @@ Also this session: the wrecking-shot number pinned precisely — pyfa's
 `_calcTurretMult` (citing EVE Uni) has wrecking shots *replace* the top
 1% of hit rolls rather than add: 0.99 × 0.995 + 0.01 × 3 = 1.01505, the
 observed 101.5%, not the folk 102–103%.
+
+### 2026-08-17 — versus: the duel question becomes one call
+
+Owner question: is "how does this fit do vs ship X" one tool, both
+directions? It wasn't — applied_dps covered outgoing application but
+not the victim's resists, and the mirror direction took composed calls.
+`versus(fit_a, fit_b, distance_km)` closes it: for each direction it
+computes the attacker's applied damage *mix* (application vs the
+victim's current post-ewar sig/speed), sets the victim's damage pattern
+to that actual mix and reads EHP against it (resists finally in the
+loop), subtracts sustained reps, applies structure incoming-damage caps,
+and reports time-to-kill or `tanked`. Assumptions ship in the response:
+victim at max transversal, reps as one pool (defender-favoring), ewar
+only if projected. Smoke test pins both directions on a Rifter/Punisher
+duel and that webbing the victim raises the attacker's applied dps.
+20 tools, ~2,340 tokens standing.

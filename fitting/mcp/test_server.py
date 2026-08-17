@@ -198,6 +198,31 @@ async def main(pyfa):
             assert ad_frig['dps_applied'] < ad_bs['dps_applied'] <= ad_bs['dps_raw'] * 1.02, \
                 (ad_frig, ad_bs)
             assert 'turrets' in ad_bs['by_source'], ad_bs
+            # versus: both directions in one call — applied dps into resist-
+            # weighted EHP, reps subtracted; projecting a web onto the victim
+            # slows it, so the attacker applies MORE
+            pun = await call('import_fit', eft='[Punisher, duel]\n'
+                             '400mm Rolled Tungsten Compact Plates\nSmall Armor Repairer II\n'
+                             'Damage Control II\nMultispectrum Coating II\n\n'
+                             '1MN Afterburner II\n\n'
+                             'Small Focused Pulse Laser II, Imperial Navy Multifrequency S\n'
+                             'Small Focused Pulse Laser II, Imperial Navy Multifrequency S\n'
+                             'Small Focused Pulse Laser II, Imperial Navy Multifrequency S')
+            vs = await call('versus', fit_id_a=fid, fit_id_b=pun['fit_id'], distance_km=1)
+            ab, ba = vs['a_vs_b'], vs['b_vs_a']
+            assert ab['applied_dps'] > 0 and ba['applied_dps'] > 0, vs
+            assert ab['applied_dps'] <= ab['raw_dps'] * 1.02, ab
+            assert abs(sum(ab['damage_mix_pct'].values()) - 100) <= 2, ab['damage_mix_pct']
+            assert ('time_to_kill_s' in ab) or ab.get('tanked'), ab
+            web2 = await call('import_fit', eft='[Vigil, w2]\nStasis Webifier I')
+            await call('set_projected', fit_id=pun['fit_id'],
+                       projector_fit_ids=[web2['fit_id']])
+            vs_web = await call('versus', fit_id_a=fid, fit_id_b=pun['fit_id'], distance_km=1)
+            assert vs_web['a_vs_b']['applied_dps'] >= ab['applied_dps'], \
+                (vs_web['a_vs_b']['applied_dps'], ab['applied_dps'])
+            await call('delete_fit', fit_id=web2['fit_id'])
+            await call('delete_fit', fit_id=pun['fit_id'])
+
             mis = await call('import_fit', eft='[Caracal, rlml]\n'
                              'Rapid Light Missile Launcher II, Caldari Navy Scourge Light Missile\n'
                              'Rapid Light Missile Launcher II, Caldari Navy Scourge Light Missile')

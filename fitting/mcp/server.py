@@ -696,6 +696,65 @@ def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dic
 
 @mcp.tool()
 @_engine_thread
+def versus(fit_id_a: str, fit_id_b: str, distance_km: float) -> dict:
+    """The duel question, both directions: each fit's APPLIED dps into the other (application vs the victim's current sig/speed — set_projected ewar first to include it) and the victim's EHP weighted by the attacker's actual damage mix, reps, and time-to-kill (reps subtracted; structure damage caps applied)."""
+    from eos.saveddata.damagePattern import DamagePattern
+    if fit_id_a == fit_id_b:
+        raise ValueError('a fit cannot fight itself; clone_fit it first')
+    fa, fb = _fit(fit_id_a), _fit(fit_id_b)
+    dist = float(distance_km) * 1000
+
+    def direction(att, vic):
+        _recalc(att)
+        _recalc(vic)
+        vic_speed = vic.maxSpeed or 0
+        vic_sig = vic.ship.getModifiedItemAttr('signatureRadius') or 0
+        dmg = graphlib._dmg_map(att)
+        amap = graphlib._application_map(att, dist, vic_speed, vic_sig, 0.0)
+        mix = {'em': 0.0, 'thermal': 0.0, 'kinetic': 0.0, 'explosive': 0.0}
+        raw = 0.0
+        for key, d in dmg.items():
+            mult = amap.get(key, 0)
+            for t in mix:
+                mix[t] += getattr(d, t) * mult
+            raw += d.total
+        applied = sum(mix.values())
+        vic.damagePattern = DamagePattern(
+            emAmount=mix['em'] or (0 if applied else 25),
+            thermalAmount=mix['thermal'] or (0 if applied else 25),
+            kineticAmount=mix['kinetic'] or (0 if applied else 25),
+            explosiveAmount=mix['explosive'] or (0 if applied else 25))
+        _recalc(vic)
+        ehp = sum(vic.ehp.values())
+        reps_total = sum(v for v in vic.effectiveTank.values() if v)
+        caps = [vic.ship.getModifiedItemAttr(a) for a in
+                ('shieldDamageLimit', 'armorDamageLimit', 'structureDamageLimit')]
+        caps = [c for c in caps if c]
+        effective = min([applied] + caps) if caps else applied
+        out = {'applied_dps': round(applied, 1), 'raw_dps': round(raw, 1),
+               'damage_mix_pct': {t: round(100 * v / applied)
+                                  for t, v in mix.items() if applied and v / applied >= 0.005},
+               'victim_ehp_vs_this_mix': round(ehp),
+               'victim_reps_hps_total': round(reps_total, 1)}
+        if caps:
+            out['victim_incoming_dps_cap'] = round(min(caps))
+        if effective > reps_total > 0 or (effective and not reps_total):
+            out['time_to_kill_s'] = round(ehp / (effective - reps_total))
+        elif effective:
+            out['tanked'] = True  # reps outpace what lands
+        return out
+
+    return {'distance_km': distance_km,
+            'a_vs_b': {'attacker': fit_id_a, 'victim': fit_id_b, **direction(fa, fb)},
+            'b_vs_a': {'attacker': fit_id_b, 'victim': fit_id_a, **direction(fb, fa)},
+            'assumptions': [
+                'victim moving at its current max speed, 90 deg (max transversal)',
+                'reps as one continuous pool across layers (favors the defender)',
+                'ewar/links only if already set via set_projected/set_booster']}
+
+
+@mcp.tool()
+@_engine_thread
 def compare_fits(fit_id_a: str, fit_id_b: str) -> dict:
     """Stat panels diffed: only figures differing >0.1%, as {stat: [a, b]}."""
     diffs = {}

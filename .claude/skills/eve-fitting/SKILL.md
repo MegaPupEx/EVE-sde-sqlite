@@ -131,6 +131,12 @@ that hull there" in one call — turret tracking, missile explosion terms
 and drone mobility, raw vs applied per source class; pull the target's
 base sig/speed from layer 1, and note perfect turret application reads
 ~101.5% of paper (wrecking-shot expectation, pyfa's own model).
+`versus(fit_a, fit_b, distance_km)` is the whole duel in one call —
+both directions of applied dps into resist-weighted EHP (the victim's
+EHP against the attacker's *actual* damage mix), reps subtracted,
+structure damage caps applied, time-to-kill each way. Project ewar/links
+first (`set_projected`/`set_booster`) and versus reads the post-ewar
+sig/speed. Its assumptions ride in the response — quote them.
 `required_skills` gives the fit-wide skill prerequisite closure ("can I
 even sit in this").
 
