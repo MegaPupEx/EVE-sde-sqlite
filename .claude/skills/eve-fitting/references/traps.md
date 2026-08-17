@@ -174,8 +174,11 @@ the range is fake or mis-transcribed — say which value was used); and
 unrolled attributes still carry the mutaplasmid's own baseline values, so
 a mutated module is never just "base + one attribute". Export → reimport
 round-trips exactly; quote stats from the built fit, never from the roll
-text. Roll *feasibility* ("what could this roll to") is layer-1 data:
-`mutaplasmids` × `mutaplasmidAttributes` is the band, band × base
-attribute is the reachable window — enumerate candidates there in SQL,
-then build only the winner in the engine to verify it in fit context
-(ship bonuses and heat land on top of the roll).
+text. Roll *feasibility* ("what could this roll to") is data-layer SQL:
+layer 1 stores the bands in `dynamicItemAttributes` (JSON `attributeIDs`
+of `{_key, min, max}` per mutaplasmid, applicable/resulting types in
+`inputOutputMapping`); the engine's db has the same data as
+`mutaplasmids`/`mutaplasmidAttributes`. Band × base attribute is the
+reachable window — enumerate candidates in SQL, then build only the
+winner in the engine to verify it in fit context (ship bonuses and heat
+land on top of the roll).

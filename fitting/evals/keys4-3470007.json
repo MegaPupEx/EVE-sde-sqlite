@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "engine_build": "3470007",
+    "layer1_build_local": "3466501",
+    "generated": "2026-08-17",
+    "derivation": "see questions4.md per-question notes; engine values via drive.py calls and module_attrs"
+  },
+  "A1": {
+    "verdict": "impossible",
+    "point_heated_m": 36000,
+    "best_web_heated_m": {"unstable_max": 23400, "glorified_unstable_max": 24375},
+    "web_base_max_m": 15000,
+    "overload": {"web_pct": 30, "point_pct": 20},
+    "muta_maxrange_bands": {"decayed": 1.075, "gravid": 1.15, "unstable": 1.2,
+                            "glorified_decayed": 1.1, "glorified_gravid": 1.175,
+                            "glorified_unstable": 1.25}
+  },
+  "A2": {
+    "verdict": "swap",
+    "base_illegal_pg": [86.7, 83.8],
+    "ehp_uniform": [7819, 7482],
+    "armor_hps": [41.3, 55.1],
+    "cpu": [[151.0, 175.0], [146.0, 175.0]]
+  },
+  "A3": {
+    "verdict": "wolf-rayet",
+    "dps": {"none": 434.4, "wr_c3": 901.8, "pulsar_c3": 434.4},
+    "ehp_uniform": {"none": 5467, "wr_c3": 6700, "pulsar_c3": 5598}
+  },
+  "B1": {
+    "hull": "Myrmidon",
+    "bandwidth_mbit": 100,
+    "runner_up": {"hull": "Prophecy", "bandwidth_mbit": 75},
+    "ogre2_count": 4,
+    "dps_drones": 380.2
+  },
+  "B2": {
+    "web_base_m": 15000,
+    "tied_factions": ["Dark Blood", "Domination", "True Sansha", "Republic Fleet"],
+    "huginn_cold_m": 60000,
+    "huginn_heated_m": 78000
+  },
+  "B3": {
+    "pg_total_mw": 65.0,
+    "base_pg_mw": 40,
+    "mapc_power_increase_mw": 12,
+    "napkin_wrong": 62
+  }
+}

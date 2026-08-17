@@ -127,9 +127,12 @@ one row each (~30 tokens): use it for every "which module here" and
 candidate list with knowledge *first* (2–6 plausible options, not the
 market group), then sweep once; never loop `edit_fit`+`get_stats` per
 variant. Mutaplasmid roll feasibility ("can a web roll to X km") is
-layer-1 SQL — `mutaplasmids` × `mutaplasmidAttributes` gives the band ×
-base attribute — then build the winning roll in the engine (EFT `[N]`
-dialect) to verify it in fit context.
+data-layer SQL — in layer 1 the bands live in `dynamicItemAttributes`
+(`attributeIDs` JSON: `[{_key: attrID, min, max}]`, plus applicable
+types and resulting type in `inputOutputMapping`); the engine's own db
+has the same data relational as `mutaplasmids`/`mutaplasmidAttributes`.
+Band × base attribute is the reachable window; build the winning roll
+in the engine (EFT `[N]` dialect) to verify it in fit context.
 
 Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted

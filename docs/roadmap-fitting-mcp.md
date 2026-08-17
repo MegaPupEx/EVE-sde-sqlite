@@ -159,9 +159,22 @@ Everything left, with what building each requires:
 7. **Fighter ability toggles** — abilities beyond the auto-activated
    standard attack (missiles, bombs, utility), plus light/support/heavy
    tube split validation.
-8. **Heat over time** — burnout/uptime estimates; pyfa does not simulate
-   it for panels and v1 explicitly skipped it. Only if a real question
-   class demands it.
+8. **Heat over time** — burnout/uptime estimates. Assessed 2026-08-17,
+   inputs verified in the SDE: per-rack `heatCapacity*` (100 everywhere)
+   and `heatDissipationRate*` (0.01 everywhere), per-hull
+   `heatGenerationMultiplier` (1.0 frigates → 0.25 titans — buildup
+   *rate* is the "ship size" effect) and `heatAttenuation*` (0.5 → 0.82
+   — how far damage spreads to neighboring slots; bigger hulls spread
+   wider), per-module `heatDamage` and 40 structure HP, Thermodynamics
+   −5% heat damage/level. Buildup is deterministic; the *damage rolls*
+   are the random part (chance scales with rack heat, targets weighted
+   by slot distance and occupancy). An expected-value model is buildable
+   — but pyfa has no heat-over-time sim, so this is the first feature
+   with no wrap target and no engine ground truth to pin eval keys
+   against; the server-side generation constants are community-measured,
+   not SDE data. Verdict: defer until layer 3 makes the mechanism
+   citable; meanwhile `module_attrs` exposes the SDE inputs and answers
+   name burnout as unmodeled.
 9. **Fit ISK cost** (ESI bolt-on) — roadmap non-goal for v1, unchanged:
    needs live price data, so it rides on the ESI pointers, not the SDE.
 
