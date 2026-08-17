@@ -32,7 +32,7 @@ import re
 
 _MUTANT_HEAD = re.compile(r'^\[(\d+)\]\s+(.+)$')
 _MUTATION_REF = re.compile(r'\s*\[(\d+)\]$')
-_EMPTY_SLOT = re.compile(r'^\[Empty (Low|Med|High|Rig|Subsystem) slot\]$', re.IGNORECASE)
+_EMPTY_SLOT = re.compile(r'^\[Empty (Low|Med|High|Rig|Subsystem|Service) slot\]$', re.IGNORECASE)
 
 
 class EftError(Exception):
@@ -179,14 +179,19 @@ def build_fit(spec):
     ship_item = _lookup(spec.ship)
     if ship_item is None:
         raise EftError(f'unknown ship: {spec.ship!r}')
-    fit = Fit(Ship(ship_item), name=spec.name)
+    if ship_item.category.name == 'Structure':
+        from eos.saveddata.citadel import Citadel
+        fit = Fit(Citadel(ship_item), name=spec.name)
+    else:
+        fit = Fit(Ship(ship_item), name=spec.name)
     fit.character = Character.getAll5()
     fit.damagePattern = DamagePattern(emAmount=25, thermalAmount=25,
                                       kineticAmount=25, explosiveAmount=25)
     from eos.const import FittingSlot
     empty_slots = {'low': FittingSlot.LOW, 'med': FittingSlot.MED,
                    'high': FittingSlot.HIGH, 'rig': FittingSlot.RIG,
-                   'subsystem': FittingSlot.SUBSYSTEM}
+                   'subsystem': FittingSlot.SUBSYSTEM,
+                   'service': FittingSlot.SERVICE}
     for entry in spec.entries:
         if entry.get('empty'):
             placeholder = Module.buildEmpty(empty_slots[entry['empty']])
@@ -263,7 +268,7 @@ def render_eft(fit):
         return f' [{ref}]'
 
     order = (FittingSlot.LOW, FittingSlot.MED, FittingSlot.HIGH,
-             FittingSlot.RIG, FittingSlot.SUBSYSTEM)
+             FittingSlot.RIG, FittingSlot.SUBSYSTEM, FittingSlot.SERVICE)
     slots = {s: [] for s in order}
     for mod in fit.modules:
         if mod.isEmpty:

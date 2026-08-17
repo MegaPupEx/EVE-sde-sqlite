@@ -43,7 +43,12 @@ def buildFit(spec, character):
     from eos.saveddata.module import Module
     from eos.saveddata.ship import Ship
 
-    fit = Fit(Ship(getItemStrict(spec['ship'])), name=spec['name'])
+    ship_item = getItemStrict(spec['ship'])
+    if ship_item.category.name == 'Structure':
+        from eos.saveddata.citadel import Citadel
+        fit = Fit(Citadel(ship_item), name=spec['name'])
+    else:
+        fit = Fit(Ship(ship_item), name=spec['name'])
     fit.character = character
     fit.damagePattern = DamagePattern(emAmount=25, thermalAmount=25,
                                       kineticAmount=25, explosiveAmount=25)

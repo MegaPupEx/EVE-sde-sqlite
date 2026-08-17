@@ -277,4 +277,17 @@ FITS = [
         ],
         'drones': [],
     },
+    {
+        'name': 'astrahus-standup',
+        'ship': 'Astrahus',
+        'exercises': 'Upwell structure: Citadel calc branch, standup missiles, '
+                     'service module fuel, structure EHP layers',
+        'modules': [
+            ('Standup Multirole Missile Launcher I', 'Standup Cruise Missile'),
+            ('Standup Ballistic Control System I', None),
+            ('Standup Layered Armor Plating I', None),
+            ('Standup Cloning Center I', None),
+        ],
+        'drones': [],
+    },
 ]

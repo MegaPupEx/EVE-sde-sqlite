@@ -118,10 +118,35 @@ def stat_panel(fit, recalc=_recalc, spool=None):
     }
     if reps:
         panel['defense']['reps_hps'] = reps
+    # Upwell structures cap incoming dps per layer (data: *DamageLimit attrs);
+    # EHP / cap is the floor on time-to-kill regardless of attacker count
+    dmg_caps = {layer: round(attr(a))
+                for layer, a in (('shield', 'shieldDamageLimit'),
+                                 ('armor', 'armorDamageLimit'),
+                                 ('hull', 'structureDamageLimit'))
+                if attr(a)}
+    if dmg_caps:
+        panel['defense']['incoming_dps_cap'] = dmg_caps
     if not dps_drones:
         del panel['offense']['dps_drones']
     if dps_fighters:
         panel['offense']['dps_fighters'] = round(dps_fighters, 1)
     if dps_burst == dps_sustained:
         del panel['offense']['dps_sustained']
+    # Upwell service modules: fuel is per-service dogma, and the hourly burn
+    # is the number every "what does it cost to run" question needs
+    from eos.const import FittingModuleState
+    services = [m for m in fit.modules if not m.isEmpty
+                and 'serviceModuleFuelAmount' in m.item.attributes]
+    if services:
+        online = [m for m in services if m.state >= FittingModuleState.ONLINE]
+        panel['services'] = {
+            'fitted': [{'name': m.item.typeName,
+                        'fuel_hr': round(m.getModifiedItemAttr('serviceModuleFuelAmount') or 0, 1),
+                        'fuel_to_online': round(m.getModifiedItemAttr('serviceModuleFuelOnlineAmount') or 0),
+                        'online': m.state >= FittingModuleState.ONLINE}
+                       for m in services],
+            'fuel_blocks_per_hour': round(sum(
+                m.getModifiedItemAttr('serviceModuleFuelAmount') or 0 for m in online), 1),
+        }
     return panel

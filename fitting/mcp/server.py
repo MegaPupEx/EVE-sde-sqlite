@@ -150,7 +150,8 @@ def _problems(fit):
     for slot, label, attr_name in (
             (FittingSlot.LOW, 'low', 'lowSlots'), (FittingSlot.MED, 'med', 'medSlots'),
             (FittingSlot.HIGH, 'high', 'hiSlots'), (FittingSlot.RIG, 'rig', 'rigSlots'),
-            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems')):
+            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
+            (FittingSlot.SERVICE, 'service', 'serviceSlots')):
         total = attr(attr_name) or 0
         over = used_by_slot.get(int(slot), 0) - total
         if over > 0:
@@ -200,7 +201,8 @@ def _summary(fit_id):
     for slot, label, attr_name in (
             (FittingSlot.HIGH, 'high', 'hiSlots'), (FittingSlot.MED, 'med', 'medSlots'),
             (FittingSlot.LOW, 'low', 'lowSlots'), (FittingSlot.RIG, 'rig', 'rigSlots'),
-            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems')):
+            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
+            (FittingSlot.SERVICE, 'service', 'serviceSlots')):
         total = int(attr(attr_name) or 0)
         if total or used.get(int(slot)):
             slots[label] = [used.get(int(slot), 0), total]
@@ -791,7 +793,8 @@ def engine_info() -> dict:
         'engine': 'pyfa-eos (headless)',
         'engine_build': meta.get('client_build'),
         'unmodeled': ['industrial core state',
-                      'structures', 'custom skill sheets',
+                      'structure reinforcement/low-power cycles (fitting, combat and fuel ARE modeled)',
+                      'custom skill sheets',
                       'fighter ability toggles (standard attack only)',
                       'heat burnout timers (overload bonuses ARE modeled: state overheated)'],
         'skills_presets': ['all-0', 'alpha', 'all-5'],

@@ -219,3 +219,25 @@ RSB cycles 5.5× the HP in a quarter of the time). Two rules ride along:
   shown), remote assistance impedance, in-game weapon locks, the
   end-of-cycle vulnerability — arrive as a `notes` line naming the
   module. Quote the note with the numbers.
+
+## T17 — Structures: caps in, caps out, and fuel is per service
+
+Upwell structures compute like ships (Citadel calc branch — standup
+weapons, EHP layers, resists all engine numbers) with three structural
+differences worth naming every time:
+
+- **Incoming damage is capped per layer** (`*DamageLimit` attributes —
+  Astrahus 5,000 dps on every layer; in the panel as
+  `defense.incoming_dps_cap`). EHP ÷ cap is the *floor* on time-to-kill
+  no matter how many attackers — a 30M EHP Astrahus cannot die faster
+  than ~100 minutes of capped fire. Never quote structure EHP without
+  the cap beside it.
+- **Fuel is per service module, not per hull** — `services` in the panel
+  sums `serviceModuleFuelAmount` (blocks/hr) over online services, with
+  the one-time onlining cost per service. Towers (POSes) are a different
+  model entirely: layer 1's `controlTowerResources` (see the eve-sde
+  skill's gotchas-industry for both).
+- **The state machine is not modeled**: reinforcement windows,
+  vulnerability timers and the low-power state (no fueled service =
+  reduced defenses) are in-game rules the panel can't see — the numbers
+  are the full-power structure, and answers say so.

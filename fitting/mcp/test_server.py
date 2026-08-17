@@ -469,6 +469,38 @@ async def main(pyfa):
             for f in (gol, bad, phx, mino):
                 await call('delete_fit', fit_id=f['fit_id'])
 
+            # Upwell structures: Citadel branch, standup weapons, service fuel,
+            # service rack in summaries, legality in both directions
+            ast = await call('import_fit', eft='[Astrahus, home]\n'
+                             'Standup Ballistic Control System I\n\n'
+                             'Standup Multirole Missile Launcher I, Standup Cruise Missile\n\n'
+                             'Standup Cloning Center I')
+            assert ast['slots'].get('service') == [1, 3], ast['slots']
+            a_stats = await call('get_stats', fit_id=ast['fit_id'])
+            assert a_stats['offense']['dps'] > 900, a_stats['offense']
+            assert a_stats['defense']['ehp']['total'] > 20_000_000, a_stats['defense']['ehp']
+            assert a_stats['navigation']['max_velocity_ms'] == 0, a_stats['navigation']
+            svc = a_stats['services']
+            assert svc['fuel_blocks_per_hour'] == 10 and svc['fitted'][0]['fuel_to_online'] == 720, svc
+            assert a_stats['defense']['incoming_dps_cap']['hull'] == 5000, \
+                a_stats['defense'].get('incoming_dps_cap')
+            av = await call('validate_fit', fit_id=ast['fit_id'])
+            assert av['legal'], av
+            await call('edit_fit', fit_id=ast['fit_id'], ops=[
+                {'op': 'add', 'item': 'Standup Cloning Center I'},
+                {'op': 'add', 'item': 'Standup Reprocessing Facility I'},
+                {'op': 'add', 'item': 'Standup Market Hub I'}])
+            av2 = await call('validate_fit', fit_id=ast['fit_id'])
+            assert any('service slots over by 1' in p for p in av2['problems']), av2
+            bad_s = await call('import_fit', eft='[Astrahus, bad]\nGyrostabilizer II')
+            bs_val = await call('validate_fit', fit_id=bad_s['fit_id'])
+            assert any('cannot be fitted' in p for p in bs_val['problems']), bs_val
+            bad_r = await call('import_fit', eft='[Rifter, bad2]\nStandup Cloning Center I')
+            br_val = await call('validate_fit', fit_id=bad_r['fit_id'])
+            assert any('cannot be fitted' in p for p in br_val['problems']), br_val
+            for f in (ast, bad_s, bad_r):
+                await call('delete_fit', fit_id=f['fit_id'])
+
             info = await call('engine_info')
             assert info['engine_build'], info
             assert 'environment effects' not in info['unmodeled'], 'env is modeled now'

@@ -27,7 +27,8 @@ def main():
     from eos.const import FittingSlot
     from eos.saveddata.module import Module
 
-    order = (FittingSlot.LOW, FittingSlot.MED, FittingSlot.HIGH, FittingSlot.RIG)
+    order = (FittingSlot.LOW, FittingSlot.MED, FittingSlot.HIGH, FittingSlot.RIG,
+             FittingSlot.SUBSYSTEM, FittingSlot.SERVICE)
     for spec in FITS:
         slots = {s: [] for s in order}
         for name, charge in spec['modules']:
