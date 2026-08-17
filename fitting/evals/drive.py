@@ -44,6 +44,8 @@ async def run(pyfa, calls):
             await s.initialize()
             def resolve(v):
                 if isinstance(v, str) and v.startswith('$'):
+                    if v[1:] not in saved:
+                        raise KeyError(f'unresolved reference {v!r} — did its source call fail?')
                     return saved[v[1:]]
                 if isinstance(v, list):
                     return [resolve(x) for x in v]
@@ -52,8 +54,8 @@ async def run(pyfa, calls):
                 return v
 
             for call in calls:
-                args = {k: resolve(v) for k, v in call.get('args', {}).items()}
                 try:
+                    args = {k: resolve(v) for k, v in call.get('args', {}).items()}
                     res = unwrap(await s.call_tool(call['tool'], args))
                 except Exception as e:  # noqa: BLE001 — report and continue
                     res = {'error': str(e)}

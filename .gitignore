@@ -4,3 +4,5 @@ __pycache__/
 fitting/work/
 fitting/mcp/work/
 fitting/spike/work/
+eve-sde-*.sqlite
+eve-sde-*.sqlite.xz
