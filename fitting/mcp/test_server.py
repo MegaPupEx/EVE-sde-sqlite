@@ -192,6 +192,19 @@ async def main(pyfa):
             i_off = await call('get_stats', fit_id=imp_fit['fit_id'])
             assert i_off['navigation']['max_velocity_ms'] == i_base['navigation']['max_velocity_ms']
 
+            # spool weapons get a named note; wrong-size charges are rejected
+            ved = await call('create_fit', ship='Vedmak')
+            await call('edit_fit', fit_id=ved['fit_id'], ops=[
+                {'op': 'add', 'item': 'Heavy Entropic Disintegrator II', 'charge': 'Occult M'}])
+            v_stats = await call('get_stats', fit_id=ved['fit_id'])
+            assert any('spool' in n for n in v_stats.get('notes', [])), 'spool note missing'
+            try:
+                await call('edit_fit', fit_id=ved['fit_id'], ops=[
+                    {'op': 'charge', 'item': 'Heavy Entropic Disintegrator II', 'charge': 'Occult L'}])
+                raise AssertionError('L charge in an M gun must be rejected')
+            except RuntimeError as e:
+                assert 'does not fit' in str(e), e
+
             # T3D mode swap moves signature
             conf = await call('create_fit', ship='Confessor')
             await call('edit_fit', fit_id=conf['fit_id'], ops=[

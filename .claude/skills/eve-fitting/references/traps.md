@@ -28,6 +28,11 @@ Two different systems, and the difference decides real answers:
   so was the old claim "env/burst effects are stacking-exempt", wrong in
   both halves. (pyfa `eos/effects.py` systemShieldHP vs systemMaxVelocity/
   systemArmorEmResistance, all engine-verified.)
+- **"Penalized" does not mean "chains with your modules".** Bonuses and
+  penalties are separate chains (F§1): a Wolf-Rayet's shield-resist
+  *malus* does not weaken your hardener's *bonus* — each stacks within
+  its own direction. Don't tell a pilot the wormhole nerfs their
+  hardeners; it nerfs their resists directly.
 
 ## T2 — Environmental effects hit NPCs too — and `set_env` hits one fit
 

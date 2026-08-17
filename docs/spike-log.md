@@ -277,3 +277,17 @@ realism, fighter toggles, heat, and ISK cost.
 
 15 tools, ~1,422 tokens standing; smoke test covers every new mechanism;
 eval keys verified unchanged throughout.
+
+### 2026-08-17 — graded run 2: layered 100% vs fit-sim-only 81%
+
+Full write-up in `fitting/evals/results2-2026-08-17.md`. The headline:
+sim-only jumped 69% → 81% between generations *because v1.5 moved the
+mechanics into the engine* — the skill's edge now concentrates in
+discipline, the unmodeled, and the engine/game-knowledge boundary
+(spool: 1.5 vs 4; T2 prerequisites: 3 vs 4). Two engine fixes fell out
+of grading and are pinned in the smoke test: `get_stats` names zero-spool
+floors on spool weapons, and charge ops reject wrong-size charges (the
+sim arm's Vedmak number had been computed on an L charge in an M gun,
+silently). One docs pin (§T1: bonuses and penalties are separate chains)
+and one harness fix (G4's phantom armor repairer). Token accounting and
+the no-effort-control caveat are in the results file.

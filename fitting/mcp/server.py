@@ -246,6 +246,9 @@ def edit_fit(fit_id: str, ops: list) -> dict:
                     charge = eftlib._lookup(op['charge'])
                     if charge is None:
                         raise ValueError(f'unknown charge {op["charge"]!r}')
+                    if not mod.isValidCharge(charge):
+                        raise ValueError(f'{charge.typeName!r} does not fit {item.typeName!r} '
+                                         '(wrong size or charge group)')
                     mod.charge = charge
                 if mod.isValidState(FittingModuleState.ACTIVE):
                     mod.state = FittingModuleState.ACTIVE
@@ -271,6 +274,9 @@ def edit_fit(fit_id: str, ops: list) -> dict:
             hits = 0
             for mod in fit.modules:
                 if not mod.isEmpty and mod.item.typeName == item_name:
+                    if not mod.isValidCharge(charge):
+                        raise ValueError(f'{charge.typeName!r} does not fit {item_name!r} '
+                                         '(wrong size or charge group)')
                     mod.charge = charge
                     hits += 1
             if not hits:
@@ -409,6 +415,10 @@ def get_stats(fit_id: str, profile: dict = None) -> dict:
         kineticAmount=p.get('kinetic', 25), explosiveAmount=p.get('explosive', 25))
     panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload))
     panel['problems'] = _problems(fit)
+    # A silent zero-spool number cost a graded eval miss (2026-08-17): name it.
+    if any(not m.isEmpty and 'damageMultiplierBonusPerCycle' in m.item.attributes
+           for m in fit.modules):
+        panel['notes'] = ['spool-up unmodeled: dps/volley are zero-spool floors']
     return panel
 
 
