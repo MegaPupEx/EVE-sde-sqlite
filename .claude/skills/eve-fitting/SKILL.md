@@ -114,3 +114,11 @@ zero range — full strength, so quote it as the worst/best case it is.
 Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted
 resonance. Never guess a unit.
+
+**Follow-up turns answer the delta.** In an ongoing conversation: batch
+every engine call a question needs into one request; reuse fits already
+resident (and numbers already computed) instead of re-deriving them;
+never re-paste or re-audit a settled answer — if turn one rated the fit,
+turn two's swap question needs the changed figures and the verdict, not
+a second full review. Measured: a follow-up handled this way costs a
+fraction of a fresh question; a re-audit costs more than the original.

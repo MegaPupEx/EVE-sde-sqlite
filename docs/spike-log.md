@@ -291,3 +291,20 @@ sim arm's Vedmak number had been computed on an L charge in an M gun,
 silently). One docs pin (§T1: bonuses and penalties are separate chains)
 and one harness fix (G4's phantom armor repairer). Token accounting and
 the no-effort-control caveat are in the results file.
+
+### 2026-08-17 — run 3: multi-turn session costs
+
+Twelve persistent sessions × three turns (fitting-layered, fitting-bare,
+SDE-only, and layered-with-unrelated-questions arms), measuring marginal
+cost per follow-up. Full data in `fitting/evals/results3-2026-08-17.md`.
+Headlines: turn one is the whole cliff (38–82k transcript tokens) and
+follow-ups run ~6k (SDE) to ~8–18k (fitting) — even *unrelated* questions
+in a warm session cost a fifth of a cold start; latency is dominated by
+per-invocation engine boots the production MCP registration doesn't pay;
+and the two cheapest turns in the run were the two *wrong* ones (sim-only
+answering environment and neut questions from memory). One engine bug
+found and fixed mid-run: rack overflow had never actually been validated
+(eos compares slot enums by identity; EFT-built modules carry ints) —
+caught by a layered subject reading layer 1, of all things, after it
+flagged an illegal test fit of mine the broken check had passed. Router
+gained the conversation-economy rules the outlier turns paid for.
