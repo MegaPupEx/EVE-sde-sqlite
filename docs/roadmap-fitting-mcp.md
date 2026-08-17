@@ -269,7 +269,14 @@ doc-owned misses get fixed and pinned in the harness.**
    damage profiles, `compare_fits`, `validate_fit`, `engine_info` — smoke
    test drives the full surface over real stdio against the reference
    battery, on both bundled and adapter-current data builds.*
-3. Fitting-knowledge skill v1 + first eval generation
+3. Fitting-knowledge skill v1 + first eval generation. *Landed
+   2026-08-17: `.claude/skills/eve-fitting/` (router ~1.6k tokens of the
+   ~4k budget + three references) and `fitting/evals/` (10 questions,
+   classes 1+2, engine-pinned keys). First graded run: control 69% vs
+   with-skill 98%; misses root-caused, fixes pinned — including one
+   engine bug (alpha-preset character mutation) and one formulas-doc
+   error (Pulsar shield HP is not stack-penalized) caught before the run.
+   See `docs/spike-log.md`.*
 4. `compare_fits` + `graph` + v1.5 external-effects pipeline
 5. Layer 3: corpus build + search + knowledge skill
 6. Cross-layer eval (questions requiring all three layers)

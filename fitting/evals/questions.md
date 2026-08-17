@@ -96,10 +96,13 @@ and lose?"
 **Key (engine, pinned variant: plate+web+trimark → LSE+3rd DDA+CDFE):**
 EHP 31,102 → 20,413 (−34%); align 10.25 → 8.44 s; 575 → 627 m/s; sig 145
 → 178.5; DPS 431.7 → 471.1 (freed low = 3rd DDA at ~57% stacking); PG
-985.4/875 (**over — the armor fit is illegal as-is**) → 555.4/875. **Key
-(docs):** shield spends mids (this swap costs the web — brawl control),
-armor spends lows (costs DPS); plate mass slows align, extender sig makes
-you easier to hit. Noticing the base fit's PG problem is part of the key.
+985.4/875 (**over — the armor fit is illegal as-is**) → 555.4/875. Any
+coherent shield variant is acceptable — the battery Vexor has a **free
+mid**, so an LSE fits without dropping tackle (the pinned variant's
+web-drop was a choice, not a necessity; graded run 1 caught this). **Key
+(docs):** shield competes for mids with tackle, armor spends lows (costs
+DPS); plate mass slows align, extender sig makes you easier to hit.
+Noticing the base fit's PG problem is part of the key.
 
 ## T3 — cap stability is not a grade (abaddon-pulse-armor)
 

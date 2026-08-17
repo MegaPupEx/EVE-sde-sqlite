@@ -159,3 +159,46 @@ Both first work items for MCP v1 are in:
   for the format notes (two real CCP-vs-pyfa divergences found and
   handled: dynamicItemAttributes list-vs-dict, localized effect
   descriptions).
+
+## 2026-08-17 — fitting-knowledge skill v1 + first graded eval run
+
+Phase 3 of the roadmap. `.claude/skills/eve-fitting/` (named to match the
+MCP server it pairs with, parallel to `eve-sde`): a ~1.6k-token router —
+well inside the ~4k budget — plus three references (`reading-stats`,
+`tradeoffs`, `traps`, ~1.5–1.9k each). The router carries the answer
+discipline (authority order SDE > engine > wiki > memory, layer naming,
+the engine/SDE/CCP build-skew check, unmodeled-means-named); the
+references carry the teaching. NPC damage-profile weights come from
+pyfa's own presets, so even the "game knowledge" table is engine-layer
+sourced.
+
+**Writing the traps file caught a formulas-doc error.** Verifying §1's
+beacon claims against pyfa's actual handlers: category 2 decides
+*eligibility*, the attribute's stackable flag decides each case — the
+black-hole velocity multiplier and the resist maluses are penalized
+(`stackingPenalties=True`), but a Pulsar's shield HP multiplier hits
+`shieldCapacity` (stackable) and applies in full. The doc's example had
+overshot; corrected 2026-08-17.
+
+**Eval set 1** (`fitting/evals/`): 10 questions, roadmap classes 1+2,
+keys engine-pinned per data build (`keys-3424810.json`, regenerable by
+`make_keys.py`). Key generation itself caught an engine bug —
+`set_skills('alpha')` mutated pyfa's shared All-5 character, silently
+turning every fit in the session alpha (fixed; smoke test now asserts
+restoration and fresh-import isolation) — and a docs error (the battery
+Caracal *gains* EHP vs Guristas, 16,943 → 18,511; the doc claimed a
+loss). Also pinned: the battery Hurricane (1,681/1,425) and Vexor
+(985/875) are PG-over — coverage fits, never legality-checked; the evals
+now use that as a discipline probe.
+
+**Graded run** (`results-2026-08-17.md`): control 27.5/40 (69%) vs
+with-skill 39/40 (98%), fresh Sonnet sessions, identical engine access.
+Both control outright misses (guessed NPC profile weights; "env effects
+are stacking-exempt" plus inverted Wolf-Rayet effects) are exactly the
+docs-owned content the skill carries. Every miss root-caused: one docs
+gap fixed and pinned mid-run (validate_fit doesn't check skill
+prerequisites — traps §T12), one harness key fixed (the battery Vexor has
+a free mid; a shield tank needn't drop the web), one model-owned nit
+logged. Notable negative result: the control's 69% shows the MCP surface
+itself (problems lists, unit-suffixed keys) carries real discipline —
+every control run that imported a fit caught the PG-illegal battery fits.

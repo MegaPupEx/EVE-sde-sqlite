@@ -7,7 +7,7 @@ below it:
 | Layer | What it answers | Status |
 | --- | --- | --- |
 | **1. SDE skill** (`.claude/skills/eve-sde`) | what the game data says — ships, modules, dogma, industry, the universe | done; auto-released |
-| **2. Fitting engine** (`fitting/`) | what happens when you combine things — fits, stats, stacking | engine + MCP server working; knowledge skill next |
+| **2. Fitting engine** (`fitting/` + `.claude/skills/eve-fitting`) | what happens when you combine things — fits, stats, stacking | engine + MCP server + knowledge skill; eval loop running |
 | **3. Knowledge base** | what players know — mechanics, doctrine, strategy | planned |
 
 Design and status: [`docs/roadmap-fitting-mcp.md`](docs/roadmap-fitting-mcp.md) ·
@@ -84,10 +84,15 @@ work/eosenv/bin/python fitting/mcp/test_server.py --pyfa work/pyfa   # full smok
 ```
 
 Registration and tool list: [`fitting/mcp/README.md`](fitting/mcp/README.md).
-Unlike layer 1, this layer is a *process*, not an upload: it needs Python,
+Unlike layer 1, the engine is a *process*, not an upload: it needs Python,
 a pyfa checkout and the MCP registration — Claude Code and Claude Desktop
-territory. The upcoming fitting-knowledge skill (the interpretation half)
-will be a normal uploadable skill that pairs with it.
+territory. The interpretation half is a normal skill:
+[`.claude/skills/eve-fitting`](.claude/skills/eve-fitting/SKILL.md) teaches
+what the engine's numbers mean (stat reading, tradeoffs, a numbered trap
+catalogue) and the answer discipline (name your layer, your build, your
+skill preset, and anything unmodeled). Its graded eval loop lives in
+[`fitting/evals/`](fitting/evals/) — first run: 69% without the skill,
+98% with.
 
 ## Automation
 
