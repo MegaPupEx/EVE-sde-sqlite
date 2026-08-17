@@ -98,9 +98,10 @@ full on its own. Module states matter: `active` is the boosted state;
 
 Bay volume caps what you carry, bandwidth caps what launches, and the
 pilot's Drones skill caps **5 active** — the skill cap is in neither ship
-attribute. Drone DPS is inside panel `dps` (broken out as `dps_drones`)
-and is the first DPS you lose: drones get shot, left behind, or exceed
-control range. Say when a quoted DPS depends on drones staying alive.
+attribute. Drone DPS is inside panel `dps` (broken out as `dps_drones`;
+fighters as `dps_fighters`, standard attack only) and is the first DPS
+you lose: drones get shot, left behind, or exceed control range. Say when
+a quoted DPS depends on drones or fighters staying alive.
 
 ## T10 — Fitting headroom: validate after calculation, expect 0.01 skew
 

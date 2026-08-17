@@ -1,6 +1,6 @@
-# eve-fitting MCP server (v1 + phase-4 surface)
+# eve-fitting MCP server (v1.5)
 
-pyfa's engine behind 14 terse tools. A Claude session launches this process
+pyfa's engine behind 15 terse tools. A Claude session launches this process
 locally over stdio; fits live in the server's memory and travel as short IDs
 (`f1`, `f2`) — the conversation never carries a fit, only the numbers asked
 for. EFT text is the sole import/export payload.
@@ -9,7 +9,7 @@ for. EFT text is the sole import/export payload.
 
 | item | tokens |
 | --- | --- |
-| standing schema overhead (all 14 tools) | **~1,280** |
+| standing schema overhead (all 15 tools) | **~1,420** |
 | `get_stats` full panel | ~260 |
 | `graph` (≤30-point curve + summary) | ~110–190 |
 | `edit_fit` / `import_fit` / `clone_fit` summary | ~30 |
@@ -49,11 +49,14 @@ Register in a project `.mcp.json` (or Claude Desktop's config, same shape):
 Lifecycle: `create_fit`, `import_fit` (EFT, multi-fit capable), `clone_fit`,
 `delete_fit`, `export_fit`.
 Mutation: `edit_fit` (ops list: add/remove/charge/state/mode — charge and
-state apply to all matching modules; mode sets a T3D tactical mode),
-`set_skills` (`all-5` | `alpha`), `set_env` (system environment — wormhole
-class beacons, metaliminal storms, abyssal hazards; applies to that fit
-only), `set_booster` (command-burst fits, computed recursively — the
-booster's own hull/skills scale the burst, strongest same buff wins).
+state apply to all matching modules; mode sets a T3D tactical mode; add
+covers modules, drones, fighters, implants and drugs by item category),
+`set_skills` (`all-0` | `alpha` | `all-5`), `set_env` (system environment —
+wormhole class beacons, metaliminal storms, abyssal hazards; applies to
+that fit only), `set_booster` (command-burst fits, computed recursively —
+the booster's own hull/skills scale the burst, strongest same buff wins),
+`set_projected` (other fits' remote reps/ewar/neuts applied at zero
+range).
 Read: `get_stats` (full panel, optional damage-profile weights), `graph`
 (`dps_vs_range` / `dps_vs_target_speed` / `cap_vs_time` — ≤30 points +
 summary + named assumptions), `compare_fits` (differing figures only),
@@ -82,6 +85,11 @@ silently ignored.
   every booster's COMMAND pass before each calculation
   (`panel.stat_panel`'s injectable `recalc`). Symptom if regressed: burst
   bonuses appear once, then vanish on the next `get_stats`.
-- Not yet here (tracked in the roadmap): projected fits (remote
-  reps/ewar), implants/boosters, mutated modules, fighters, custom skill
-  sheets.
+- Projection ordering is load-bearing: bursts run BEFORE the subject's
+  local calc (eos consumes their bonuses during it), projected fits run
+  AFTER it (the local calc's clear() would wipe them). `_recalc` is the
+  single place that knows this.
+- Not yet here (tracked in the roadmap's v2 list): mutated modules (EFT
+  dialect decided — pyfa's `[N]` references; parser work remains), siege
+  states, spool-up, structures, custom skill sheets, fighter ability
+  toggles.

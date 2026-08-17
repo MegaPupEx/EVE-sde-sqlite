@@ -98,8 +98,9 @@ output, never silently ignored.
 - ~~Command bursts~~ *landed 2026-08-17* — modeled as a *separate boost
   fit* whose own skills, mindlinks and hull scale the burst (recursive,
   like pyfa does it)
-- Projected fits: remote assistance/impedance, where the projecting ship's
-  own rigs/skills scale the projected module (same recursion)
+- ~~Projected fits~~ *landed 2026-08-17 (`set_projected`, zero-range)*:
+  remote assistance/impedance, where the projecting ship's own rigs/skills
+  scale the projected module (same recursion)
 - ~~Environmental~~ *landed 2026-08-17 (`set_env`)*: wormhole phenomena,
   k-space metaliminal storms, abyssal system-wide weather, local AoE
   (abyssal clouds, ESS bubble), incursion and insurgency system effects.
@@ -109,7 +110,8 @@ output, never silently ignored.
 - Mutated (abyssal) modules — rolled stats within mutaplasmid ranges;
   import/export must carry exact rolled values or real PvP fits cannot
   round-trip
-- Fighters (ability-level effects; the SDE work already mapped
+- ~~Fighters~~ *landed 2026-08-17 (standard attack; ability toggles are
+  v2)* (ability-level effects; the SDE work already mapped
   `fighterAbilities`) — promoted from v2, 2026-08-16
 - ~~Tactical destroyer modes~~ *landed 2026-08-17 (`edit_fit` op `mode`)*
   (Confessor/Svipul/Hecate/Jackdaw) — promoted from v2, 2026-08-16; modes
@@ -120,6 +122,48 @@ output, never silently ignored.
 - Spool-up weapons (Triglavian ramp — makes DPS time-dependent; needs a
   spool parameter or time series)
 - Structures (fittable citadels)
+
+### What v2 needs (assessed 2026-08-17, at v1.5 close)
+
+Everything left, with what building each requires:
+
+1. **Mutated (abyssal) modules** — the one v1.5 leftover. Dialect
+   *decided*: adopt pyfa's EFT format exactly — `[N]` references on module
+   lines plus a mutation section (`service/port/eft.py:59–160, 634` is
+   the de-facto spec). Remaining work: parse/render in
+   `fitting/engine/eft.py`; eos-side construction (base item +
+   mutaplasmid + per-attribute mutator values, clamped to mutaplasmid
+   ranges); round-trip tests; one battery fit with rolled stats.
+2. **Siege-class states** (siege, bastion, triage, industrial core) —
+   modules whose effects fire in a special state. Needs: a battery fit
+   per class (start: bastion Golem), verification the effects run
+   headless, and name-it rules for the side conditions the panel can't
+   show (no remote reps in bastion, immobility).
+3. **Spool-up** — DPS becomes a function of time. eos already carries
+   `SpoolOptions`; needs a `spool` parameter on `get_stats`/`graph` (or
+   dps_at_0/50/100 keys), a `dps_vs_time` graph kind, and skill docs for
+   quoting spool honestly (pyfa's own NPC profiles ship at three spool
+   levels).
+4. **Structures** (fittable citadels) — eos has the `isStructure` calc
+   branch. Needs: structure hulls in `create_fit`, service-slot fitting
+   rules and separate validation, structure-specific panel semantics.
+   Decide first whether the product wants it at all.
+5. **Custom skill sheets** — `set_skills` with a {skill: level} sheet.
+   Needs: a compact sheet format, per-sheet eos Character construction
+   (the alpha-preset singleton lesson applies), and eval keys for a
+   mid-SP character.
+6. **Projection range realism** — v1.5 projects at zero range;
+   `ProjectedFit.projectionRange` is already plumbed in eos. Needs: a
+   range argument on `set_projected`, falloff-aware ewar/rep application,
+   and an `ewar_vs_range` graph kind.
+7. **Fighter ability toggles** — abilities beyond the auto-activated
+   standard attack (missiles, bombs, utility), plus light/support/heavy
+   tube split validation.
+8. **Heat over time** — burnout/uptime estimates; pyfa does not simulate
+   it for panels and v1 explicitly skipped it. Only if a real question
+   class demands it.
+9. **Fit ISK cost** (ESI bolt-on) — roadmap non-goal for v1, unchanged:
+   needs live price data, so it rides on the ESI pointers, not the SDE.
 
 ### MCP tool surface (v1)
 

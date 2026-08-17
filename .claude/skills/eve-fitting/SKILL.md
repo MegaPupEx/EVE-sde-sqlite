@@ -31,11 +31,12 @@ confidently wrong. The engine computes; you interpret.
   quoting affected numbers — skew produces silently-wrong figures, which is
   the failure class this whole stack exists to kill.
 - **Name what the engine does not model.** `engine_info().unmodeled` lists
-  it (currently: projected fits — remote reps/ewar, implants/boosters,
-  mutated modules, fighters, siege states, spool-up, structures). If the
-  question touches one, answer with the engine number *plus* the named gap —
-  never silently ignore it. Command bursts, environments and T3D modes
-  *are* modeled (`set_booster`, `set_env`, the `mode` edit op).
+  it (currently: mutated modules, siege states, spool-up, structures,
+  custom skill sheets, fighter ability toggles). If the question touches
+  one, answer with the engine number *plus* the named gap — never silently
+  ignore it. Modeled: bursts (`set_booster`), environments (`set_env`),
+  projected fits (`set_projected` — remote reps/ewar/neuts, zero range),
+  T3D modes (`mode` op), fighters, implants and drugs (`edit_fit` add).
 - **Skills are part of every number.** Presets: `all-0`, `alpha`, `all-5`
   (import default: all-5, pyfa's convention). Say which preset a number is
   for. **Unknown pilot? Default to the all-0 floor** and give all-5 as the
@@ -106,7 +107,9 @@ line.
 assumptions — reason from the summary, chart the points only if asked.
 `set_env` applies a system environment **to that fit only** — set the same
 env on both sides of any comparison. `set_booster` attaches command-burst
-fits; the booster fit's own hull/skills scale the burst.
+fits; the booster fit's own hull/skills scale the burst. `set_projected`
+applies enemy or friendly fits onto this one (webs, neuts, remote reps) at
+zero range — full strength, so quote it as the worst/best case it is.
 
 Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted

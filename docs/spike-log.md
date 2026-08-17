@@ -252,3 +252,28 @@ Docs updated in step: router + traps §T1/T2 no longer call bursts/env
 unmodeled, reading-stats gained a graphs section, MCP README re-measured.
 Eval generation 2 candidates (results-2026-08-17.md) now include
 engine-truth keys for T4/T5's mechanics, which this slice made computable.
+
+## 2026-08-17 — v1.5 closed (minus mutated), all-0 preset, v2 scoped
+
+`set_projected` finishes the external-effects pipeline: other fits'
+modules/drones apply onto the subject (webs ×0.500 exact, a Curse neut
+takes a stable Punisher to dead-in-12-seconds, Scythe remote reps land in
+`reps_hps`). The ordering finding is the mirror of the burst one and both
+now live in `_recalc`: **bursts before the subject's local calc, projected
+fits after it** — the local calc's `clear()` wipes anything projected
+earlier, which cost an hour of "projection silently does nothing" before
+pyfa's own LOCAL path revealed the order. Fighters (squadron-sized,
+standard attack, `dps_fighters` panel key, tube/bay validation), implants
+and drugs (category-routed through `edit_fit` add; +3% hardwiring and
+Quafe Zero verified to the percent) closed the rest. `set_skills` gained
+`all-0` — per product decision, the *default answer* for a pilot of
+unknown skills is now the all-0 floor bracketed with the all-V ceiling.
+
+Mutated modules are the one v1.5 item deferred: the dialect decision is
+made (pyfa's `[N]`-reference EFT format), the remaining work is parser +
+eos construction, spec'd in the roadmap's new "What v2 needs" list along
+with siege states, spool-up, structures, custom sheets, projection-range
+realism, fighter toggles, heat, and ISK cost.
+
+15 tools, ~1,422 tokens standing; smoke test covers every new mechanism;
+eval keys verified unchanged throughout.
