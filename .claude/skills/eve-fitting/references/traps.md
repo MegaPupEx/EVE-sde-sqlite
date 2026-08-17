@@ -119,12 +119,15 @@ levels or decline the single figure — pyfa's own NPC profiles ship as
 
 ## T12 — Every number has a skill preset in it
 
-Engine default is all-V; `alpha` is the byte-exact Alpha-clone set. The
-gap is double-digit on most panels (damage skills, fitting skills, cap
-skills all stack up), and alpha clones cannot *use* much T2 equipment at
-all. A number quoted without its preset is unanchored — say "all-V" or
-"alpha" every time, and re-run `set_skills` rather than estimating the
-delta. Note `validate_fit` checks fitting resources and slots only — it
+Presets: `all-0` (no skills — the floor), `alpha` (the byte-exact
+Alpha-clone set), `all-5` (the import default, pyfa's convention). The
+all-0-to-all-5 gap is double-digit on most panels (damage, fitting and
+cap skills all stack up), and alpha clones cannot *use* much T2 equipment
+at all. A number quoted without its preset is unanchored — name it every
+time, and re-run `set_skills` rather than estimating the delta. **When
+the asker's skills are unknown, the all-0 floor is the default answer**,
+with all-5 as the labeled ceiling — the all-V number alone is what their
+ship will *not* do. Note `validate_fit` checks fitting resources and slots only — it
 does **not** check skill prerequisites or alpha module restrictions, so
 "validate passed on the alpha preset" is not evidence a clone can use the
 modules; that check is game knowledge, and say so.

@@ -262,28 +262,33 @@ def edit_fit(fit_id: str, ops: list) -> dict:
 
 
 _alpha_char = None
+_all0_char = None
 
 
 @mcp.tool()
 def set_skills(fit_id: str, preset: str) -> dict:
-    """Set the pilot: 'all-5' or 'alpha' (alpha-clone skill set)."""
+    """Set the pilot skills: 'all-0' | 'alpha' | 'all-5'. Import/create default is all-5; bracket all-0 vs all-5 for an unknown pilot."""
     # The alpha pilot must be its own Character: getAll5() returns a shared
     # saveddata object, and flipping alphaCloneID on it silently turns every
     # fit alpha (found by the eval harness, 2026-08-17).
     from eos.saveddata.character import Character
-    global _alpha_char
+    global _alpha_char, _all0_char
     fit = _fit(fit_id)
     if preset == 'all-5':
         char = Character.getAll5()
         char.alphaCloneID = None
         fit.character = char
+    elif preset == 'all-0':
+        if _all0_char is None:
+            _all0_char = Character('MCP All 0')   # in-memory; getAll0() would hit saveddata
+        fit.character = _all0_char
     elif preset == 'alpha':
         if _alpha_char is None:
             _alpha_char = Character('MCP Alpha', 5)   # in-memory only, never saved
             _alpha_char.alphaCloneID = 1
         fit.character = _alpha_char
     else:
-        raise ValueError("preset must be 'all-5' or 'alpha'")
+        raise ValueError("preset must be 'all-0', 'alpha' or 'all-5'")
     return {'fit_id': fit_id, 'skills': preset}
 
 
@@ -400,7 +405,7 @@ def engine_info() -> dict:
         'unmodeled': ['projected fits (remote reps/ewar)', 'implants/boosters',
                       'mutated modules', 'fighters', 'siege states',
                       'spool-up', 'structures'],
-        'skills_presets': ['all-5', 'alpha'],
+        'skills_presets': ['all-0', 'alpha', 'all-5'],
     }
 
 

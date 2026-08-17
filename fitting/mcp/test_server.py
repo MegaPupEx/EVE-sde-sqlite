@@ -81,6 +81,9 @@ async def main(pyfa):
             await call('set_skills', fit_id=fid, preset='alpha')
             s3 = await call('get_stats', fit_id=fid)
             assert s3['offense']['dps'] < s2['offense']['dps'], (s3['offense'], s2['offense'])
+            await call('set_skills', fit_id=fid, preset='all-0')
+            s3z = await call('get_stats', fit_id=fid)
+            assert s3z['offense']['dps'] < s3['offense']['dps'], 'all-0 must be below alpha'
             await call('set_skills', fit_id=fid, preset='all-5')
             s3b = await call('get_stats', fit_id=fid)
             assert s3b['offense']['dps'] == s2['offense']['dps'], 'all-5 not restored after alpha'

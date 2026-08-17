@@ -36,9 +36,11 @@ confidently wrong. The engine computes; you interpret.
   question touches one, answer with the engine number *plus* the named gap —
   never silently ignore it. Command bursts, environments and T3D modes
   *are* modeled (`set_booster`, `set_env`, the `mode` edit op).
-- **Skills are part of every number.** The engine defaults to all-V; `alpha`
-  is the other preset. Say which preset a number is for — an alpha clone
-  loses double-digit percentages on most panels.
+- **Skills are part of every number.** Presets: `all-0`, `alpha`, `all-5`
+  (import default: all-5, pyfa's convention). Say which preset a number is
+  for. **Unknown pilot? Default to the all-0 floor** and give all-5 as the
+  ceiling — quoting only the all-V number to a player of unknown skills
+  overpromises by double digits.
 
 **No engine registered?** Setup is `fitting/mcp/README.md` (a local process +
 `.mcp.json` entry). Without it you may quote layer-1 base-hull values marked
