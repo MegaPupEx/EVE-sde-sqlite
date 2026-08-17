@@ -152,11 +152,13 @@ the rest is dropped.**
    meet (engine: 0.675 × 0.700 = 0.4725 exactly; same-chain would be
    0.4990); hull resists exempt outright. Documented as traps §T16 with
    the source named.
-3. **Spool across time** — DPS quotable at named spool levels/times.
-   eos already carries `SpoolOptions`; needs a `spool` parameter on
-   `get_stats`/`graph` (or dps_at_0/50/100 keys), a `dps_vs_time` graph
-   kind, and skill docs for quoting spool honestly (pyfa's own NPC
-   profiles ship at three spool levels).
+3. ~~**Spool across time**~~ *landed 2026-08-17* — `get_stats` takes
+   `spool: 0..1` (default full spool, pyfa's own convention; the old
+   panels were zero-spool floors), `offense.spool` carries level +
+   floor + time-to-full, the note names the level, and `dps_vs_time`
+   graphs the ramp — all via eos's own `SpoolOptions`/`calculateSpoolup`.
+   Both eval key sets verified unchanged across the default switch;
+   T11 rewritten to quote the band.
 4. **Projection & application realism** — two halves of one feature.
    Projection: `set_projected` at actual ranges with falloff-aware
    ewar/rep strength (`ProjectedFit.projectionRange` is already plumbed
