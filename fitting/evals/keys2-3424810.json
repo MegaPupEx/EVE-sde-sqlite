@@ -1,0 +1,69 @@
+{
+ "engine_build": "3424810",
+ "G1_drake_uniform_ehp": 47178,
+ "G1_drake_c3wr_ehp": 42989,
+ "G1_drake_c3wr_shield_resists": {
+  "em": 0.303,
+  "thermal": 0.443,
+  "kinetic": 0.582,
+  "explosive": 0.652
+ },
+ "G1_drake_c3wr_regen": {
+  "passiveShield": 389.2
+ },
+ "G2_hurricane_range_summary": {
+  "peak_dps": 562.4,
+  "peak_at_km": 0.0,
+  "half_dps_km": 57.3
+ },
+ "G3_hurricane_vs_frigate": {
+  "points_head": [
+   [
+    0,
+    562.4
+   ],
+   [
+    150,
+    81.6
+   ],
+   [
+    300,
+    81.6
+   ],
+   [
+    450,
+    81.6
+   ]
+  ],
+  "summary": {
+   "peak_dps": 562.4,
+   "at_km": 2.0,
+   "half_dps_target_ms": 150
+  }
+ },
+ "G4_punisher_cap_before": {
+  "capacity_gj": 500.0,
+  "stable": true,
+  "stable_pct": 87.7
+ },
+ "G4_punisher_cap_neuted": {
+  "capacity_gj": 500.0,
+  "stable": false,
+  "lasts_s": 12.0
+ },
+ "G5_shield_hp": {
+  "base": 5375,
+  "drake_burst": 6181,
+  "vulture_burst": 6302,
+  "both": 6302
+ },
+ "G6_rifter_all0": {
+  "dps": 49.0,
+  "ehp_uniform": 2364,
+  "max_velocity_ms": 2129.4
+ },
+ "G7_thanatos_firbolg": {
+  "dps_fighters": 524.3,
+  "dps": 524.3
+ }
+}

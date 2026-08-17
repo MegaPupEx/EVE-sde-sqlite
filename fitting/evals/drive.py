@@ -42,9 +42,17 @@ async def run(pyfa, calls):
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as s:
             await s.initialize()
+            def resolve(v):
+                if isinstance(v, str) and v.startswith('$'):
+                    return saved[v[1:]]
+                if isinstance(v, list):
+                    return [resolve(x) for x in v]
+                if isinstance(v, dict):
+                    return {k: resolve(x) for k, x in v.items()}
+                return v
+
             for call in calls:
-                args = {k: saved[v[1:]] if isinstance(v, str) and v.startswith('$') else v
-                        for k, v in call.get('args', {}).items()}
+                args = {k: resolve(v) for k, v in call.get('args', {}).items()}
                 try:
                     res = unwrap(await s.call_tool(call['tool'], args))
                 except Exception as e:  # noqa: BLE001 — report and continue
