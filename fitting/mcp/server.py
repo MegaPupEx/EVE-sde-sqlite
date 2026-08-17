@@ -49,8 +49,9 @@ graphlib._install_shims(ARGS.pyfa)
 mcp = MCPServer('eve-fitting')
 
 FITS = {}
-BOOSTS = {}   # fit_id -> [booster fit_id, ...]
-ENVS = {}     # fit_id -> projected env Module
+BOOSTS = {}       # fit_id -> [booster fit_id, ...]
+PROJECTIONS = {}  # fit_id -> [projector fit_id, ...]
+ENVS = {}         # fit_id -> projected env Module
 _counter = 0
 
 ENV_GROUPS = ('Effect Beacon', 'MassiveEnvironments', 'Abyssal Hazards',
@@ -73,8 +74,9 @@ def _fit(fit_id):
 
 
 def _recalc(fit, factor_reload=False):
-    # Command bursts must be re-projected before EVERY calculation: eos
-    # consumes commandBonuses as it applies them (fit.py __runCommandBoosts).
+    # Ordering is pyfa's: command bursts BEFORE the local calc (eos consumes
+    # commandBonuses as it applies them), projected fits AFTER it (the local
+    # calc's clear() would wipe modifications applied earlier).
     fit.factorReload = factor_reload
     fit.clear()
     fit_id = next((k for k, v in FITS.items() if v is fit), None)
@@ -86,6 +88,16 @@ def _recalc(fit, factor_reload=False):
         booster.clear()
         booster.calculateModifiedAttributes(targetFit=fit, type=CalcType.COMMAND)
     fit.calculateModifiedAttributes()
+    for proj_id in PROJECTIONS.get(fit_id, []):
+        projector = FITS.get(proj_id)
+        if projector is None:
+            continue
+        projector.factorReload = False
+        projector.clear()
+        if projector.getProjectionInfo(fit.ID) is None:
+            from eos.db.saveddata.fit import ProjectedFit
+            projector.projectedOnto[fit.ID] = ProjectedFit(projector.ID, projector)
+        projector.calculateModifiedAttributes(targetFit=fit, type=CalcType.PROJECTED)
 
 
 def _problems(fit):
@@ -116,6 +128,14 @@ def _problems(fit):
     vol = sum(d.item.attributes['volume'].value * d.amount for d in fit.drones)
     if vol > (attr('droneCapacity') or 0):
         out.append(f'drone bay over: {vol:g} / {attr("droneCapacity") or 0:g} m3')
+    if fit.fighters:
+        tubes = attr('fighterTubes') or 0
+        if len(fit.fighters) > tubes:
+            out.append(f'fighter tubes over: {len(fit.fighters)} / {tubes:g}')
+        fvol = sum(f.item.attributes['volume'].value * max(f.amount, 0) for f in fit.fighters)
+        fbay = attr('fighterCapacity') or 0
+        if fvol > fbay:
+            out.append(f'fighter bay over: {fvol:g} / {fbay:g} m3')
     return out
 
 
@@ -172,8 +192,9 @@ def delete_fit(fit_id: str) -> dict:
     _fit(fit_id)
     del FITS[fit_id]
     BOOSTS.pop(fit_id, None)
+    PROJECTIONS.pop(fit_id, None)
     ENVS.pop(fit_id, None)
-    for ids in BOOSTS.values():
+    for ids in (*BOOSTS.values(), *PROJECTIONS.values()):
         if fit_id in ids:
             ids.remove(fit_id)
     return {'deleted': fit_id}
@@ -205,6 +226,20 @@ def edit_fit(fit_id: str, ops: list) -> dict:
                 drone.amountActive = qty
                 fit.drones.append(drone)
                 drone.owner = fit
+            elif item.category.name == 'Fighter':
+                from eos.saveddata.fighter import Fighter
+                fighter = Fighter(item)
+                if op.get('quantity'):
+                    fighter.amount = int(op['quantity'])
+                fit.fighters.append(fighter)
+                fighter.owner = fit
+            elif item.category.name == 'Implant':
+                if item.group.name == 'Booster':
+                    from eos.saveddata.booster import Booster
+                    fit.boosters.append(Booster(item))
+                else:
+                    from eos.saveddata.implant import Implant
+                    fit.implants.append(Implant(item))
             else:
                 mod = Module(item)
                 if op.get('charge'):
@@ -217,9 +252,10 @@ def edit_fit(fit_id: str, ops: list) -> dict:
                 fit.modules.append(mod)
                 mod.owner = fit
         elif kind == 'remove':
-            for drone in list(fit.drones):
-                if drone.item.typeName == item_name:
-                    fit.drones.remove(drone)
+            for kept in (fit.fighters, fit.drones, fit.implants, fit.boosters):
+                hit = next((x for x in kept if x.item.typeName == item_name), None)
+                if hit is not None:
+                    kept.remove(hit)
                     break
             else:
                 for mod in list(fit.modules):
@@ -323,6 +359,18 @@ def set_env(fit_id: str, effect: str = '') -> dict:
 
 
 @mcp.tool()
+def set_projected(fit_id: str, projector_fit_ids: list) -> dict:
+    """Project other fits' active modules/drones onto this fit ([] clears): remote reps, ewar, neuts. Applied at zero range (full strength); the projector's own skills/hull scale everything."""
+    _fit(fit_id)
+    for p in projector_fit_ids:
+        if p == fit_id:
+            raise ValueError('a fit cannot project onto itself here; fit a second copy')
+        _fit(p)
+    PROJECTIONS[fit_id] = list(projector_fit_ids)
+    return {'fit_id': fit_id, 'projected_by': list(projector_fit_ids)}
+
+
+@mcp.tool()
 def set_booster(fit_id: str, booster_fit_ids: list) -> dict:
     """Attach command-burst booster fits by fit_id ([] clears). The booster fit's own hull/skills/mindlink scale its bursts; strongest same buff wins, bursts never stack."""
     _fit(fit_id)
@@ -402,9 +450,9 @@ def engine_info() -> dict:
     return {
         'engine': 'pyfa-eos (headless)',
         'engine_build': meta.get('client_build'),
-        'unmodeled': ['projected fits (remote reps/ewar)', 'implants/boosters',
-                      'mutated modules', 'fighters', 'siege states',
-                      'spool-up', 'structures'],
+        'unmodeled': ['mutated modules', 'siege states', 'spool-up',
+                      'structures', 'custom skill sheets',
+                      'fighter ability toggles (standard attack only)'],
         'skills_presets': ['all-0', 'alpha', 'all-5'],
     }
 

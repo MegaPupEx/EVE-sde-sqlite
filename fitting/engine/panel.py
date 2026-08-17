@@ -41,7 +41,8 @@ def stat_panel(fit, recalc=_recalc):
     _recalc(fit, factor_reload=False)
     dps_burst = fit.getTotalDps().total
     volley = fit.getTotalVolley().total
-    dps_drones = fit.getDroneDps().total
+    dps_fighters = sum((f.getDps().total for f in fit.fighters), 0.0)
+    dps_drones = fit.getDroneDps().total - dps_fighters  # getDroneDps folds fighters in
     ehp = fit.ehp
     cap_stable = fit.capStable
     cap_state = fit.capState
@@ -93,6 +94,8 @@ def stat_panel(fit, recalc=_recalc):
         panel['defense']['reps_hps'] = reps
     if not dps_drones:
         del panel['offense']['dps_drones']
+    if dps_fighters:
+        panel['offense']['dps_fighters'] = round(dps_fighters, 1)
     if dps_burst == dps_sustained:
         del panel['offense']['dps_sustained']
     return panel

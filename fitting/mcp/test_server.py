@@ -148,6 +148,50 @@ async def main(pyfa):
             assert s_vult['defense']['hp']['shield'] > s_one['defense']['hp']['shield'], \
                 'command-ship hull must scale the burst'
 
+            # projected fits: a web halves speed; a neut kills the cap; [] restores
+            vic = await call('import_fit', eft='[Rifter, victim]\n5MN Y-T8 Compact Microwarpdrive')
+            v_base = await call('get_stats', fit_id=vic['fit_id'])
+            ewar = await call('import_fit', eft='[Vigil, ew]\nStasis Webifier I')
+            await call('set_projected', fit_id=vic['fit_id'], projector_fit_ids=[ewar['fit_id']])
+            v_web = await call('get_stats', fit_id=vic['fit_id'])
+            wr_ratio = v_web['navigation']['max_velocity_ms'] / v_base['navigation']['max_velocity_ms']
+            assert 0.45 < wr_ratio < 0.55, f'projected web ratio {wr_ratio}'
+            neut = await call('import_fit', eft='[Curse, neut]\nMedium Energy Neutralizer II')
+            await call('set_projected', fit_id=vic['fit_id'],
+                       projector_fit_ids=[ewar['fit_id'], neut['fit_id']])
+            v_neut = await call('get_stats', fit_id=vic['fit_id'])
+            assert not v_neut['capacitor']['stable'] and \
+                v_neut['capacitor']['lasts_s'] < v_base['capacitor'].get('lasts_s', 1e9), v_neut['capacitor']
+            await call('set_projected', fit_id=vic['fit_id'], projector_fit_ids=[])
+            v_clear = await call('get_stats', fit_id=vic['fit_id'])
+            assert v_clear['navigation']['max_velocity_ms'] == v_base['navigation']['max_velocity_ms']
+
+            # fighters: squadron dps lands in the panel, tube overflow is named
+            than = await call('create_fit', ship='Thanatos')
+            await call('edit_fit', fit_id=than['fit_id'], ops=[
+                {'op': 'add', 'item': 'Firbolg I'}])
+            f_stats = await call('get_stats', fit_id=than['fit_id'])
+            assert f_stats['offense'].get('dps_fighters', 0) > 300, f_stats['offense']
+            for _ in range(6):
+                await call('edit_fit', fit_id=than['fit_id'], ops=[
+                    {'op': 'add', 'item': 'Firbolg I'}])
+            f_val = await call('validate_fit', fit_id=than['fit_id'])
+            assert any('fighter tubes' in p for p in f_val['problems']), f_val
+
+            # implants and drugs apply and remove cleanly
+            imp_fit = await call('import_fit', eft='[Rifter, pods]')
+            i_base = await call('get_stats', fit_id=imp_fit['fit_id'])
+            await call('edit_fit', fit_id=imp_fit['fit_id'], ops=[
+                {'op': 'add', 'item': "Zainou 'Gnome' Shield Management SM-703"},
+                {'op': 'add', 'item': 'Quafe Zero Classic'}])
+            i_on = await call('get_stats', fit_id=imp_fit['fit_id'])
+            assert abs(i_on['defense']['hp']['shield'] / i_base['defense']['hp']['shield'] - 1.03) < 0.005
+            assert abs(i_on['navigation']['max_velocity_ms'] / i_base['navigation']['max_velocity_ms'] - 1.05) < 0.005
+            await call('edit_fit', fit_id=imp_fit['fit_id'], ops=[
+                {'op': 'remove', 'item': 'Quafe Zero Classic'}])
+            i_off = await call('get_stats', fit_id=imp_fit['fit_id'])
+            assert i_off['navigation']['max_velocity_ms'] == i_base['navigation']['max_velocity_ms']
+
             # T3D mode swap moves signature
             conf = await call('create_fit', ship='Confessor')
             await call('edit_fit', fit_id=conf['fit_id'], ops=[
