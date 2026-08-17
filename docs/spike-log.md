@@ -541,3 +541,29 @@ it costs; smoke suite pins the resist product, the restriction, sieged
 dps/immobility and triage rep numbers. `engine_info` unmodeled now
 carries 'industrial core state' (out of scope) instead of 'siege
 states'.
+
+### 2026-08-17 — v2 item 2: spool across time; DC joins the bastion chain
+
+Weapon spool is modeled: `get_stats` takes `spool: 0..1` (default 1.0 —
+full spool, pyfa's own `globalDefaultSpoolupPercentage` convention,
+replacing the old zero-spool floors), `offense.spool` carries the level
++ zero-spool floor + time-to-full, the panel note names the level, and
+`graph(fit, 'dps_vs_time')` returns the ramp via eos's own
+`SpoolOptions(TIME, t)` — all pyfa math (`calculateSpoolup`), no new
+formulas. Both eval key sets verified unchanged across the default
+switch. T11 rewritten: quote the band ("full X after Y s, floor Z"),
+never one number.
+
+Owner follow-up on bastion answered from the handlers and pinned into
+T16: the `preMul` chain's other common resident is the **Damage
+Control** — `damageControl` multiplies shield/armor resonance with
+`penaltyGroup='preMul'` exactly like bastion, so DC and bastion DO
+penalize each other (Golem: DC ×0.875 + bastion ×0.700 → 0.6240
+penalized, not the 0.6125 product) while both stay independent of
+hardeners. And bastion has no passive resist component: its effect list
+is online/hiPower/moduleBonusBastionModule — resists exist only while
+the state runs; the passive preMul resident is the DC. Also verified
+the new hull-restriction check covers the whole class the owner asked
+about: covert ops cloaks (Buzzard yes / Rifter no), bomb launchers,
+burst jammers (hull-restricted in the data), clone vats — one
+`fit.canFit` check, covert cloak pinned in the smoke suite.

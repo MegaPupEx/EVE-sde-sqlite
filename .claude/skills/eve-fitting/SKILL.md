@@ -31,8 +31,8 @@ confidently wrong. The engine computes; you interpret.
   quoting affected numbers — skew produces silently-wrong figures, which is
   the failure class this whole stack exists to kill.
 - **Name what the engine does not model.** `engine_info().unmodeled` lists
-  it (currently: industrial core, spool-up, structures, custom skill
-  sheets, fighter ability toggles). If the question touches one, answer
+  it (currently: industrial core, structures, custom skill sheets,
+  fighter ability toggles). If the question touches one, answer
   with the engine number *plus* the named gap — never silently ignore it.
   Modeled: bursts (`set_booster`), environments (`set_env`), projected
   fits (`set_projected` — remote reps/ewar/neuts, zero range), T3D modes
@@ -110,8 +110,11 @@ all-V/alpha. On import failures, quote the parser's error — it names the
 line.
 
 `graph(fit_id, kind)` returns bounded curves (`dps_vs_range`,
-`dps_vs_target_speed`, `cap_vs_time`): ≤30 points, summary stats, named
-assumptions — reason from the summary, chart the points only if asked.
+`dps_vs_target_speed`, `cap_vs_time`, `dps_vs_time` — the spool ramp):
+≤30 points, summary stats, named assumptions — reason from the summary,
+chart the points only if asked. Spool-up fits quote full spool by
+default with the floor and ramp time in `offense.spool`
+(`references/traps.md` §T11); `get_stats(spool=…)` re-quotes any level.
 `set_env` applies a system environment **to that fit only** — set the same
 env on both sides of any comparison. `set_booster` attaches command-burst
 fits; the booster fit's own hull/skills scale the burst. `set_projected`

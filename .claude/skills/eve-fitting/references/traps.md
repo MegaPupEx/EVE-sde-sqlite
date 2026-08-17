@@ -117,12 +117,18 @@ bonuses) — legality is checked on final values, which is what
 (F§1); an independent calculation can disagree with the panel by 0.01 —
 that is rounding, not a data bug.
 
-## T11 — Spool-up weapons make "DPS" a function, not a number
+## T11 — Spool-up weapons make "DPS" a function, and the panel names the point
 
-Triglavian damage ramps per cycle to a cap (F§3) and the v1 engine does
-not model it (`unmodeled`). For those hulls, give DPS at named spool
-levels or decline the single figure — pyfa's own NPC profiles ship as
-"0% / 50% / 100% spool" variants for the same reason.
+Triglavian damage ramps per cycle to a cap (F§3). The panel quotes
+**full spool by default** (pyfa's own convention) and says so in a
+`notes` line; `offense.spool` carries the level, the zero-spool floor
+and the ramp time, and `get_stats(spool=0.4)` re-quotes at any level.
+Quote the band, not one number: "980 full spool (reached after 51 s of
+continuous fire; starts at 613)" — a fight shorter than the ramp never
+sees the headline figure, and the spool resets on target switch.
+`graph(fit, 'dps_vs_time')` is the whole ramp when the fight length is
+the question. pyfa's own NPC profiles ship as 0/50/100% spool variants
+for the same reason.
 
 ## T12 — Every number has a skill preset in it
 
@@ -190,17 +196,24 @@ fit the module, set it `active`, and the panel is the in-state ship
 (sieged Phoenix: ~15× torpedo DPS, speed 0; triage Minokawa: a Capital
 RSB cycles 5.5× the HP in a quarter of the time). Two rules ride along:
 
-- **Bastion's resist bonus never dilutes your hardeners.** Hardeners
-  boost resonance in the `postPercent` penalty group; bastion
-  *multiplies* resonance in the `preMul` group — and stacking penalties
-  compute per group, so the two chains never see each other.
-  Engine-verified (Golem, build 3470007): one hardener ×0.675, bastion
-  ×0.700, together 0.4725 = exactly 0.675 × 0.700 — where a same-chain
-  second module would have given 0.4990. A second *hardener* penalizes
-  normally (×0.7175). Bastion's hull resist bonus is stacking-exempt
-  outright. Source: the `moduleBonusBastionModule` dogma effect as
-  implemented in pyfa's effect handlers plus eos's per-group penalized
-  calculator — not wiki folklore; re-derive it there if a patch moves it.
+- **Bastion's resist bonus never dilutes your hardeners — but it DOES
+  penalize with a Damage Control.** Hardeners boost resonance in the
+  `postPercent` penalty group; bastion *multiplies* resonance in the
+  `preMul` group — and stacking penalties compute per group, so those
+  two chains never see each other. The `preMul` chain has one other
+  common resident: the **Damage Control**, whose shield/armor resonance
+  multipliers live there too (its famous hull multiplier is separate —
+  bastion's hull bonus is stacking-exempt). Engine-verified (Golem,
+  build 3470007): hardener ×0.675 with bastion ×0.700 → 0.4725, the
+  exact product (separate chains); DC II ×0.875 with bastion →
+  **0.6240, the penalized value** (0.70 full + DC at the 86.9% stacking
+  step; the naive product is 0.6125). And note bastion's resists are
+  **active-state only** — the module's effect list is just
+  online/hiPower/moduleBonusBastionModule, no passive component; the
+  passive `preMul` resident is the DC. Source: pyfa's effect handlers
+  (`moduleBonusBastionModule`, `damageControl` — both
+  `penaltyGroup='preMul'`) plus eos's per-group penalized calculator —
+  not wiki folklore; re-derive there if a patch moves it.
 - **The panel is the state, not the fight.** Numbers assume the cycle is
   running; the costs the panel can't show — immobility (speed 0 *is*
   shown), remote assistance impedance, in-game weapon locks, the

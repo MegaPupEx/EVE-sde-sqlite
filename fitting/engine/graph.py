@@ -140,6 +140,39 @@ def dps_vs_target_speed(fit, distance_km=5.0, tgt_sig=None, max_speed=3600.0, po
     }
 
 
+def dps_vs_time(fit, points=24):
+    """Spool ramp: total dps as a function of continuous fire time."""
+    from eos.const import SpoolType
+    from eos.utils.spoolSupport import SpoolOptions, calculateSpoolup
+    ramp = 0.0
+    for m in fit.modules:
+        if m.isEmpty:
+            continue
+        mx = m.getModifiedItemAttr('damageMultiplierBonusMax')
+        step = m.getModifiedItemAttr('damageMultiplierBonusPerCycle')
+        if mx and step:
+            cyc = (m.getModifiedItemAttr('speed') or m.getModifiedItemAttr('duration') or 0) / 1000
+            ramp = max(ramp, calculateSpoolup(mx, step, cyc, SpoolType.SPOOL_SCALE, 1.0)[2])
+    if not ramp:
+        raise ValueError('no spool-up weapons on this fit; dps_vs_time is the Triglavian ramp')
+    tmax = ramp * 1.15
+    series = []
+    for i in range(points + 1):
+        t = tmax * i / points
+        dps = fit.getTotalDps(spoolOptions=SpoolOptions(SpoolType.TIME, t, True)).total
+        pt = [round(t, 1), round(dps, 1)]
+        if not series or pt[1] != series[-1][1] or i == points:
+            series.append(pt)
+    return {
+        'x': 'time_s', 'y': 'dps', 'points': series,
+        'summary': {'dps_zero_spool': series[0][1],
+                    'dps_full_spool': max(y for _, y in series),
+                    'time_to_full_s': round(ramp, 1)},
+        'assumptions': ['continuous fire on one target, no reload',
+                        'spool resets on target switch or cease-fire'],
+    }
+
+
 def cap_vs_time(fit, points=30):
     capacity = fit.ship.getModifiedItemAttr('capacitorCapacity')
     raw = fit.getCapSimData(startingCap=capacity)

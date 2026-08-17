@@ -200,6 +200,22 @@ async def main(pyfa):
                 {'op': 'add', 'item': 'Heavy Entropic Disintegrator II', 'charge': 'Occult M'}])
             v_stats = await call('get_stats', fit_id=ved['fit_id'])
             assert any('spool' in n for n in v_stats.get('notes', [])), 'spool note missing'
+            # spool is modeled: default full, floor + ramp named, param moves dps,
+            # dps_vs_time is the monotone ramp ending at the full-spool number
+            sp = v_stats['offense']['spool']
+            assert sp['level'] == 1.0 and sp['dps_zero_spool'] < v_stats['offense']['dps'], sp
+            assert sp['time_to_full_s'] > 0, sp
+            v0 = await call('get_stats', fit_id=ved['fit_id'], spool=0)
+            assert v0['offense']['dps'] == sp['dps_zero_spool'], (v0['offense'], sp)
+            gt = await call('graph', fit_id=ved['fit_id'], kind='dps_vs_time')
+            ys = [y for _, y in gt['points']]
+            assert ys == sorted(ys) and ys[0] < ys[-1], gt['points']
+            assert gt['summary']['dps_full_spool'] == v_stats['offense']['dps'], gt['summary']
+            try:
+                await call('graph', fit_id=fid, kind='dps_vs_time')
+                raise AssertionError('dps_vs_time on a non-spool fit must be rejected')
+            except RuntimeError as e:
+                assert 'no spool-up weapons' in str(e), e
             try:
                 await call('edit_fit', fit_id=ved['fit_id'], ops=[
                     {'op': 'charge', 'item': 'Heavy Entropic Disintegrator II', 'charge': 'Occult L'}])
@@ -392,6 +408,11 @@ async def main(pyfa):
             bad = await call('import_fit', eft='[Rifter, bad]\nBastion Module I')
             bv = await call('validate_fit', fit_id=bad['fit_id'])
             assert any('cannot be fitted' in p for p in bv['problems']), bv
+            # the same check covers the whole canFitShipType/Group class
+            cloak = await call('import_fit', eft='[Rifter, cloak]\nCovert Ops Cloaking Device II')
+            cv = await call('validate_fit', fit_id=cloak['fit_id'])
+            assert any('cannot be fitted' in p for p in cv['problems']), cv
+            await call('delete_fit', fit_id=cloak['fit_id'])
             phx = await call('import_fit', eft='[Phoenix, siege]\n'
                              'XL Torpedo Launcher II, Mjolnir XL Torpedo\nSiege Module II')
             p_stats = await call('get_stats', fit_id=phx['fit_id'])

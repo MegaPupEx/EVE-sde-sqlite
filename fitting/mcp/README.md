@@ -67,8 +67,9 @@ server-side, one compact row each with named panel metrics +
 cpu/pg/problems, fit restored — a 10-variant tradeoff scan is one call,
 not ten conversation round-trips),
 `required_skills` (training-queue ends, alpha-trainability flags; full closure on demand), `graph`
-(`dps_vs_range` / `dps_vs_target_speed` / `cap_vs_time` — ≤30 points +
-summary + named assumptions), `compare_fits` (differing figures only),
+(`dps_vs_range` / `dps_vs_target_speed` / `cap_vs_time` /
+`dps_vs_time`, the spool ramp — ≤30 points + summary + named
+assumptions), `compare_fits` (differing figures only),
 `validate_fit` (named constraint violations), `engine_info` (data build +
 the explicit unmodeled list).
 
@@ -119,7 +120,10 @@ silently ignored.
   panel can't show. Bastion's resist bonus multiplies in the `preMul`
   penalty group while hardeners boost in `postPercent` — separate
   chains, verified in the smoke test (0.675 × 0.700 = 0.4725).
-- Not yet here (tracked in the roadmap's v2 list): spool-up, projection
+- Spool-up weapons quote full spool by default (`get_stats` takes
+  `spool: 0..1`); the zero-spool floor and ramp time ride in
+  `offense.spool`, and `dps_vs_time` graphs the ramp.
+- Not yet here (tracked in the roadmap's v2 list): projection
   ranges/application context, structures, full fighter abilities.
   Out of scope: industrial core, custom skill sheets, heat-over-time,
   ISK cost.

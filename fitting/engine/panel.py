@@ -27,7 +27,7 @@ def _resists(item, layer):
     return out
 
 
-def stat_panel(fit, recalc=_recalc):
+def stat_panel(fit, recalc=_recalc, spool=None):
     """Full stat panel. Caller sets fit.damagePattern first (default uniform).
 
     recalc(fit, factor_reload) is injectable because eos *consumes* command
@@ -39,17 +39,42 @@ def stat_panel(fit, recalc=_recalc):
 
     _recalc = recalc
     _recalc(fit, factor_reload=False)
-    dps_burst = fit.getTotalDps().total
-    volley = fit.getTotalVolley().total
+
+    # Spool-up weapons (Triglavian ramp): quote at a named spool level.
+    # Default is FULL spool (pyfa's own globalDefaultSpoolupPercentage=1.0
+    # convention); the zero-spool floor and ramp time ride along so the
+    # answer can name the band instead of a single misleading number.
+    from eos.const import SpoolType
+    from eos.utils.spoolSupport import SpoolOptions, calculateSpoolup
+    spool_mods = [m for m in fit.modules if not m.isEmpty
+                  and 'damageMultiplierBonusPerCycle' in m.item.attributes]
+    spool_level = 1.0 if spool is None else max(0.0, min(1.0, float(spool)))
+    spool_opts = SpoolOptions(SpoolType.SPOOL_SCALE, spool_level, True) if spool_mods else None
+
+    dps_burst = fit.getTotalDps(spoolOptions=spool_opts).total
+    volley = fit.getTotalVolley(spoolOptions=spool_opts).total
     dps_fighters = sum((f.getDps().total for f in fit.fighters), 0.0)
     dps_drones = fit.getDroneDps().total - dps_fighters  # getDroneDps folds fighters in
+    spool_info = None
+    if spool_mods:
+        ramp_s = max(calculateSpoolup(
+            m.getModifiedItemAttr('damageMultiplierBonusMax'),
+            m.getModifiedItemAttr('damageMultiplierBonusPerCycle'),
+            (m.getModifiedItemAttr('speed') or m.getModifiedItemAttr('duration') or 0) / 1000,
+            SpoolType.SPOOL_SCALE, 1.0)[2] for m in spool_mods)
+        spool_info = {
+            'level': spool_level,
+            'dps_zero_spool': round(fit.getTotalDps(
+                spoolOptions=SpoolOptions(SpoolType.SPOOL_SCALE, 0.0, True)).total, 1),
+            'time_to_full_s': round(ramp_s, 1),
+        }
     ehp = fit.ehp
     cap_stable = fit.capStable
     cap_state = fit.capState
     reps = {k: round(v, 1) for k, v in fit.effectiveTank.items() if v}
 
     _recalc(fit, factor_reload=True)
-    dps_sustained = fit.getTotalDps().total
+    dps_sustained = fit.getTotalDps(spoolOptions=spool_opts).total
 
     scan_res = attr('scanResolution')
     panel = {
@@ -68,6 +93,7 @@ def stat_panel(fit, recalc=_recalc):
             'dps_sustained': round(dps_sustained, 1),
             'dps_drones': round(dps_drones, 1),
             'volley': round(volley, 1),
+            **({'spool': spool_info} if spool_info else {}),
         },
         'capacitor': {
             'capacity_gj': round(attr('capacitorCapacity'), 1),

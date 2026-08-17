@@ -478,7 +478,7 @@ def set_booster(fit_id: str, booster_fit_ids: list) -> dict:
 @mcp.tool()
 @_engine_thread
 def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0) -> dict:
-    """Bounded curve: <=30 points + summary + named assumptions. kind: 'dps_vs_range' | 'dps_vs_target_speed' | 'cap_vs_time'. target for dps kinds: {speed_ms, sig_m, atk_speed_ms}; distance_km applies to dps_vs_target_speed."""
+    """Bounded curve: <=30 points + summary + named assumptions. kind: 'dps_vs_range' | 'dps_vs_target_speed' | 'cap_vs_time' | 'dps_vs_time' (spool ramp). target for dps kinds: {speed_ms, sig_m, atk_speed_ms}; distance_km applies to dps_vs_target_speed."""
     fit = _fit(fit_id)
     _recalc(fit)
     t = target or {}
@@ -489,26 +489,31 @@ def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0)
         return graphlib.dps_vs_target_speed(fit, distance_km=distance_km, tgt_sig=t.get('sig_m'))
     if kind == 'cap_vs_time':
         return graphlib.cap_vs_time(fit)
-    raise ValueError("kind must be 'dps_vs_range', 'dps_vs_target_speed' or 'cap_vs_time'")
+    if kind == 'dps_vs_time':
+        return graphlib.dps_vs_time(fit)
+    raise ValueError("kind must be 'dps_vs_range', 'dps_vs_target_speed', "
+                     "'cap_vs_time' or 'dps_vs_time'")
 
 
 @mcp.tool()
 @_engine_thread
-def get_stats(fit_id: str, profile: dict = None) -> dict:
-    """Full stat panel. profile: optional damage weights {em,thermal,kinetic,explosive}, default uniform. All ship values include skills/modules; resists as fractions."""
+def get_stats(fit_id: str, profile: dict = None, spool: float = None) -> dict:
+    """Full stat panel. profile: optional damage weights {em,thermal,kinetic,explosive}, default uniform. spool: 0..1 for spool-up weapons (default 1 = full spool; floor and ramp time ride in offense.spool). All ship values include skills/modules; resists as fractions."""
     from eos.saveddata.damagePattern import DamagePattern
     fit = _fit(fit_id)
     p = profile or {}
     fit.damagePattern = DamagePattern(
         emAmount=p.get('em', 25), thermalAmount=p.get('thermal', 25),
         kineticAmount=p.get('kinetic', 25), explosiveAmount=p.get('explosive', 25))
-    panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload))
+    panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload),
+                       spool=spool)
     panel['problems'] = _problems(fit)
-    # A silent zero-spool number cost a graded eval miss (2026-08-17): name it.
-    if any(not m.isEmpty and 'damageMultiplierBonusPerCycle' in m.item.attributes
-           for m in fit.modules):
+    # A silent zero-spool number once cost a graded eval miss: name the level.
+    spool_info = panel['offense'].get('spool')
+    if spool_info:
         panel.setdefault('notes', []).append(
-            'spool-up unmodeled: dps/volley are zero-spool floors')
+            f"spool-up weapons: dps/volley at {round(spool_info['level'] * 100)}% spool "
+            f"(floor {spool_info['dps_zero_spool']}, full ramp {spool_info['time_to_full_s']} s)")
     # Siege-class states (bastion/siege/triage share dogma group 'Siege
     # Module'): the numbers assume the state is running; name what it costs.
     siege = sorted({m.item.typeName for m in fit.modules
@@ -722,7 +727,7 @@ def engine_info() -> dict:
     return {
         'engine': 'pyfa-eos (headless)',
         'engine_build': meta.get('client_build'),
-        'unmodeled': ['industrial core state', 'spool-up',
+        'unmodeled': ['industrial core state',
                       'structures', 'custom skill sheets',
                       'fighter ability toggles (standard attack only)',
                       'heat burnout timers (overload bonuses ARE modeled: state overheated)'],
