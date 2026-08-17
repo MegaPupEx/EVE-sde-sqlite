@@ -27,11 +27,17 @@ def _resists(item, layer):
     return out
 
 
-def stat_panel(fit):
-    """Full stat panel. Caller sets fit.damagePattern first (default uniform)."""
+def stat_panel(fit, recalc=_recalc):
+    """Full stat panel. Caller sets fit.damagePattern first (default uniform).
+
+    recalc(fit, factor_reload) is injectable because eos *consumes* command
+    bonuses on application — a caller with command-burst boosters must rerun
+    its booster pass before every calculation, not just the first.
+    """
     ship = fit.ship
     attr = ship.getModifiedItemAttr
 
+    _recalc = recalc
     _recalc(fit, factor_reload=False)
     dps_burst = fit.getTotalDps().total
     volley = fit.getTotalVolley().total

@@ -39,14 +39,22 @@ _eos_config.saveddata_connectionstring = \
 
 import eos.db  # noqa: E402,F401 — must precede eos.saveddata imports
 eos.db.saveddata_meta.create_all()  # what pyfa.py does at startup
-from eos.const import FittingModuleState  # noqa: E402
+from eos.const import CalcType, FittingModuleState  # noqa: E402
 import eft as eftlib  # noqa: E402
+import graph as graphlib  # noqa: E402
 from panel import stat_panel  # noqa: E402
+
+graphlib._install_shims(ARGS.pyfa)
 
 mcp = MCPServer('eve-fitting')
 
 FITS = {}
+BOOSTS = {}   # fit_id -> [booster fit_id, ...]
+ENVS = {}     # fit_id -> projected env Module
 _counter = 0
+
+ENV_GROUPS = ('Effect Beacon', 'MassiveEnvironments', 'Abyssal Hazards',
+              'Destructible Effect Beacon')
 
 STATES = {'offline': FittingModuleState.OFFLINE, 'online': FittingModuleState.ONLINE,
           'active': FittingModuleState.ACTIVE, 'overheated': FittingModuleState.OVERHEATED}
@@ -64,9 +72,19 @@ def _fit(fit_id):
     return FITS[fit_id]
 
 
-def _recalc(fit):
-    fit.factorReload = False
+def _recalc(fit, factor_reload=False):
+    # Command bursts must be re-projected before EVERY calculation: eos
+    # consumes commandBonuses as it applies them (fit.py __runCommandBoosts).
+    fit.factorReload = factor_reload
     fit.clear()
+    fit_id = next((k for k, v in FITS.items() if v is fit), None)
+    for booster_id in BOOSTS.get(fit_id, []):
+        booster = FITS.get(booster_id)
+        if booster is None:
+            continue
+        booster.factorReload = False
+        booster.clear()
+        booster.calculateModifiedAttributes(targetFit=fit, type=CalcType.COMMAND)
     fit.calculateModifiedAttributes()
 
 
@@ -153,6 +171,11 @@ def delete_fit(fit_id: str) -> dict:
     """Discard a fit."""
     _fit(fit_id)
     del FITS[fit_id]
+    BOOSTS.pop(fit_id, None)
+    ENVS.pop(fit_id, None)
+    for ids in BOOSTS.values():
+        if fit_id in ids:
+            ids.remove(fit_id)
     return {'deleted': fit_id}
 
 
@@ -164,7 +187,7 @@ def export_fit(fit_id: str) -> str:
 
 @mcp.tool()
 def edit_fit(fit_id: str, ops: list) -> dict:
-    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones)}. 'charge'/'state' apply to every matching module. Returns summary + problems."""
+    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones)}. 'charge'/'state' apply to every matching module; 'mode' sets a tactical-destroyer mode item. Returns summary + problems."""
     from eos.saveddata.drone import Drone
     from eos.saveddata.module import Module
     fit = _fit(fit_id)
@@ -216,6 +239,12 @@ def edit_fit(fit_id: str, ops: list) -> dict:
                     hits += 1
             if not hits:
                 raise ValueError(f'{item_name!r} not fitted')
+        elif kind == 'mode':
+            from eos.saveddata.mode import Mode
+            item = eftlib._lookup(item_name)
+            if item is None or item.group.name != 'Ship Modifiers':
+                raise ValueError(f'unknown mode {item_name!r}; want e.g. "Confessor Defense Mode"')
+            fit.mode = Mode(item)
         elif kind == 'state':
             state = STATES.get(op.get('state', ''))
             if state is None:
@@ -258,6 +287,64 @@ def set_skills(fit_id: str, preset: str) -> dict:
     return {'fit_id': fit_id, 'skills': preset}
 
 
+def _env_candidates(text):
+    rows = sqlite3.connect(os.path.join(ARGS.pyfa, 'eve.db')).execute(
+        """SELECT t.typeName FROM invtypes t JOIN invgroups g ON g.groupID=t.groupID
+           WHERE g.name IN (?,?,?,?) AND t.typeName LIKE '%'||?||'%' AND t.published=1
+           ORDER BY t.typeName LIMIT 8""", (*ENV_GROUPS, text)).fetchall()
+    return [r[0] for r in rows]
+
+
+@mcp.tool()
+def set_env(fit_id: str, effect: str = '') -> dict:
+    """Set the system-wide environment on a fit ('Class 5 Wolf Rayet Effects', 'Strong Metaliminal Dark Storm Environment', ...); '' clears. Affects this fit only — set the same env on any fit you compare it to."""
+    from eos.saveddata.module import Module
+    fit = _fit(fit_id)
+    prev = ENVS.pop(fit_id, None)
+    if prev is not None and prev in fit.projectedModules:
+        fit.projectedModules.remove(prev)
+    if not effect:
+        return {'fit_id': fit_id, 'env': None}
+    item = eftlib._lookup(effect)
+    if item is None or item.group.name not in ENV_GROUPS:
+        raise ValueError(f'unknown environment {effect!r}; candidates: {_env_candidates(effect)}')
+    mod = Module(item)
+    fit.projectedModules.append(mod)
+    if mod not in fit.projectedModules:
+        raise ValueError(f'{effect!r} is not projectable')
+    mod.owner = fit
+    ENVS[fit_id] = mod
+    return {'fit_id': fit_id, 'env': item.typeName}
+
+
+@mcp.tool()
+def set_booster(fit_id: str, booster_fit_ids: list) -> dict:
+    """Attach command-burst booster fits by fit_id ([] clears). The booster fit's own hull/skills/mindlink scale its bursts; strongest same buff wins, bursts never stack."""
+    _fit(fit_id)
+    for b in booster_fit_ids:
+        if b == fit_id:
+            raise ValueError('a fit cannot boost itself')
+        _fit(b)
+    BOOSTS[fit_id] = list(booster_fit_ids)
+    return {'fit_id': fit_id, 'boosters': list(booster_fit_ids)}
+
+
+@mcp.tool()
+def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0) -> dict:
+    """Bounded curve: <=30 points + summary + named assumptions. kind: 'dps_vs_range' | 'dps_vs_target_speed' | 'cap_vs_time'. target for dps kinds: {speed_ms, sig_m, atk_speed_ms}; distance_km applies to dps_vs_target_speed."""
+    fit = _fit(fit_id)
+    _recalc(fit)
+    t = target or {}
+    if kind == 'dps_vs_range':
+        return graphlib.dps_vs_range(fit, tgt_speed=t.get('speed_ms', 0.0),
+                                     tgt_sig=t.get('sig_m'), atk_speed=t.get('atk_speed_ms', 0.0))
+    if kind == 'dps_vs_target_speed':
+        return graphlib.dps_vs_target_speed(fit, distance_km=distance_km, tgt_sig=t.get('sig_m'))
+    if kind == 'cap_vs_time':
+        return graphlib.cap_vs_time(fit)
+    raise ValueError("kind must be 'dps_vs_range', 'dps_vs_target_speed' or 'cap_vs_time'")
+
+
 @mcp.tool()
 def get_stats(fit_id: str, profile: dict = None) -> dict:
     """Full stat panel. profile: optional damage weights {em,thermal,kinetic,explosive}, default uniform. All ship values include skills/modules; resists as fractions."""
@@ -267,7 +354,7 @@ def get_stats(fit_id: str, profile: dict = None) -> dict:
     fit.damagePattern = DamagePattern(
         emAmount=p.get('em', 25), thermalAmount=p.get('thermal', 25),
         kineticAmount=p.get('kinetic', 25), explosiveAmount=p.get('explosive', 25))
-    panel = stat_panel(fit)
+    panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload))
     panel['problems'] = _problems(fit)
     return panel
 
@@ -310,8 +397,8 @@ def engine_info() -> dict:
     return {
         'engine': 'pyfa-eos (headless)',
         'engine_build': meta.get('client_build'),
-        'unmodeled': ['command bursts', 'projected fits', 'environment effects',
-                      'mutated modules', 'fighters', 'T3D modes', 'siege states',
+        'unmodeled': ['projected fits (remote reps/ewar)', 'implants/boosters',
+                      'mutated modules', 'fighters', 'siege states',
                       'spool-up', 'structures'],
         'skills_presets': ['all-5', 'alpha'],
     }
