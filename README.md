@@ -91,6 +91,36 @@ skill preset, and anything unmodeled). Its graded eval loop lives in
 [`fitting/evals/`](fitting/evals/) — first run: 69% without the skill,
 98% with.
 
+## Quick start: both layers in one chat
+
+From a fresh clone, three commands of setup, then any new Claude Code
+chat in this directory has the full stack:
+
+```bash
+# 1. engine (~5 min once: clones pyfa, builds its db, installs the MCP SDK)
+fitting/spike/setup_pyfa.sh "$PWD/fitting/work" && fitting/work/eosenv/bin/pip install mcp
+
+# 2. SDE parts for layer 1 (seconds; grab only what you need)
+BASE=https://github.com/MegaPupEx/EVE-sde-sqlite-Claude-skill/releases/latest/download
+for p in items universe industry; do curl -sSLO $BASE/eve-sde-$p.sqlite.xz; done && xz -d eve-sde-*.xz
+
+# 3. verify
+fitting/work/eosenv/bin/python fitting/mcp/test_server.py --pyfa fitting/work/pyfa
+```
+
+Then start a new chat here (`claude`). The committed `.mcp.json`
+registers the `eve-fitting` server (approve it when prompted; if the
+server fails to start, replace its relative paths with absolute ones),
+and both skills load from `.claude/skills/` automatically. First fitting
+question in a session: the skill has the model check `engine_info()`
+against the SDE build and name any skew. Optional: rebuild the engine's
+db at CCP's current build so both layers share one data generation —
+see [`fitting/adapter/`](fitting/adapter/).
+
+Outside Claude Code (claude.ai / Desktop): layer 1 works by uploading
+the `eve-sde` skill folder plus the `.xz` parts; layer 2's engine is a
+local process, so it needs Claude Code or Desktop with MCP configured.
+
 ## Automation
 
 `.github/workflows/sde-release.yml` polls CCP every 3 hours and republishes
