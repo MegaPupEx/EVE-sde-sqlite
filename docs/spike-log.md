@@ -594,3 +594,25 @@ perfect turret application reads ~101.5% of paper dps — the
 wrecking-shot expectation, pyfa's own model, not a bug. Damage maps in
 graphs now use full spool, matching the panel default. 19 tools,
 ~2,180 tokens standing; both key sets unchanged.
+
+### 2026-08-17 — v2 item 4: Upwell structures land
+
+The Citadel calc branch works headless: build_fit (and so create_fit)
+constructs `Citadel` for category-Structure hulls, and an Astrahus with
+standup modules computes everything — 1,023 dps of standup cruise
+missiles, 30.15M EHP across layers, service fuel — pinned as battery
+fit 14 (616 leaves). Service slots joined every rack surface (EFT
+`[Empty Service slot]`, summaries, overflow validation), `fit.canFit`'s
+Standup/ship split gives two-way legality (a Gyrostabilizer on an
+Astrahus and a Standup service on a Rifter both fail loudly), and the
+panel gains two structure sections: `services` (per-service fuel
+blocks/hr + onlining cost) and `defense.incoming_dps_cap` — the
+per-layer `*DamageLimit` attributes (Astrahus 5,000/layer), because
+EHP ÷ cap is the floor on time-to-kill and quoting structure EHP
+without it misleads. T17 written; reinforcement windows and low-power
+state named unmodeled.
+
+Also this session: the wrecking-shot number pinned precisely — pyfa's
+`_calcTurretMult` (citing EVE Uni) has wrecking shots *replace* the top
+1% of hit rolls rather than add: 0.99 × 0.995 + 0.01 × 3 = 1.01505, the
+observed 101.5%, not the folk 102–103%.

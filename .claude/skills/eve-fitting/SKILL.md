@@ -31,9 +31,10 @@ confidently wrong. The engine computes; you interpret.
   quoting affected numbers — skew produces silently-wrong figures, which is
   the failure class this whole stack exists to kill.
 - **Name what the engine does not model.** `engine_info().unmodeled` lists
-  it (currently: industrial core, structures, custom skill sheets,
-  fighter ability toggles). If the question touches one, answer
-  with the engine number *plus* the named gap — never silently ignore it.
+  it (currently: industrial core, structure reinforcement/low-power
+  cycles, custom skill sheets, fighter ability toggles). If the question
+  touches one, answer with the engine number *plus* the named gap —
+  never silently ignore it.
   Modeled: bursts (`set_booster`), environments (`set_env`), projected
   fits (`set_projected` — remote reps/ewar/neuts, zero range), T3D modes
   (`mode` op), fighters, implants and drugs (`edit_fit` add), mutated
@@ -42,7 +43,9 @@ confidently wrong. The engine computes; you interpret.
   burnout timers are not modeled, so name the tradeoff), and
   bastion/siege/triage — fit the module, set it active; the panel is the
   in-state ship and a `notes` line names the costs (§T16, incl. why
-  bastion never dilutes your hardeners).
+  bastion never dilutes your hardeners) — and Upwell structures
+  (Citadel hulls, standup modules, service rack, per-service fuel and
+  the per-layer incoming damage cap in the panel — §T17).
 - **Skills are part of every number.** Presets: `all-0`, `alpha`, `all-5`
   (import default: all-5). **Assume an omega pilot** and quote all-V,
   labeled. Reach for `alpha`/`all-0` only when the question signals it —
@@ -61,7 +64,7 @@ present remembered fit numbers as computed.
 | --- | --- | --- |
 | `references/reading-stats.md` | 2.1k | interpreting any stat panel or graph — DPS/volley/sustained, EHP and damage profiles (incl. NPC profile table), cap stability, align, targeting, graph summaries, fitting headroom |
 | `references/tradeoffs.md` | 1.7k | choosing between things — buffer vs active, shield vs armor, another damage mod vs a different slot, speed vs resists, and "what should I fit" questions (incl. the sweep-driven authoring loop) |
-| `references/traps.md` | 3.1k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones, abyssal rolls, siege-class states |
+| `references/traps.md` | 3.5k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones, abyssal rolls, siege-class states |
 
 Sizes are bytes/4, for budgeting; this router is ~2.4k.
 

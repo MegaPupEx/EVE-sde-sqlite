@@ -126,7 +126,11 @@ silently ignored.
 - Spool-up weapons quote full spool by default (`get_stats` takes
   `spool: 0..1`); the zero-spool floor and ramp time ride in
   `offense.spool`, and `dps_vs_time` graphs the ramp.
-- Not yet here (tracked in the roadmap's v2 list): structures, full
-  fighter abilities.
-  Out of scope: industrial core, custom skill sheets, heat-over-time,
-  ISK cost.
+- Upwell structures fit and compute like ships (Citadel calc branch):
+  standup modules with two-way hull legality, a `service` rack in slots,
+  per-service fuel in `services`, and the per-layer incoming damage cap
+  in `defense.incoming_dps_cap`. Reinforcement/low-power cycles are
+  named unmodeled.
+- Not yet here (tracked in the roadmap's v2 list): full fighter
+  abilities. Out of scope: industrial core, custom skill sheets,
+  heat-over-time, ISK cost.
