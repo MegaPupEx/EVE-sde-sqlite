@@ -125,3 +125,14 @@ for). Never enumerate a market group through the engine, and never loop
 tradeoff sentence the pilot needs ("meta plate: −4% raw EHP, frees 12
 CPU for the T2 rep — net +18% sustain") falls straight out of two rows
 of a sweep plus one `module_attrs` read.
+
+**Lay out racks for heat when authoring a fit.** Heat damage spreads to
+*adjacent* slots, so decide from the fit's job which modules the pilot
+will overload — brawler: prop, tackle, reps; kiter: prop and maybe
+point; gun racks usually heat as a block — and write the EFT so those
+sit apart, with `[Empty ... slot]` gaps between them when the rack has
+spare slots (the gaps cost nothing in stats and survive export). On a
+full rack, order still matters: put the module you'll heat beside what
+you'd sacrifice first, not beside the other heated module. Deliver fits
+as EFT so the layout carries through; when editing later, remove with
+`keep_slot: true` to keep the spacing.

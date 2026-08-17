@@ -461,3 +461,28 @@ after them lived) — and render re-emits `[Empty X slot]` in position.
 what fitting a module in-game does. Stats are order-independent (heat
 over time unmodeled), so the smoke test pins: placeholders identical
 through export, dps identical with and without them, add fills the gap.
+
+### 2026-08-17 — keep_slot removal, layout-safe sweep, heat-aware authoring
+
+Follow-ups to layout preservation. `edit_fit` remove gains
+`keep_slot: true`: the module's position becomes an `[Empty ...]` gap
+(eos's `HandledModuleList.free`) instead of the rack closing up —
+in-game semantics, so remove-then-add round-trips a swap in place. One
+eos landmine: `free()`'s dummy carries no owner, and calc paths read
+`module.owner.factorReload` even on empties — the freed gap crashed the
+next stat panel until the server gave the dummy an owner (imported
+placeholders already got one, which is why import-built layouts never
+hit it).
+
+`sweep` now replaces candidates *in position* (`replace(idx, mod)`)
+instead of remove+append — append semantics were quietly re-filling
+authored gaps during trials, so a sweep on a layout fit would return
+correct rows and a scrambled fit. Smoke test pins export-identical
+before and after a sweep on a gapped fit.
+
+The authoring half: tradeoffs.md now tells the model to lay racks out
+for heat when building fits from scratch — infer the overload set from
+the fit's job (brawler: prop/tackle/reps; kiter: prop/point; gun racks
+heat as a block), space those with gaps where slots are free, and order
+full racks so the heated module sits next to what the pilot would
+sacrifice first. Engine stats are order-blind; the layout rides the EFT.

@@ -356,6 +356,21 @@ async def main(pyfa):
                 {'op': 'add', 'item': '150mm Light AutoCannon II'}])
             lx2 = await call('export_fit', fit_id=lay['fit_id'])
             assert '[Empty High slot]' not in lx2, 'edit add should fill the gap'
+            # keep_slot remove leaves the gap in position (in-game semantics)
+            await call('edit_fit', fit_id=lay['fit_id'], ops=[
+                {'op': 'remove', 'item': '150mm Light AutoCannon II', 'keep_slot': True}])
+            lx3 = await call('export_fit', fit_id=lay['fit_id'])
+            lay_lines3 = [l for l in lx3.splitlines() if 'AutoCannon' in l or 'Empty High' in l]
+            assert lay_lines3 == ['[Empty High slot]', '150mm Light AutoCannon II',
+                                  '150mm Light AutoCannon II'], lay_lines3
+            # sweep replaces in position: layout untouched afterwards
+            sw_lay = await call('sweep', fit_id=lay['fit_id'],
+                                item='150mm Light AutoCannon II',
+                                candidates=['200mm AutoCannon II'],
+                                metrics=['offense.dps'])
+            assert len(sw_lay['rows']) == 2, sw_lay
+            lx4 = await call('export_fit', fit_id=lay['fit_id'])
+            assert lx4 == lx3, 'sweep must not disturb rack layout'
             await call('delete_fit', fit_id=lay['fit_id'])
 
             info = await call('engine_info')

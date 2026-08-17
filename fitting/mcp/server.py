@@ -248,7 +248,7 @@ def export_fit(fit_id: str) -> str:
 @mcp.tool()
 @_engine_thread
 def edit_fit(fit_id: str, ops: list) -> dict:
-    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones)}. 'charge'/'state' apply to every matching module; 'mode' sets a tactical-destroyer mode item. Returns summary + problems."""
+    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones), keep_slot?:bool (remove: leave an [Empty] gap in place)}. 'charge'/'state' apply to every matching module; 'add' fills the first gap in the rack; 'mode' sets a tactical-destroyer mode item. Returns summary + problems."""
     from eos.saveddata.drone import Drone
     from eos.saveddata.module import Module
     fit = _fit(fit_id)
@@ -303,7 +303,14 @@ def edit_fit(fit_id: str, ops: list) -> dict:
             else:
                 for mod in list(fit.modules):
                     if not mod.isEmpty and mod.item.typeName == item_name:
-                        fit.modules.remove(mod)
+                        if op.get('keep_slot'):
+                            slot_idx = fit.modules.index(mod)
+                            fit.modules.free(slot_idx)
+                            # eos's dummy has no owner; calc paths read
+                            # module.owner.factorReload even on empties
+                            fit.modules[slot_idx].owner = fit
+                        else:
+                            fit.modules.remove(mod)
                         break
                 else:
                     raise ValueError(f'{item_name!r} not fitted')
@@ -508,9 +515,11 @@ def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dic
     metrics = metrics or ['offense.dps', 'defense.ehp.total',
                           'navigation.max_velocity_ms']
     fit = _fit(fit_id)
-    originals = [m for m in fit.modules if not m.isEmpty and m.item.typeName == item]
-    if not originals:
+    idxs = [i for i, m in enumerate(fit.modules)
+            if not m.isEmpty and m.item.typeName == item]
+    if not idxs:
         raise ValueError(f'{item!r} not fitted')
+    originals = [fit.modules[i] for i in idxs]
 
     def pick(panel, path):
         node = panel
@@ -531,16 +540,16 @@ def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dic
         return r
 
     rows = [row(f'{item} (fitted)')]
-    for mod in originals:
-        fit.modules.remove(mod)
     try:
         for name in candidates:
             cand_item = eftlib._lookup(name)
             if cand_item is None:
                 rows.append({'candidate': name, 'error': 'unknown item'})
                 continue
-            added = []
+            # construct all candidate copies BEFORE touching the fit, so a
+            # bad candidate (a drone name, say) leaves the fit untouched
             try:
+                cands = []
                 for orig in originals:
                     mod = Module(cand_item)
                     if orig.charge is not None and mod.isValidCharge(orig.charge):
@@ -549,19 +558,22 @@ def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dic
                         mod.state = orig.state
                     elif mod.isValidState(FittingModuleState.ACTIVE):
                         mod.state = FittingModuleState.ACTIVE
-                    fit.modules.append(mod)
-                    mod.owner = fit
-                    added.append(mod)
-                rows.append(row(name))
+                    cands.append(mod)
             except ValueError as e:
                 rows.append({'candidate': name, 'error': str(e)})
-            finally:
-                for mod in added:
-                    fit.modules.remove(mod)
+                continue
+            # replace in position — never remove/append, which would disturb
+            # rack layout ([Empty ...] gaps) on layout-conscious fits
+            for i, mod in zip(idxs, cands):
+                fit.modules.replace(i, mod)
+                mod.owner = fit
+            rows.append(row(name))
+            for i, orig in zip(idxs, originals):
+                fit.modules.replace(i, orig)
     finally:
-        for mod in originals:
-            fit.modules.append(mod)
-            mod.owner = fit
+        for i, orig in zip(idxs, originals):
+            if fit.modules[i] is not orig:
+                fit.modules.replace(i, orig)
         _recalc(fit)
     return {'fit_id': fit_id, 'swapped_count': len(originals), 'rows': rows}
 
