@@ -235,7 +235,14 @@ class this project exists to kill. Therefore:
   is one data source.~~ Resolved early, 2026-08-16: `fitting/adapter/`
   generates pyfa's staticdata inputs from CCP's current JSONL export, so
   pyfa's own db builder produces `eve.db` at the skill's SDE build —
-  verified zero panel drift on the reference battery.
+  verified zero panel drift on the reference battery. Operationalized
+  2026-08-17: `fitting/adapter/refresh.sh` does the whole rebuild in one
+  command (no-op when already current), and the working engine moved to
+  build 3470007 with eval keys re-pinned (`keys-3470007.json`,
+  numerically identical to the 3424810 keys). Layer 1's release workflow
+  polls CCP every 3 h, so "both layers current" is: let the workflow
+  publish, run `refresh.sh` — the runtime build check guards the gap
+  between the two.
 
 ### The fitting-knowledge skill (the docs half)
 

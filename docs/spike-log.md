@@ -341,3 +341,31 @@ nothing until the roll moved.
 traps gains §T15 (roll-is-the-data, killboard pastes without the section,
 clamping); eval keys 1 and 2 verified unchanged; smoke test grows the
 module + drone round-trip, clamp, and bare-abyssal-rejection assertions.
+
+### 2026-08-17 — build refresh operationalized; engine moves to 3470007
+
+`fitting/adapter/refresh.sh` turns the adapter's three manual steps into
+one idempotent command: read CCP's manifest (or `--build N`), download
+that build's JSONL zip into a gitignored cache, generate pyfa's
+staticdata, swap it into the checkout, rebuild with pyfa's own
+`db_update.py`, and verify `client_build` — a no-op when the db is
+already current. CCP shipped build 3470007 the same day (the manifest
+moved past even layer 1's 3466501), so the working engine refreshed to
+it as the first real run.
+
+The re-pin that follows a refresh, executed in full: battery rerun at
+3470007 vs the pinned 3424810 references — **440 leaves, zero
+differences** (two CCP builds without a balance change these fits
+touch); reference panels re-stamped at the working build (meta-only
+diff); eval keys regenerated — numerically identical, so
+`keys-3470007.json` / `keys2-3470007.json` replace the 3424810 files
+with only the embedded build string moved; selftest 10/10 and the full
+smoke suite green on the new db. Skill docs now quote 3470007 and traps
+notes the claims held across the refresh.
+
+The remaining skew window is operational, not architectural: layer 1's
+release workflow polls CCP every 3 h and self-publishes; the engine
+refreshes when `refresh.sh` is run. Between the two, `engine_info()` vs
+`meta.sdeBuildNumber` names the gap — which is the designed behavior,
+not a bug. CI running `refresh.sh` + battery-diff per CCP build (the
+auto-generated balance report) stays on the backlog.

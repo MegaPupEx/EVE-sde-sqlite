@@ -9,6 +9,18 @@ format rather than fork its build.
 ## Use
 
 ```bash
+./refresh.sh                  # rebuild at CCP's current build (no-op if already there)
+./refresh.sh --build 3470007  # or pin a specific build
+```
+
+`refresh.sh` runs the whole pipeline: fetch CCP's manifest, download that
+build's JSONL zip (cached in `./cache`, gitignored), generate pyfa's
+staticdata layout with `make_staticdata.py`, swap it into the checkout
+(default: `../work/pyfa`, override with `--pyfa`), and rebuild with
+pyfa's own `db_update.py`. Run it after any CCP patch. The manual steps,
+for reference or debugging:
+
+```bash
 # 1. fetch + extract CCP's current JSONL export (same zip layer 1 uses)
 curl -sSLO https://developers.eveonline.com/static-data/tranquility/eve-online-static-data-<BUILD>-jsonl.zip
 python3 -c "import zipfile; zipfile.ZipFile('eve-online-static-data-<BUILD>-jsonl.zip').extractall('sde-raw')"
@@ -21,16 +33,23 @@ rm -rf <pyfa>/staticdata && cp -r staticdata-gen <pyfa>/staticdata
 ( cd <pyfa> && rm -f eve.db && PYTHONPATH=../spike/wxstub python3 db_update.py )
 ```
 
+After a refresh that moves numbers, re-pin what the build number anchors:
+rerun `../spike/run_battery.py` and `../spike/compare_panels.py` (the
+diff is the balance-change report; update `../spike/reference/` if fits
+moved), and regenerate the eval keys (`../evals/make_keys.py`,
+`make_keys2.py`) into `keys-<BUILD>.json` files.
+
 `eve.db` then reports `client_build = <BUILD>` — the engine and the SDE
 skill answer from the same build, and `engine_info()` skew checks go quiet.
 
 ## Verified
 
-Built this way at build 3466501 and re-ran the full reference battery:
-**440 stat-panel leaves compared against the pinned build-3424810
-references, zero differences** (CCP changed nothing these fits touch in
-those five weeks). When a future build does move numbers,
-`../spike/compare_panels.py` output *is* the balance-change report.
+Built this way at build 3466501 and again at 3470007 (now the working
+engine build, 2026-08-17), re-running the full reference battery each
+time: **440 stat-panel leaves compared against the pinned build-3424810
+references, zero differences** (CCP changed nothing these fits touch).
+When a future build does move numbers, `../spike/compare_panels.py`
+output *is* the balance-change report.
 
 ## Format notes (found the hard way, encoded in the script)
 

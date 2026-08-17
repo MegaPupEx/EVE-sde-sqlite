@@ -3,7 +3,7 @@
 What each `get_stats` section means, what it hides, and what to quote.
 Formula sources are pinned in `docs/fitting-formulas.md`; this file is the
 interpretation. Every figure below marked "battery" is from the pinned
-reference fits (`fitting/spike/reference/`), engine build 3424810, all-V.
+reference fits (`fitting/spike/reference/`), engine build 3470007, all-V.
 
 ## offense — dps, dps_sustained, dps_drones, volley
 

@@ -3,7 +3,7 @@
 Ten questions. Class 1 (E*) grades engine-truth plumbing — the key is a
 number the MCP computes; class 2 (T*) grades tradeoff reasoning — the key
 is engine numbers *plus* documented mechanics. Engine keys are pinned in
-`keys-3424810.json` (regenerate with `make_keys.py` on any build; the
+`keys-3470007.json` (regenerate with `make_keys.py` on any build; the
 filename carries the build so skew is visible).
 
 Fits named below are the reference battery (`../spike/reference/battery.eft`);

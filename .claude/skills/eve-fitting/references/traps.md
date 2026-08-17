@@ -2,7 +2,8 @@
 
 Numbered so eval misses can pin them. Each claim names its source; formulas
 live in `docs/fitting-formulas.md` (cited as F§n). Engine-verified claims
-were checked against pyfa's own data/handlers at build 3424810, 2026-08-17.
+were checked against pyfa's own data/handlers at build 3424810 and held
+unchanged on the refreshed build 3470007 (both 2026-08-17).
 
 ## T1 — Command bursts don't stack-penalize; environmental beacons do (mostly)
 

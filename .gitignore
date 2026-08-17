@@ -6,3 +6,4 @@ fitting/mcp/work/
 fitting/spike/work/
 eve-sde-*.sqlite
 eve-sde-*.sqlite.xz
+fitting/adapter/cache/

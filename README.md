@@ -113,9 +113,10 @@ registers the `eve-fitting` server (approve it when prompted; if the
 server fails to start, replace its relative paths with absolute ones),
 and both skills load from `.claude/skills/` automatically. First fitting
 question in a session: the skill has the model check `engine_info()`
-against the SDE build and name any skew. Optional: rebuild the engine's
-db at CCP's current build so both layers share one data generation —
-see [`fitting/adapter/`](fitting/adapter/).
+against the SDE build and name any skew. Recommended after setup and
+after any CCP patch: `fitting/adapter/refresh.sh` rebuilds the engine's
+db at CCP's current build in one command, so both layers answer from the
+same data generation — see [`fitting/adapter/`](fitting/adapter/).
 
 Outside Claude Code (claude.ai / Desktop): layer 1 works by uploading
 the `eve-sde` skill folder plus the `.xz` parts; layer 2's engine is a

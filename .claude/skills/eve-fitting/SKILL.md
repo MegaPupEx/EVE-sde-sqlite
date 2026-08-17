@@ -22,7 +22,7 @@ confidently wrong. The engine computes; you interpret.
   higher-layer number when a lower layer can produce it. Fit math (anything
   combining two or more effects) is engine territory; base attributes are SDE
   territory; doctrine and meta are wiki/memory and must be labeled as such.
-- **Name the layer for every number you quote** — "engine, build 3424810,
+- **Name the layer for every number you quote** — "engine, build 3470007,
   all-V skills" or "SDE base hull, pre-skill" or "player convention, not
   data". A number without its layer is not an answer.
 - **Check builds once per session.** `engine_info()` returns the engine's
@@ -128,7 +128,7 @@ is in restating, so:
 - **Verdict first, once.** One opening sentence answers the question; no
   closing "bottom line" that says it again — end when the support ends.
 - **Each number appears once** — table or prose, never both.
-- **Provenance is one trailing line** ("engine 3424810, all-V, uniform
+- **Provenance is one trailing line** ("engine 3470007, all-V, uniform
   profile"), not clauses on every figure.
 - **At most one unsolicited flag**, the most consequential one.
 - Budgets: fit review ~200 words, follow-up ~100, data lookup ~50. Over

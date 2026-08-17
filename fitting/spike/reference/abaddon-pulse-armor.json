@@ -5,11 +5,11 @@
  "meta": {
   "engine": "pyfa-eos",
   "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
-  "engine_client_build": "3424810",
-  "engine_dump_time": "1783448238",
+  "engine_client_build": "3470007",
+  "engine_dump_time": "1786976710",
   "character": "all-5",
   "damage_profile": "uniform",
-  "generated": "2026-08-16"
+  "generated": "2026-08-17"
  },
  "modules": [
   [

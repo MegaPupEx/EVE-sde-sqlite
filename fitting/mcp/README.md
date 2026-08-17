@@ -26,8 +26,9 @@ answering question after question without hitting rate or context limits.
 ```bash
 ../spike/setup_pyfa.sh work                     # pyfa @ pinned commit + venv + eve.db
 work/eosenv/bin/pip install mcp
-# optional but recommended — rebuild eve.db at CCP's current SDE build:
-#   see ../adapter/README.md
+# recommended — rebuild eve.db at CCP's current SDE build (repeat after
+# any CCP patch; layers 1 and 2 then answer from the same build):
+../adapter/refresh.sh --pyfa work/pyfa
 work/eosenv/bin/python test_server.py --pyfa work/pyfa    # smoke test
 ```
 
