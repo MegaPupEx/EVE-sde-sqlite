@@ -524,7 +524,7 @@ def engine_info() -> dict:
     return {
         'engine': 'pyfa-eos (headless)',
         'engine_build': meta.get('client_build'),
-        'unmodeled': ['mutated modules', 'siege states', 'spool-up',
+        'unmodeled': ['siege states', 'spool-up',
                       'structures', 'custom skill sheets',
                       'fighter ability toggles (standard attack only)'],
         'skills_presets': ['all-0', 'alpha', 'all-5'],

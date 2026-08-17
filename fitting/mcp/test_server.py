@@ -246,9 +246,55 @@ async def main(pyfa):
             assert 'Gunnery' in closure and 'Minmatar Frigate' in closure, closure
             assert len(closure) > len(ends), (len(closure), len(ends))
 
+            # mutated (abyssal) modules: pyfa's [N] dialect, absolute rolled
+            # values, eos clamping, and an identical export->reimport round trip
+            plain_eft = ('[Rifter, plain]\nGyrostabilizer II\n\n'
+                         '150mm Light AutoCannon II, Republic Fleet EMP S')
+            muta_eft = ('[Rifter, muta]\nGyrostabilizer II [1]\n\n'
+                        '150mm Light AutoCannon II, Republic Fleet EMP S\n\n'
+                        '[1] Gyrostabilizer II\n'
+                        '  Decayed Gyrostabilizer Mutaplasmid\n'
+                        '  damageMultiplier 1.1088\n')  # max roll: 1.008 x 1.1
+            mp = await call('import_fit', eft=plain_eft)
+            mm = await call('import_fit', eft=muta_eft)
+            p_dps = (await call('get_stats', fit_id=mp['fit_id']))['offense']['dps']
+            m_dps = (await call('get_stats', fit_id=mm['fit_id']))['offense']['dps']
+            assert m_dps > p_dps, (m_dps, p_dps)
+            mx = await call('export_fit', fit_id=mm['fit_id'])
+            assert '[1] Gyrostabilizer II' in mx and 'Mutaplasmid' in mx, mx
+            mr = await call('import_fit', eft=mx)
+            r_dps = (await call('get_stats', fit_id=mr['fit_id']))['offense']['dps']
+            assert r_dps == m_dps, f'round trip drifted: {r_dps} != {m_dps}'
+            mc = await call('import_fit',
+                            eft=muta_eft.replace('damageMultiplier 1.1088',
+                                                 'damageMultiplier 2.0'))
+            c_dps = (await call('get_stats', fit_id=mc['fit_id']))['offense']['dps']
+            assert c_dps == m_dps, f'absurd roll must clamp to max: {c_dps} != {m_dps}'
+            try:
+                await call('import_fit', eft='[Rifter, bare]\nAbyssal Gyrostabilizer')
+                raise AssertionError('bare abyssal item name must be rejected')
+            except RuntimeError as e:
+                assert 'mutation block' in str(e), e
+            # drones mutate through the same dialect (base dmgMult is 1.92 here
+            # — roll above it or the test proves nothing)
+            md = await call('import_fit', eft=(
+                '[Tristan, mutdrone]\nDrone Damage Amplifier II\n\n'
+                'Hobgoblin II x5 [1]\n\n'
+                '[1] Hobgoblin II\n'
+                '  Exigent Light Drone Firepower Mutaplasmid\n'
+                '  damageMultiplier 2.3\n'))
+            d_dps = (await call('get_stats', fit_id=md['fit_id']))['offense']['dps_drones']
+            dx = await call('export_fit', fit_id=md['fit_id'])
+            dr = await call('import_fit', eft=dx)
+            dr_dps = (await call('get_stats', fit_id=dr['fit_id']))['offense']['dps_drones']
+            assert dr_dps == d_dps, f'drone round trip drifted: {dr_dps} != {d_dps}'
+            for f in (mp, mm, mr, mc, md, dr):
+                await call('delete_fit', fit_id=f['fit_id'])
+
             info = await call('engine_info')
             assert info['engine_build'], info
             assert 'environment effects' not in info['unmodeled'], 'env is modeled now'
+            assert 'mutated modules' not in info['unmodeled'], 'mutations are modeled now'
             await call('delete_fit', fit_id=c['fit_id'])
 
             print(f"\nengine_build: {info['engine_build']} | all assertions passed")

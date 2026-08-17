@@ -31,12 +31,14 @@ confidently wrong. The engine computes; you interpret.
   quoting affected numbers — skew produces silently-wrong figures, which is
   the failure class this whole stack exists to kill.
 - **Name what the engine does not model.** `engine_info().unmodeled` lists
-  it (currently: mutated modules, siege states, spool-up, structures,
-  custom skill sheets, fighter ability toggles). If the question touches
-  one, answer with the engine number *plus* the named gap — never silently
-  ignore it. Modeled: bursts (`set_booster`), environments (`set_env`),
-  projected fits (`set_projected` — remote reps/ewar/neuts, zero range),
-  T3D modes (`mode` op), fighters, implants and drugs (`edit_fit` add).
+  it (currently: siege states, spool-up, structures, custom skill sheets,
+  fighter ability toggles). If the question touches one, answer with the
+  engine number *plus* the named gap — never silently ignore it. Modeled:
+  bursts (`set_booster`), environments (`set_env`), projected fits
+  (`set_projected` — remote reps/ewar/neuts, zero range), T3D modes
+  (`mode` op), fighters, implants and drugs (`edit_fit` add), mutated
+  (abyssal) modules — rolls travel in the EFT `[N]` dialect
+  (`references/traps.md` §T15).
 - **Skills are part of every number.** Presets: `all-0`, `alpha`, `all-5`
   (import default: all-5). **Assume an omega pilot** and quote all-V,
   labeled. Reach for `alpha`/`all-0` only when the question signals it —
@@ -55,9 +57,9 @@ present remembered fit numbers as computed.
 | --- | --- | --- |
 | `references/reading-stats.md` | 2.1k | interpreting any stat panel or graph — DPS/volley/sustained, EHP and damage profiles (incl. NPC profile table), cap stability, align, targeting, graph summaries, fitting headroom |
 | `references/tradeoffs.md` | 1.5k | choosing between things — buffer vs active, shield vs armor, another damage mod vs a different slot, speed vs resists, and "what should I fit" questions |
-| `references/traps.md` | 2.0k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones |
+| `references/traps.md` | 2.5k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones, abyssal rolls |
 
-Sizes are bytes/4, for budgeting; this router is ~1.7k.
+Sizes are bytes/4, for budgeting; this router is ~2.1k.
 
 ## If you read nothing else
 

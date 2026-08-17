@@ -107,9 +107,10 @@ output, never silently ignored.
   Note: internally these are dogma projections while bursts are warfare
   buffs — different systems (see `docs/fitting-formulas.md` §1), though
   they share the tier.
-- Mutated (abyssal) modules — rolled stats within mutaplasmid ranges;
-  import/export must carry exact rolled values or real PvP fits cannot
-  round-trip
+- ~~Mutated (abyssal) modules~~ *landed 2026-08-17 (pyfa's `[N]` EFT
+  dialect: parse/build/render in `fitting/engine/eft.py`; rolls are
+  absolute values, eos-clamped to the mutaplasmid band; identical
+  export→reimport verified for modules and drones)*
 - ~~Fighters~~ *landed 2026-08-17 (standard attack; ability toggles are
   v2)* (ability-level effects; the SDE work already mapped
   `fighterAbilities`) — promoted from v2, 2026-08-16
@@ -127,13 +128,12 @@ output, never silently ignored.
 
 Everything left, with what building each requires:
 
-1. **Mutated (abyssal) modules** — the one v1.5 leftover. Dialect
-   *decided*: adopt pyfa's EFT format exactly — `[N]` references on module
-   lines plus a mutation section (`service/port/eft.py:59–160, 634` is
-   the de-facto spec). Remaining work: parse/render in
-   `fitting/engine/eft.py`; eos-side construction (base item +
-   mutaplasmid + per-attribute mutator values, clamped to mutaplasmid
-   ranges); round-trip tests; one battery fit with rolled stats.
+1. ~~**Mutated (abyssal) modules**~~ *landed 2026-08-17* — pyfa's EFT
+   format adopted exactly (`[N]` references + mutation section);
+   parse/build/render in `fitting/engine/eft.py`, eos Mutators clamp
+   rolls to the mutaplasmid band, round-trip tests in
+   `fitting/mcp/test_server.py` (module + drone, clamp, bare-abyssal
+   rejection).
 2. **Siege-class states** (siege, bastion, triage, industrial core) —
    modules whose effects fire in a special state. Needs: a battery fit
    per class (start: bastion Golem), verification the effects run
@@ -331,8 +331,9 @@ doc-owned misses get fixed and pinned in the harness.**
    (wormhole/storm/abyssal beacons via projection — C5 Wolf-Rayet ×2.69
    on the battery Rifter, verified), `set_booster` (recursive
    command-burst fits, strongest-wins measured), and T3D modes via the
-   `mode` edit op. Still open from v1.5: projected fits, fighters,
-   mutated modules — reasons in `docs/spike-log.md`.*
+   `mode` edit op. The rest of v1.5 landed later the same day: projected
+   fits (`set_projected`), fighters, and mutated modules (pyfa's `[N]`
+   EFT dialect) — details in `docs/spike-log.md`.*
 5. Layer 3: corpus build + search + knowledge skill
 6. Cross-layer eval (questions requiring all three layers)
 
@@ -353,7 +354,7 @@ doc-owned misses get fixed and pinned in the harness.**
 
 - ~~How deep does pyfa's GUI entanglement go?~~ Answered: shallow — one
   wx.Colour stub suffices; see the entanglement map in `docs/spike-log.md`.
-- EFT dialect for mutated modules: adopt pyfa's exactly, or document our own?
-  (Lean: pyfa's exactly — interop is the point.)
+- ~~EFT dialect for mutated modules: adopt pyfa's exactly, or document our
+  own?~~ Answered 2026-08-17: pyfa's exactly — interop is the point.
 - Graph rendering: does the consuming session chart the series (artifacts)
   or reason over summaries only? Both should work; neither should be assumed.

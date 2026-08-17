@@ -308,3 +308,36 @@ found and fixed mid-run: rack overflow had never actually been validated
 caught by a layered subject reading layer 1, of all things, after it
 flagged an illegal test fit of mine the broken check had passed. Router
 gained the conversation-economy rules the outlier turns paid for.
+
+### 2026-08-17 — mutated (abyssal) modules land; v1.5 is complete
+
+Pyfa's EFT mutation dialect adopted exactly (`service/port/eft.py` +
+`muta.py` are the de-facto spec): fitted lines carry the *base* item name
+plus an ` [N]` reference; a trailing section maps each N to base item,
+mutaplasmid item, and comma-separated `attr value` pairs — **absolute**
+rolled values. `fitting/engine/eft.py` now parses the section (strict:
+malformed pairs and unknown attrs raise, naming the block), builds via
+eos's own path (`getDynamicItem(mutaplasmid.ID)` →
+`Module/Drone(dyn.resultingItem, baseItem, dyn)` → set
+`mutators[attrID].value`, where the Mutator validator clamps to the
+mutaplasmid band), and renders the section back (attrs sorted by name,
+`floatUnerr`, refs renumbered from 1 — byte-compatible with pyfa's
+export).
+
+Verified: a max-roll Decayed Gyrostabilizer moves a Rifter's panel DPS,
+export→reimport is stat-identical, an out-of-band roll (2.0 on a
+0.995–1.008 mutaplasmid) clamps to the max-roll number, and the drone
+path round-trips too (Exigent-mutated Hobgoblin). Two traps worth the
+log: a bare abyssal type name ('Abyssal Gyrostabilizer') used to die
+inside eos with "Passed item is not a Module" — it now raises a named
+EftError explaining the mutation block *is* the data; and unrolled
+attributes still carry the mutated item's own baseline values, so the
+render emits the full mutator set, exactly like pyfa. One test-authoring
+lesson: Hobgoblin II's base damageMultiplier is already 1.92 on this
+build — the first "mutated" drone test rolled the base value and proved
+nothing until the roll moved.
+
+`engine_info().unmodeled` drops 'mutated modules'; skill router updated;
+traps gains §T15 (roll-is-the-data, killboard pastes without the section,
+clamping); eval keys 1 and 2 verified unchanged; smoke test grows the
+module + drone round-trip, clamp, and bare-abyssal-rejection assertions.

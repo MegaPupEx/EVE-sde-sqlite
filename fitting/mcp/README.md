@@ -90,7 +90,12 @@ silently ignored.
   local calc (eos consumes their bonuses during it), projected fits run
   AFTER it (the local calc's clear() would wipe them). `_recalc` is the
   single place that knows this.
-- Not yet here (tracked in the roadmap's v2 list): mutated modules (EFT
-  dialect decided — pyfa's `[N]` references; parser work remains), siege
-  states, spool-up, structures, custom skill sheets, fighter ability
-  toggles.
+- Mutated (abyssal) modules and drones use pyfa's EFT dialect: the fitted
+  line carries the *base* item name plus an ` [N]` reference, and a
+  trailing section maps each N to base item / mutaplasmid / rolled
+  attributes (absolute values). eos clamps out-of-range rolls to the
+  mutaplasmid's band; export → reimport round-trips to identical stats. A
+  bare abyssal type name with no mutation block is rejected loudly — the
+  roll is the data.
+- Not yet here (tracked in the roadmap's v2 list): siege states,
+  spool-up, structures, custom skill sheets, fighter ability toggles.

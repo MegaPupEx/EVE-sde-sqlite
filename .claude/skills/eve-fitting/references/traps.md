@@ -157,3 +157,20 @@ resist), and `agility` is the inertia modifier, not agility. The panel
 has already converted all of these; mixing panel values with raw SDE
 values in one calculation is how sign errors are born. (Full list: eve-sde
 skill, gotchas-dogma.)
+
+## T15 — Abyssal modules: the roll is the data, and it rides in the EFT
+
+A mutated module's stats live in the *roll*, not the type — 'Abyssal
+Gyrostabilizer' names a container, and the engine rejects it bare. The
+EFT dialect (pyfa's, engine-supported): the fitted line carries the
+**base** item name plus an ` [N]` reference; a trailing section maps each
+N to base item, mutaplasmid, and `attr value` pairs — **absolute** rolled
+values, not multipliers. Three consequences: a killboard paste without
+its mutation section silently reverts every abyssal to the base T2/faction
+module (ask for the full export); rolls outside the mutaplasmid's band are
+clamped by the engine to the band edge (a "god roll" claim that exceeds
+the range is fake or mis-transcribed — say which value was used); and
+unrolled attributes still carry the mutaplasmid's own baseline values, so
+a mutated module is never just "base + one attribute". Export → reimport
+round-trips exactly; quote stats from the built fit, never from the roll
+text.

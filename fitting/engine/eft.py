@@ -14,11 +14,17 @@ lookup, trying rightmost commas first, which survives item names containing
 commas. "/offline" suffix and "[Empty ... slot]" placeholders are handled.
 Quantity lines ("Hobgoblin II x5") become drones/fighters/cargo by category.
 
-Mutated (abyssal) modules are NOT supported yet — the pyfa mutation dialect
-is a planned v1 item (roadmap open question); lines referencing unknown
-items raise EftError naming the line, so mutated fits fail loudly, not
-silently.
+Mutated (abyssal) modules and drones use pyfa's dialect exactly, because
+interop is the point: the fitted line carries the BASE item name plus an
+` [N]` reference, and a trailing section maps each N to three lines —
+base item, mutaplasmid item, and `attr value, attr value` rolled stats.
+Rolled values outside the mutaplasmid's range are clamped by eos's own
+Mutator validator, same as pyfa.
 """
+import re
+
+_MUTANT_HEAD = re.compile(r'^\[(\d+)\]\s+(.+)$')
+_MUTATION_REF = re.compile(r'\s*\[(\d+)\]$')
 
 
 class EftError(Exception):
@@ -29,7 +35,8 @@ class FitSpec:
     def __init__(self, ship, name):
         self.ship = ship
         self.name = name
-        self.entries = []  # dicts: {'name', 'charge', 'offline', 'quantity'}
+        self.entries = []    # dicts: {'name', 'charge', 'offline', 'quantity', 'mutation'}
+        self.mutations = {}  # ref -> {'base', 'mutaplasmid', 'attrs': {name: value}}
 
     def __repr__(self):
         return f'FitSpec({self.ship!r}, {self.name!r}, {len(self.entries)} entries)'
@@ -39,6 +46,7 @@ def parse_eft(text):
     """Parse EFT text (one or many fits) into FitSpecs. Pure text handling."""
     fits = []
     fit = None
+    pending = None  # (ref, lines_still_expected) while inside a mutation block
     for rawline in text.splitlines():
         line = rawline.strip()
         if not line:
@@ -47,12 +55,41 @@ def parse_eft(text):
             ship, name = line[1:-1].split(',', 1)
             fit = FitSpec(ship.strip(), name.strip())
             fits.append(fit)
+            pending = None
             continue
         if line.startswith('[') and line.endswith(']'):  # [Empty Low slot] etc.
             continue
+        mut_head = _MUTANT_HEAD.match(line)
+        if mut_head and fit is not None:
+            ref = int(mut_head.group(1))
+            fit.mutations[ref] = {'base': mut_head.group(2).strip(),
+                                  'mutaplasmid': None, 'attrs': {}}
+            pending = (ref, 2)
+            continue
+        if pending is not None:
+            ref, left = pending
+            mut = fit.mutations[ref]
+            if mut['mutaplasmid'] is None:
+                mut['mutaplasmid'] = line
+            else:
+                for pair in line.split(','):
+                    bits = pair.strip().rsplit(' ', 1)
+                    if len(bits) != 2:
+                        raise EftError(f'malformed mutation attribute {pair.strip()!r} in [{ref}]')
+                    try:
+                        mut['attrs'][bits[0].strip()] = float(bits[1])
+                    except ValueError:
+                        raise EftError(f'non-numeric mutation value in [{ref}]: {pair.strip()!r}')
+            pending = (ref, left - 1) if left > 1 else None
+            continue
         if fit is None:
             raise EftError(f'module line before any [Ship, name] header: {line!r}')
-        entry = {'name': line, 'charge': None, 'offline': False, 'quantity': None}
+        entry = {'name': line, 'charge': None, 'offline': False,
+                 'quantity': None, 'mutation': None}
+        mut_ref = _MUTATION_REF.search(entry['name'])
+        if mut_ref:
+            entry['mutation'] = int(mut_ref.group(1))
+            entry['name'] = entry['name'][:mut_ref.start()].strip()
         if entry['name'].endswith('/offline'):
             entry['offline'] = True
             entry['name'] = entry['name'][:-len('/offline')].strip()
@@ -90,6 +127,28 @@ def _resolve(entry):
     raise EftError(f'unknown item: {entry["name"]!r}')
 
 
+def _mutation_parts(entry, spec):
+    """Resolve a mutated entry's mutaplasmid; returns (dynamic_item, attrs {ID: value})."""
+    from eos.db.gamedata.queries import getAttributeInfo, getDynamicItem
+    mut = spec.mutations.get(entry['mutation'])
+    if mut is None:
+        raise EftError(f'{entry["name"]!r} references mutation [{entry["mutation"]}] '
+                       'but no such block exists')
+    muta_item = _lookup(mut['mutaplasmid'] or '')
+    if muta_item is None:
+        raise EftError(f'unknown mutaplasmid {mut["mutaplasmid"]!r} in [{entry["mutation"]}]')
+    dyn = getDynamicItem(muta_item.ID)
+    if dyn is None:
+        raise EftError(f'{muta_item.typeName!r} is not a mutaplasmid')
+    attrs = {}
+    for name, value in mut['attrs'].items():
+        info = getAttributeInfo(name)
+        if info is None:
+            raise EftError(f'unknown attribute {name!r} in mutation [{entry["mutation"]}]')
+        attrs[info.ID] = value
+    return dyn, attrs
+
+
 def build_fit(spec):
     """Build a calculated-ready eos Fit from a FitSpec. Call bootstrap() first."""
     import eos.db  # noqa: F401 — must precede eos.saveddata imports
@@ -115,8 +174,20 @@ def build_fit(spec):
     for entry in spec.entries:
         item, charge = _resolve(entry)
         category = item.category.name
+        if entry['mutation'] is None and getattr(item, 'isAbyssal', False):
+            raise EftError(
+                f'{item.typeName!r} is a mutated item with no [N] mutation block — '
+                'its stats are the roll, not the type. Paste the fit with its '
+                'mutation section (base item, mutaplasmid, rolled attributes).')
         if entry['quantity'] is not None and category == 'Drone':
-            drone = Drone(item)
+            if entry['mutation'] is not None:
+                dyn, attrs = _mutation_parts(entry, spec)
+                drone = Drone(dyn.resultingItem, item, dyn)
+                for attr_id, value in attrs.items():
+                    if attr_id in drone.mutators:
+                        drone.mutators[attr_id].value = value
+            else:
+                drone = Drone(item)
             drone.amount = entry['quantity']
             drone.amountActive = entry['quantity']
             fit.drones.append(drone)
@@ -135,7 +206,14 @@ def build_fit(spec):
         elif category == 'Charge':
             fit.cargo.append(Cargo(item, 1))
         else:
-            mod = Module(item)
+            if entry['mutation'] is not None:
+                dyn, attrs = _mutation_parts(entry, spec)
+                mod = Module(dyn.resultingItem, item, dyn)
+                for attr_id, value in attrs.items():
+                    if attr_id in mod.mutators:
+                        mod.mutators[attr_id].value = value
+            else:
+                mod = Module(item)
             if charge is not None:
                 mod.charge = charge
             if entry['offline']:
@@ -149,19 +227,31 @@ def build_fit(spec):
 
 def render_eft(fit):
     """Render a live eos fit as EFT text, slot-grouped the way pyfa exports."""
-    from eos.const import FittingSlot
+    from eos.const import FittingModuleState, FittingSlot
+
+    mutants = {}  # ref -> mutated Module/Drone; section rendered at the end
+
+    def _mut_suffix(thing):
+        if not getattr(thing, 'isMutated', False):
+            return ''
+        ref = len(mutants) + 1
+        mutants[ref] = thing
+        return f' [{ref}]'
+
     order = (FittingSlot.LOW, FittingSlot.MED, FittingSlot.HIGH,
              FittingSlot.RIG, FittingSlot.SUBSYSTEM)
     slots = {s: [] for s in order}
     for mod in fit.modules:
         if mod.isEmpty:
             continue
-        line = mod.item.typeName
+        # mutated modules export under the BASE item name; the [N] section
+        # carries the mutaplasmid and rolls (pyfa's dialect)
+        line = mod.baseItem.typeName if mod.isMutated else mod.item.typeName
         if mod.charge is not None:
             line += f', {mod.charge.typeName}'
-        from eos.const import FittingModuleState
         if mod.state == FittingModuleState.OFFLINE:
             line += ' /offline'
+        line += _mut_suffix(mod)
         slots.setdefault(mod.slot, []).append(line)
     out = [f'[{fit.ship.item.typeName}, {fit.name}]']
     blocks = ['\n'.join(slots[s]) for s in order if slots[s]]
@@ -172,9 +262,23 @@ def render_eft(fit):
     for booster in fit.boosters:
         extras.append(booster.item.typeName)
     for drone in fit.drones:
-        extras.append(f'{drone.item.typeName} x{drone.amount}')
+        name = drone.baseItem.typeName if drone.isMutated else drone.item.typeName
+        extras.append(f'{name} x{drone.amount}{_mut_suffix(drone)}')
     for cargo in fit.cargo:
         extras.append(f'{cargo.item.typeName} x{cargo.amount}')
     if extras:
         out.append('\n' + '\n'.join(extras))
+    if mutants:
+        from eos.db.gamedata.queries import getAttributeInfo
+        from eos.utils.float import floatUnerr
+        blocks = []
+        for ref in sorted(mutants):
+            mutant = mutants[ref]
+            rolls = {getAttributeInfo(attr_id).name: mut.value
+                     for attr_id, mut in mutant.mutators.items()}
+            roll_line = ', '.join(f'{n} {floatUnerr(rolls[n])}' for n in sorted(rolls))
+            blocks.append(f'[{ref}] {mutant.baseItem.typeName}\n'
+                          f'  {mutant.mutaplasmid.item.typeName}\n'
+                          f'  {roll_line}')
+        out.append('\n' + '\n'.join(blocks))
     return '\n'.join(out) + '\n'
