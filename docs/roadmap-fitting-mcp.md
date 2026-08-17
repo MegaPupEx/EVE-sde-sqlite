@@ -95,22 +95,25 @@ output, never silently ignored.
 - Ancillary states (AAR paste, ASB charges) and the reload-DPS toggle
 
 **v1.5 — external effects (one shared pipeline):**
-- Command bursts — modeled as a *separate boost fit* whose own skills,
-  mindlinks and hull scale the burst (recursive, like pyfa does it)
+- ~~Command bursts~~ *landed 2026-08-17* — modeled as a *separate boost
+  fit* whose own skills, mindlinks and hull scale the burst (recursive,
+  like pyfa does it)
 - Projected fits: remote assistance/impedance, where the projecting ship's
   own rigs/skills scale the projected module (same recursion)
-- Environmental: wormhole phenomena, k-space metaliminal storms, abyssal
-  system-wide weather, local AoE (abyssal clouds, ESS bubble), incursion and
-  insurgency system effects. Note: internally these are the same effect class
-  as command bursts, which is why they share the tier.
+- ~~Environmental~~ *landed 2026-08-17 (`set_env`)*: wormhole phenomena,
+  k-space metaliminal storms, abyssal system-wide weather, local AoE
+  (abyssal clouds, ESS bubble), incursion and insurgency system effects.
+  Note: internally these are dogma projections while bursts are warfare
+  buffs — different systems (see `docs/fitting-formulas.md` §1), though
+  they share the tier.
 - Mutated (abyssal) modules — rolled stats within mutaplasmid ranges;
   import/export must carry exact rolled values or real PvP fits cannot
   round-trip
 - Fighters (ability-level effects; the SDE work already mapped
   `fighterAbilities`) — promoted from v2, 2026-08-16
-- Tactical destroyer modes (Confessor/Svipul/Hecate/Jackdaw) — promoted from
-  v2, 2026-08-16; modes are items applying ordinary dogma modifiers, no new
-  math
+- ~~Tactical destroyer modes~~ *landed 2026-08-17 (`edit_fit` op `mode`)*
+  (Confessor/Svipul/Hecate/Jackdaw) — promoted from v2, 2026-08-16; modes
+  are items applying ordinary dogma modifiers, no new math
 
 **v2:**
 - Siege-class states (siege, bastion, triage, industrial core)
@@ -277,7 +280,15 @@ doc-owned misses get fixed and pinned in the harness.**
    engine bug (alpha-preset character mutation) and one formulas-doc
    error (Pulsar shield HP is not stack-penalized) caught before the run.
    See `docs/spike-log.md`.*
-4. `compare_fits` + `graph` + v1.5 external-effects pipeline
+4. `compare_fits` + `graph` + v1.5 external-effects pipeline. *First
+   slice landed 2026-08-17 (`compare_fits` had landed with MCP v1):
+   `graph()` (dps_vs_range / dps_vs_target_speed / cap_vs_time, bounded
+   per the token rules, pyfa's own application math), `set_env`
+   (wormhole/storm/abyssal beacons via projection — C5 Wolf-Rayet ×2.69
+   on the battery Rifter, verified), `set_booster` (recursive
+   command-burst fits, strongest-wins measured), and T3D modes via the
+   `mode` edit op. Still open from v1.5: projected fits, fighters,
+   mutated modules — reasons in `docs/spike-log.md`.*
 5. Layer 3: corpus build + search + knowledge skill
 6. Cross-layer eval (questions requiring all three layers)
 
