@@ -48,6 +48,32 @@ graphlib._install_shims(ARGS.pyfa)
 
 mcp = MCPServer('eve-fitting')
 
+# All engine work runs on ONE dedicated thread. The MCP SDK dispatches sync
+# tools to arbitrary worker threads, and eos's SQLAlchemy sessions hold sqlite
+# objects with thread affinity — a long-lived server eventually lands two
+# calls on different threads and dies with "SQLite objects created in a
+# thread can only be used in that same thread" (first seen on an import that
+# touched the saveddata `overrides` table, 2026-08-17). The smoke test never
+# caught it: its client happens to dispatch every call to the same thread.
+import concurrent.futures  # noqa: E402
+import functools  # noqa: E402
+import threading  # noqa: E402
+
+_ENGINE_THREAD = concurrent.futures.ThreadPoolExecutor(
+    max_workers=1, thread_name_prefix='eos-engine')
+
+
+def _engine_thread(fn):
+    # Re-entrant: tools call each other (compare_fits -> get_stats), and a
+    # submit from the pool's own single thread would deadlock forever.
+    @functools.wraps(fn)
+    def pinned(*args, **kwargs):
+        if threading.current_thread().name.startswith('eos-engine'):
+            return fn(*args, **kwargs)
+        return _ENGINE_THREAD.submit(fn, *args, **kwargs).result()
+    return pinned
+
+
 FITS = {}
 BOOSTS = {}       # fit_id -> [booster fit_id, ...]
 PROJECTIONS = {}  # fit_id -> [projector fit_id, ...]
@@ -162,6 +188,7 @@ def _summary(fit_id):
 
 
 @mcp.tool()
+@_engine_thread
 def import_fit(eft: str) -> dict:
     """Import an EFT-format fit; returns fit_id + fitting summary. Multi-fit text imports all."""
     specs = eftlib.parse_eft(eft)
@@ -174,6 +201,7 @@ def import_fit(eft: str) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def create_fit(ship: str, name: str = 'unnamed') -> dict:
     """Create an empty fit for a ship type; returns fit_id + fitting summary."""
     spec = eftlib.FitSpec(ship, name)
@@ -183,6 +211,7 @@ def create_fit(ship: str, name: str = 'unnamed') -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def clone_fit(fit_id: str, name: str = '') -> dict:
     """Copy an existing fit; returns the new fit_id."""
     fit = _fit(fit_id)
@@ -195,6 +224,7 @@ def clone_fit(fit_id: str, name: str = '') -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def delete_fit(fit_id: str) -> dict:
     """Discard a fit."""
     _fit(fit_id)
@@ -209,12 +239,14 @@ def delete_fit(fit_id: str) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def export_fit(fit_id: str) -> str:
     """Export a fit as EFT text (game-client / zkillboard / pyfa interop)."""
     return eftlib.render_eft(_fit(fit_id))
 
 
 @mcp.tool()
+@_engine_thread
 def edit_fit(fit_id: str, ops: list) -> dict:
     """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones)}. 'charge'/'state' apply to every matching module; 'mode' sets a tactical-destroyer mode item. Returns summary + problems."""
     from eos.saveddata.drone import Drone
@@ -316,6 +348,7 @@ _all0_char = None
 
 
 @mcp.tool()
+@_engine_thread
 def set_skills(fit_id: str, preset: str) -> dict:
     """Set the pilot skills: 'all-0' | 'alpha' | 'all-5'. Default on import/create is all-5 (omega assumption)."""
     # The alpha pilot must be its own Character: getAll5() returns a shared
@@ -351,6 +384,7 @@ def _env_candidates(text):
 
 
 @mcp.tool()
+@_engine_thread
 def set_env(fit_id: str, effect: str = '') -> dict:
     """Set the system-wide environment on a fit ('Class 5 Wolf Rayet Effects', 'Strong Metaliminal Dark Storm Environment', ...); '' clears. Affects this fit only — set the same env on any fit you compare it to."""
     from eos.saveddata.module import Module
@@ -373,6 +407,7 @@ def set_env(fit_id: str, effect: str = '') -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def set_projected(fit_id: str, projector_fit_ids: list) -> dict:
     """Project other fits' active modules/drones onto this fit ([] clears): remote reps, ewar, neuts. Applied at zero range (full strength); the projector's own skills/hull scale everything."""
     _fit(fit_id)
@@ -385,6 +420,7 @@ def set_projected(fit_id: str, projector_fit_ids: list) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def set_booster(fit_id: str, booster_fit_ids: list) -> dict:
     """Attach command-burst booster fits by fit_id ([] clears). The booster fit's own hull/skills/mindlink scale its bursts; strongest same buff wins, bursts never stack."""
     _fit(fit_id)
@@ -397,6 +433,7 @@ def set_booster(fit_id: str, booster_fit_ids: list) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0) -> dict:
     """Bounded curve: <=30 points + summary + named assumptions. kind: 'dps_vs_range' | 'dps_vs_target_speed' | 'cap_vs_time'. target for dps kinds: {speed_ms, sig_m, atk_speed_ms}; distance_km applies to dps_vs_target_speed."""
     fit = _fit(fit_id)
@@ -413,6 +450,7 @@ def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0)
 
 
 @mcp.tool()
+@_engine_thread
 def get_stats(fit_id: str, profile: dict = None) -> dict:
     """Full stat panel. profile: optional damage weights {em,thermal,kinetic,explosive}, default uniform. All ship values include skills/modules; resists as fractions."""
     from eos.saveddata.damagePattern import DamagePattern
@@ -431,6 +469,7 @@ def get_stats(fit_id: str, profile: dict = None) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def module_attrs(fit_id: str, item: str, attrs: list) -> dict:
     """Modified per-module attribute values (skills/ship bonuses/heat/mutations applied) for every fitted module or drone named `item`. attrs: dogma attribute names, e.g. ['maxRange','speedFactor']; null = not on that module. Overheat first via edit_fit state op to read heated values."""
     from eos.db.gamedata.queries import getAttributeInfo
@@ -460,6 +499,7 @@ def module_attrs(fit_id: str, item: str, attrs: list) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dict:
     """Try each candidate module in place of fitted module `item` (every copy swapped; charge/state carried when valid) and return one compact row per candidate with the named panel metrics (dotted paths, e.g. 'offense.dps', 'defense.ehp.total'; default dps/ehp/speed) plus cpu_free/pg_free/problems. The fit is restored afterwards. Max 20 candidates."""
     from eos.saveddata.module import Module
@@ -527,6 +567,7 @@ def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dic
 
 
 @mcp.tool()
+@_engine_thread
 def compare_fits(fit_id_a: str, fit_id_b: str) -> dict:
     """Stat panels diffed: only figures differing >0.1%, as {stat: [a, b]}."""
     diffs = {}
@@ -550,6 +591,7 @@ def compare_fits(fit_id_a: str, fit_id_b: str) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def validate_fit(fit_id: str) -> dict:
     """In-game legality: fitting resources, slots, hardpoints, drone limits."""
     problems = _problems(_fit(fit_id))
@@ -557,6 +599,7 @@ def validate_fit(fit_id: str) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def required_skills(fit_id: str, full: bool = False) -> dict:
     """Skills (with levels) needed to use the whole fit. Default lists only the training-queue ends (prerequisites implied by other entries are pruned) plus any skills an alpha clone cannot train high enough; full=true returns the entire prerequisite closure."""
     fit = _fit(fit_id)
@@ -613,6 +656,7 @@ def required_skills(fit_id: str, full: bool = False) -> dict:
 
 
 @mcp.tool()
+@_engine_thread
 def engine_info() -> dict:
     """Engine + data build. Compare engine_build to the SDE skill's build; any skew means numbers may disagree with layer 1."""
     meta = dict(sqlite3.connect(os.path.join(ARGS.pyfa, 'eve.db'))
