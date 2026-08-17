@@ -127,3 +127,12 @@ local process, so it needs Claude Code or Desktop with MCP configured.
 `.github/workflows/sde-release.yml` polls CCP every 3 hours and republishes
 the layer-1 parts when the build number changes — after every archive
 round-trips, passes integrity checks, and fits the upload limit.
+
+The same poll drives layer 2 (once this workflow is on the default
+branch, where GitHub runs schedules from): on a new build, a second job
+rebuilds the fitting engine's database at that build via
+`fitting/adapter/refresh.sh`, reruns the reference battery — the diff in
+the job summary is the balance-change report — and runs the full engine
+test suite. Pushes that touch `fitting/` run the test suite from any
+branch. The fitting job publishes nothing to the release, so every layer
+stays independently downloadable, in any combination.

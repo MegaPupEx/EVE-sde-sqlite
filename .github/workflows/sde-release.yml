@@ -4,6 +4,17 @@ name: Publish SDE database
 # manifest is ~80 bytes, and the 99 MB archive is only fetched when the build
 # number has actually changed. Most runs exit in seconds having downloaded
 # nothing.
+#
+# One poll, every layer acts on it: when the build number moves, the layer-1
+# release publishes as before, and the fitting-engine job proves layer 2
+# rebuilds cleanly at the *same* build (adapter refresh + reference battery +
+# full test suite) and posts the battery diff — the balance-change report.
+# Layers stay independently installable: the engine job publishes nothing to
+# the release; it only verifies and reports.
+#
+# Note: GitHub runs scheduled workflows from the default branch only, so the
+# fitting jobs go live when the fitting layer merges to main. Pushes that
+# touch fitting/ run the test job from any branch immediately.
 on:
   schedule:
     - cron: "20 */3 * * *"   # every 3 hours at :20 (avoids the on-the-hour rush)
@@ -13,17 +24,28 @@ on:
         description: "Rebuild even if the SDE build number has not changed"
         type: boolean
         default: false
+  push:
+    paths:
+      - "fitting/**"
+      - ".claude/skills/eve-fitting/**"
+      - ".github/workflows/sde-release.yml"
 
 permissions:
   contents: write             # needed to commit the marker and publish releases
 
 concurrency:
-  group: sde-release          # never let two builds race
+  # release runs (schedule/dispatch) all share one group so builds never race;
+  # push-triggered test runs group per branch so they don't queue behind releases
+  group: ${{ github.event_name == 'push' && format('fitting-tests-{0}', github.ref) || 'sde-release' }}
   cancel-in-progress: false
 
 jobs:
   check-and-build:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+      build: ${{ steps.check.outputs.build }}
     steps:
       - uses: actions/checkout@v4
 
@@ -172,3 +194,102 @@ jobs:
           Split rather than combined because the 30 MB per-file upload limit on claude.ai is per *file*: as parts everything fits, including the 3D coordinates a single archive cannot carry.
 
           Built by \`build_sde_db.py\`; schema and query notes are in \`.claude/skills/eve-sde/SKILL.md\`."
+
+  # Layer 2 tracks the same build: rebuild the engine's eve.db from the SDE
+  # export the release above was built from, then prove nothing broke. The
+  # battery diff in the job summary is the balance-change report; the smoke
+  # suite failing after a real balance change is the re-pin signal (update
+  # spike/reference/, eval keys, and any doc examples that moved).
+  fitting-engine:
+    needs: check-and-build
+    if: needs.check-and-build.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        id: py
+        with:
+          python-version: "3.11"
+
+      - name: Cache the pyfa checkout + venv
+        uses: actions/cache@v4
+        with:
+          path: fitting/work
+          key: fitting-work-${{ steps.py.outputs.python-version }}-${{ hashFiles('fitting/spike/setup_pyfa.sh', 'fitting/spike/requirements.txt') }}-${{ needs.check-and-build.outputs.build }}
+          restore-keys: |
+            fitting-work-${{ steps.py.outputs.python-version }}-${{ hashFiles('fitting/spike/setup_pyfa.sh', 'fitting/spike/requirements.txt') }}-
+
+      - name: Set up the engine (pyfa checkout, venv, bundled db)
+        run: |
+          set -euo pipefail
+          fitting/spike/setup_pyfa.sh "$PWD/fitting/work"
+          fitting/work/eosenv/bin/pip install --quiet mcp
+
+      - name: Refresh eve.db at this release's build
+        run: fitting/adapter/refresh.sh --pyfa fitting/work/pyfa --build "${{ needs.check-and-build.outputs.build }}"
+
+      - name: Battery diff vs pinned references (the balance-change report)
+        run: |
+          set -euo pipefail
+          fitting/work/eosenv/bin/python fitting/spike/run_battery.py \
+            --pyfa fitting/work/pyfa --out battery-${{ needs.check-and-build.outputs.build }}
+          echo '## Fitting battery: build ${{ needs.check-and-build.outputs.build }} vs pinned references' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if fitting/work/eosenv/bin/python fitting/spike/compare_panels.py \
+               fitting/spike/reference battery-${{ needs.check-and-build.outputs.build }} \
+               | tee -a "$GITHUB_STEP_SUMMARY"; then
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No balance changes touch the reference fits.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo '**NUMBERS MOVED** — re-pin needed: `fitting/spike/reference/`, eval keys (`fitting/evals/make_keys*.py`), and any doc examples quoting the old figures. The test step below is expected to fail until then.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the battery panels
+        uses: actions/upload-artifact@v4
+        with:
+          name: battery-${{ needs.check-and-build.outputs.build }}
+          path: battery-${{ needs.check-and-build.outputs.build }}
+          retention-days: 30
+
+      - name: Engine selftest + MCP smoke suite
+        run: |
+          set -euo pipefail
+          fitting/work/eosenv/bin/python fitting/engine/selftest.py --pyfa fitting/work/pyfa
+          fitting/work/eosenv/bin/python fitting/mcp/test_server.py --pyfa fitting/work/pyfa
+
+  # Pushes touching the fitting layer: same suite, deterministic (bundled
+  # data build, no CCP fetch), from any branch.
+  fitting-tests:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        id: py
+        with:
+          python-version: "3.11"
+
+      - name: Cache the pyfa checkout + venv
+        uses: actions/cache@v4
+        with:
+          path: fitting/work
+          key: fitting-work-${{ steps.py.outputs.python-version }}-${{ hashFiles('fitting/spike/setup_pyfa.sh', 'fitting/spike/requirements.txt') }}-push
+          restore-keys: |
+            fitting-work-${{ steps.py.outputs.python-version }}-${{ hashFiles('fitting/spike/setup_pyfa.sh', 'fitting/spike/requirements.txt') }}-
+
+      - name: Set up the engine (pyfa checkout, venv, bundled db)
+        run: |
+          set -euo pipefail
+          fitting/spike/setup_pyfa.sh "$PWD/fitting/work"
+          fitting/work/eosenv/bin/pip install --quiet mcp
+
+      - name: Engine selftest + MCP smoke suite
+        run: |
+          set -euo pipefail
+          fitting/work/eosenv/bin/python fitting/engine/selftest.py --pyfa fitting/work/pyfa
+          fitting/work/eosenv/bin/python fitting/mcp/test_server.py --pyfa fitting/work/pyfa

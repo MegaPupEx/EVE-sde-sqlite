@@ -369,3 +369,24 @@ refreshes when `refresh.sh` is run. Between the two, `engine_info()` vs
 `meta.sdeBuildNumber` names the gap — which is the designed behavior,
 not a bug. CI running `refresh.sh` + battery-diff per CCP build (the
 auto-generated balance report) stays on the backlog.
+
+### 2026-08-17 — CI: one poll, both layers
+
+The layer-1 release workflow grows two jobs instead of a sibling file, so
+there is exactly one CCP poll and one "build changed" decision. On a new
+build (schedule/dispatch, default branch only — GitHub's rule for
+schedules): `fitting-engine` restores a cached pyfa checkout + venv,
+runs `refresh.sh --build <N>` (the same build the release job just
+published), reruns the reference battery with the diff posted to the job
+summary — an empty diff is "no balance change touches the fits", a
+non-empty one is the auto-generated re-pin worklist — then runs selftest
+plus the full MCP smoke suite, whose pinned assertions are the
+enforcement: a real balance change turns the job red until references,
+keys and docs are re-pinned. On any push touching `fitting/` (any
+branch): `fitting-tests` runs the same suite against the bundled data
+build, deterministic. The engine job uploads its battery panels as a
+workflow artifact and adds nothing to the release, keeping every layer
+independently installable. Concurrency groups split so push-test runs
+never queue behind release builds; the marker-commit push can't
+retrigger the workflow (path-filtered, and GITHUB_TOKEN pushes don't
+fire workflows anyway).

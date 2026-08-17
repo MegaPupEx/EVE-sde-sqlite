@@ -242,7 +242,12 @@ class this project exists to kill. Therefore:
   numerically identical to the 3424810 keys). Layer 1's release workflow
   polls CCP every 3 h, so "both layers current" is: let the workflow
   publish, run `refresh.sh` — the runtime build check guards the gap
-  between the two.
+  between the two. Same-day follow-up: the release workflow itself now
+  carries a `fitting-engine` job off the same poll (refresh at the new
+  build + battery diff in the job summary + full test suite; goes live
+  when the workflow reaches the default branch) and a `fitting-tests`
+  job on every push touching `fitting/`. Release assets untouched —
+  layers remain independently installable.
 
 ### The fitting-knowledge skill (the docs half)
 
