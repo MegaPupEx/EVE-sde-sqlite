@@ -112,12 +112,20 @@ def _problems(fit):
             (fit.calibrationUsed, attr('upgradeCapacity') or 0, 'calibration')):
         if used > (total or 0):
             out.append(f'{name} over: {used:g} / {total or 0:g}')
-    for slot, label in ((FittingSlot.LOW, 'low'), (FittingSlot.MED, 'med'),
-                        (FittingSlot.HIGH, 'high'), (FittingSlot.RIG, 'rig'),
-                        (FittingSlot.SUBSYSTEM, 'subsystem')):
-        free = fit.getSlotsFree(slot)
-        if free < 0:
-            out.append(f'{label} slots over by {-free}')
+    # Count rack usage by slot VALUE: eos getSlotsUsed compares `mod.slot is
+    # type` (enum identity), and EFT-built modules carry plain ints, so it
+    # silently counts zero. Found by eval run 3 — a 4-mid fit validated clean.
+    from collections import Counter
+    used_by_slot = Counter(int(m.slot) for m in fit.modules
+                           if not m.isEmpty and m.slot is not None)
+    for slot, label, attr_name in (
+            (FittingSlot.LOW, 'low', 'lowSlots'), (FittingSlot.MED, 'med', 'medSlots'),
+            (FittingSlot.HIGH, 'high', 'hiSlots'), (FittingSlot.RIG, 'rig', 'rigSlots'),
+            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems')):
+        total = attr(attr_name) or 0
+        over = used_by_slot.get(int(slot), 0) - total
+        if over > 0:
+            out.append(f'{label} slots over by {over:g}')
     for hp, label in ((FittingHardpoint.TURRET, 'turret'), (FittingHardpoint.MISSILE, 'launcher')):
         free = fit.getHardpointsFree(hp)
         if free < 0:

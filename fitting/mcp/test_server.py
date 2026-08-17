@@ -205,6 +205,14 @@ async def main(pyfa):
             except RuntimeError as e:
                 assert 'does not fit' in str(e), e
 
+            # rack overflow is flagged (eval run 3: a 4-mid fit once validated clean)
+            oni = await call('import_fit', eft='[Omen Navy Issue, slots]\n'
+                             '10MN Afterburner II\nWarp Scrambler II\n'
+                             'X5 Enduring Stasis Webifier\nCap Recharger II')
+            oni_val = await call('validate_fit', fit_id=oni['fit_id'])
+            assert any('med slots over by 1' in p for p in oni_val['problems']), oni_val
+            await call('delete_fit', fit_id=oni['fit_id'])
+
             # T3D mode swap moves signature
             conf = await call('create_fit', ship='Confessor')
             await call('edit_fit', fit_id=conf['fit_id'], ops=[
