@@ -40,3 +40,8 @@ first graded run):
 - **Battery wart, now load-bearing:** the Hurricane (1,681/1,425) and
   Vexor (985/875) reference fits are PG-over — coverage fits, never
   legality-checked. E5/T2 use that as a discipline probe.
+
+**Grading axes, generation 3 onward:** K/M/D/P plus **C (concision)** —
+graded against the skill's answer-economy budgets (fit review ~200 words,
+follow-up ~100, lookup ~50; verdict once, numbers once, provenance one
+line). Run-3 answers (`results3-2026-08-17.md`) are the "before" corpus.
