@@ -1,121 +1,96 @@
 # eve-sde-sqlite
 
-CCP ships EVE Online's static data as ~100 JSONL files. This turns them into one
-indexed SQLite database, and documents the traps in the data.
+Tools that let a Claude chat answer EVE Online questions accurately, with
+sources, at low token cost. Three layers, each verified against the one
+below it:
 
-## Download
+| Layer | What it answers | Status |
+| --- | --- | --- |
+| **1. SDE skill** (`.claude/skills/eve-sde`) | what the game data says — ships, modules, dogma, industry, the universe | done; auto-released |
+| **2. Fitting engine** (`fitting/`) | what happens when you combine things — fits, stats, stacking | engine + MCP server working; knowledge skill next |
+| **3. Knowledge base** | what players know — mechanics, doctrine, strategy | planned |
 
-[**Releases**](../../releases/latest) carries the SDE split by domain,
-republished within hours of each CCP release. Fetch only what a question needs:
+Design and status: [`docs/roadmap-fitting-mcp.md`](docs/roadmap-fitting-mcp.md) ·
+[`docs/spike-log.md`](docs/spike-log.md) ·
+[`docs/fitting-formulas.md`](docs/fitting-formulas.md)
+
+## Layer 1 — the SDE as SQLite, plus the skill that reads it safely
+
+CCP ships EVE's static data as ~100 JSONL files. `build_sde_db.py` turns
+them into one indexed SQLite database; the skill documents the traps —
+columns that return plausible wrong numbers instead of errors.
+
+**Download** ([Releases](../../releases/latest), republished within hours of
+each CCP build, split by domain so each part fits claude.ai's 30 MB
+per-file upload limit):
 
 | Part | Size | Covers |
 | --- | --- | --- |
-| `eve-sde-moons.sqlite.xz` | ~20 MB | all 344k moons with physical statistics |
-| `eve-sde-universe.sqlite.xz` | ~8 MB | systems, planets, belts, gates, stations, 3D coordinates |
-| `eve-sde-items.sqlite.xz` | ~7 MB | types, dogma attributes and effects, reprocessing |
-| `eve-sde-world.sqlite.xz` | ~1.4 MB | missions, dungeons, agents, corps, certificates |
-| `eve-sde-industry.sqlite.xz` | ~0.5 MB | blueprints, schematics, assembly lines |
-| `eve-sde-cosmetic.sqlite.xz` | ~0.4 MB | skins, graphics, icons |
-| `eve-sde-misc.sqlite.xz` | ~0.01 MB | the remainder |
-
-Moons are their own part because they are 344,457 rows — over half the universe
-data — and are asked about far less often than systems and planets.
+| `eve-sde-moons.sqlite.xz` | ~20 MB | all 344k moons |
+| `eve-sde-universe.sqlite.xz` | ~8 MB | systems, planets, gates, stations, coordinates |
+| `eve-sde-items.sqlite.xz` | ~7 MB | types, dogma attributes/effects, reprocessing |
+| `eve-sde-world.sqlite.xz` | ~1.4 MB | missions, agents, corps, certificates |
+| `eve-sde-industry.sqlite.xz` | ~0.5 MB | blueprints, PI schematics |
+| `eve-sde-cosmetic.sqlite.xz` + `misc` | ~0.4 MB | skins, icons, the remainder |
 
 ```bash
 BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
-curl -sSLO $BASE/eve-sde-universe.sqlite.xz
-curl -sSLO $BASE/eve-sde-items.sqlite.xz
-xz -d eve-sde-*.sqlite.xz
+curl -sSLO $BASE/eve-sde-universe.sqlite.xz && xz -d eve-sde-*.xz   # keep published names
 ```
 
-Use `-O`, not `-o name.xz` — the examples below expect the files to keep their
-published names.
-
-Each part is a complete SQLite database. `ATTACH` several to join across them —
-splitting costs nothing at query time. Together they reassemble to the whole
-export exactly: same tables, same row counts.
-
-Split rather than one file because the 30 MB upload limit on claude.ai is **per
-file**. One combined archive fits only by dropping the 3D coordinates; as parts,
-everything fits with room to spare. Build one locally with
-`--complete --compress xz` if you would rather have a single file.
-
-## Build
+**Or build from CCP directly** (stdlib only, ~30 s, always current build):
 
 ```bash
-python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete                        # 107 tables, 147 MB
-python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete --compress xz          # + 27 MB archive
-python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete --split --compress xz  # one file per domain
+python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete            # 107 tables
+python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete --split --compress xz
 ```
 
-Standard library only. Reads CCP's build manifest at runtime, so it always
-fetches the current build. Needs `developers.eveonline.com`.
+**Query**: each part is a complete database; `ATTACH` several and join
+across them (most real questions need two). Python's built-in `sqlite3`
+needs no install. Two mechanical warnings: `ATTACH` on a mistyped path
+silently creates an empty database, and four columns produce wrong answers
+rather than errors — resonance is inverted (`0.4` = 60% resist), `security`
+alone doesn't identify nullsec (filter `space = 'kspace'`), ship skill
+requirements are dogma not `bp_skills`, and `basePrice` is not a market
+price. Full column reference and trap catalogue:
+[`SKILL.md`](.claude/skills/eve-sde/SKILL.md). Claims are pinned to build
+3466501 — `scripts/verify_claims.py` re-checks all 138 on any newer build.
 
-| Flag | Effect |
+**Use as a skill**: loads automatically in this repo. Elsewhere:
+`cp -r .claude/skills/eve-sde ~/.claude/skills/`, or zip that folder and
+upload under Settings → Capabilities → Skills in the Claude apps, then
+attach the `.xz` parts a question needs.
+
+Not in the SDE (use [ESI](https://esi.evetech.net)): market prices, kills,
+sovereignty, character data.
+
+## Layer 2 — the fitting engine
+
+Wraps **pyfa's** battle-tested calculation engine (`eos`) headless — no
+GUI, no reimplemented math — and serves it to Claude as an MCP server with
+stateful fits addressed by ID. Verified panel-for-panel identical to
+desktop pyfa; runs on the same SDE build as layer 1.
+
+| Piece | What |
 | --- | --- |
-| *(none)* | 26 hand-shaped tables: items, dogma, industry, universe |
-| `--complete` | +81 tables and moon statistics — missions, dungeons, agents, ship traits, certificates, schematics |
-| `--split` | one database per domain |
-| `--compress {xz,gz,bz2}` | compressed copy; xz reaches 27 MB |
-| `--portable` | drops descriptions, unpublished types, moons |
-
-`--complete`'s extra tables are generic-ingested, so nested fields are JSON —
-query with `json_extract()`. The 26 core tables are hand-shaped either way.
-
-## Query
-
-Planet types live in `items` and planets live in `universe`, so this needs both
-parts attached — most real questions cross a part boundary:
-
-```python
-import sqlite3
-db = sqlite3.connect(":memory:")
-db.execute("ATTACH DATABASE 'eve-sde-universe.sqlite' AS universe")
-db.execute("ATTACH DATABASE 'eve-sde-items.sqlite'    AS items")
-
-db.execute('''
-  SELECT p.celestialIndex, t.name, p.radius, p.surfaceGravity
-  FROM universe.planets p
-  JOIN universe.systems s ON s.solarSystemID = p.solarSystemID
-  JOIN items.types      t ON t.typeID = p.typeID
-  WHERE s.name = 'TK-DLH'
-  ORDER BY p.celestialIndex''').fetchall()
-```
-
-There is no `sqlite3` CLI on many systems; Python's built-in `sqlite3` module
-needs no install. **`ATTACH` on a path that does not exist silently creates an
-empty database** — so a mistyped filename surfaces later as `no such table`,
-pointing at your SQL instead of at the typo.
-
-Four things produce wrong answers rather than errors:
-
-- **Damage resonance is inverted** — `0.4` means 60% resist.
-- **`security` alone does not identify nullsec** — wormhole, abyssal and void
-  systems all read `-0.99`. Filter `space = 'kspace'`.
-- **Ship skill requirements are dogma** (`requiredSkill1..6`), not `bp_skills`.
-- **`basePrice` is not a market price** and is empty for most items.
-
-Full column reference and the rest of the traps:
-[`.claude/skills/eve-sde/SKILL.md`](.claude/skills/eve-sde/SKILL.md).
-
-Not in the SDE: market prices, kills, sovereignty, character data. Those are
-live — use [ESI](https://esi.evetech.net).
-
-## With Claude
-
-The skill loads automatically in this repo. Elsewhere:
+| [`fitting/mcp/`](fitting/mcp/) | the server: 11 tools (import/edit/stats/compare/validate…), ~880 tokens standing, ~290 per edit+stats step |
+| [`fitting/engine/`](fitting/engine/) | EFT parse/build/render + the stat panel |
+| [`fitting/adapter/`](fitting/adapter/) | regenerates pyfa's data from CCP's current export — engine and skill share one data source |
+| [`fitting/spike/`](fitting/spike/) | reproducible setup + the 10-fit reference battery every change is graded against |
 
 ```bash
-cp -r .claude/skills/eve-sde ~/.claude/skills/     # every project on this machine
+fitting/spike/setup_pyfa.sh work && work/eosenv/bin/pip install mcp
+work/eosenv/bin/python fitting/mcp/test_server.py --pyfa work/pyfa   # full smoke test
 ```
 
-For Claude apps, zip that folder and upload it under Settings → Capabilities →
-Skills, then attach a `.xz` to the conversation. xz matters: it fits the 30 MB
-per-file upload limit where gzip does not.
+Registration and tool list: [`fitting/mcp/README.md`](fitting/mcp/README.md).
+Unlike layer 1, this layer is a *process*, not an upload: it needs Python,
+a pyfa checkout and the MCP registration — Claude Code and Claude Desktop
+territory. The upcoming fitting-knowledge skill (the interpretation half)
+will be a normal uploadable skill that pairs with it.
 
 ## Automation
 
-`.github/workflows/sde-release.yml` polls CCP every 3 hours and rebuilds only
-when the build number changes, so a typical run costs seconds and downloads
-nothing. It refuses to publish unless every archive round-trips, passes an
-integrity check, and fits the upload limit.
+`.github/workflows/sde-release.yml` polls CCP every 3 hours and republishes
+the layer-1 parts when the build number changes — after every archive
+round-trips, passes integrity checks, and fits the upload limit.
