@@ -1,3 +1,6 @@
 .sde-cache/
 *.sqlite
 __pycache__/
+fitting/work/
+fitting/mcp/work/
+fitting/spike/work/
