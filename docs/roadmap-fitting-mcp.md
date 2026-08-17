@@ -159,15 +159,15 @@ the rest is dropped.**
    graphs the ramp — all via eos's own `SpoolOptions`/`calculateSpoolup`.
    Both eval key sets verified unchanged across the default switch;
    T11 rewritten to quote the band.
-4. **Projection & application realism** — two halves of one feature.
-   Projection: `set_projected` at actual ranges with falloff-aware
-   ewar/rep strength (`ProjectedFit.projectionRange` is already plumbed
-   in eos), plus an `ewar_vs_range` graph kind. Application: target
-   signature and speed as first-class context for **both** weapon
-   systems — turrets (tracking vs transversal, sig vs resolution) and
-   missiles (explosion radius/velocity vs target sig/speed) — so
-   "what does this fit do to a frigate under it" is one computed
-   answer, not a graph the model must interpolate by hand.
+4. ~~**Projection & application realism**~~ *landed 2026-08-17* —
+   `set_projected` takes `{fit_id, range_km}` entries (falloff-aware via
+   eos's own `ProjectedFit.projectionRange` → `calculateRangeFactor`;
+   bare ids stay zero-range), `ewar_vs_range` graphs a projected
+   module's effectiveness band, and `applied_dps(fit, distance_km,
+   target={sig_m, speed_ms})` answers "what does this fit do to that
+   hull there" in one call via pyfa's `getApplicationPerKey` (turrets,
+   missiles, drones, fighters; raw-vs-applied per source class;
+   wrecking-shot ~1.015× at perfect application pinned in tests).
 5. **Structures (Upwell)** — eos has the `isStructure` calc branch.
    Needs: structure hulls in `create_fit`, service-slot fitting rules
    and separate validation, service-module *interactions* checked, fuel
