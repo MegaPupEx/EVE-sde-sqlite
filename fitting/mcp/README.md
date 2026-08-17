@@ -113,5 +113,13 @@ silently ignored.
   mutaplasmid's band; export → reimport round-trips to identical stats. A
   bare abyssal type name with no mutation block is rejected loudly — the
   roll is the data.
-- Not yet here (tracked in the roadmap's v2 list): siege states,
-  spool-up, structures, custom skill sheets, fighter ability toggles.
+- Siege-class states (bastion/siege/triage) are ordinary active modules:
+  fit and activate, the panel is the in-state ship, `validate_fit`
+  enforces the hull restriction, and a `notes` line names the costs the
+  panel can't show. Bastion's resist bonus multiplies in the `preMul`
+  penalty group while hardeners boost in `postPercent` — separate
+  chains, verified in the smoke test (0.675 × 0.700 = 0.4725).
+- Not yet here (tracked in the roadmap's v2 list): spool-up, projection
+  ranges/application context, structures, full fighter abilities.
+  Out of scope: industrial core, custom skill sheets, heat-over-time,
+  ISK cost.

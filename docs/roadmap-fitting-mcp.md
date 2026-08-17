@@ -137,19 +137,21 @@ Everything left, with what building each requires:
 **v2 scope settled 2026-08-17 (owner's cut): the five items below, and
 the rest is dropped.**
 
-2. **Siege-class states** (siege, bastion, triage — the three named in
-   scope; industrial core follows the same mechanism if ever wanted) —
-   modules whose effects fire in a special state. Needs: a battery fit
-   per class (start: bastion Golem), verification the effects run
-   headless, and name-it rules for the side conditions the panel can't
-   show (no remote reps in bastion, immobility). **Bastion sourcing
-   requirement (owner-flagged):** bastion's resist bonus is reputed to
-   interact with stacking differently than a normal hardener — the
-   implementation must derive the actual behavior from the dogma effect
-   data (modifier definitions + per-attribute `stackable` flags) and
-   verify it in the engine, and the docs must cite exactly that source,
-   the way T1's burst-vs-beacon split was settled. No wiki folklore as
-   the authority.
+2. ~~**Siege-class states**~~ *landed 2026-08-17* (siege, bastion,
+   triage; industrial core stays out of scope). The effects turned out
+   to run headless as ordinary active modules — the work was
+   verification and productizing: three battery fits (bastion Golem,
+   siege Phoenix, triage Minokawa; battery now 13 fits / 572 pinned
+   leaves), hull-restriction legality in `validate_fit` (`fit.canFit` +
+   capital-size — a bastion Rifter now fails), and a `notes` line naming
+   the state's unshowable costs. **Bastion sourcing requirement:
+   fulfilled** — the answer came from the `moduleBonusBastionModule`
+   effect handler + eos's per-group penalized calculator: bastion
+   multiplies resonance in the `preMul` penalty group, hardeners boost
+   in `postPercent`, groups penalize independently, so the chains never
+   meet (engine: 0.675 × 0.700 = 0.4725 exactly; same-chain would be
+   0.4990); hull resists exempt outright. Documented as traps §T16 with
+   the source named.
 3. **Spool across time** — DPS quotable at named spool levels/times.
    eos already carries `SpoolOptions`; needs a `spool` parameter on
    `get_stats`/`graph` (or dps_at_0/50/100 keys), a `dps_vs_time` graph

@@ -182,3 +182,27 @@ of `{_key, min, max}` per mutaplasmid, applicable/resulting types in
 reachable window — enumerate candidates in SQL, then build only the
 winner in the engine to verify it in fit context (ship bonuses and heat
 land on top of the roll).
+
+## T16 — Bastion stacks in its own chain, and siege-class numbers assume the state
+
+Bastion, siege and triage are ordinary active modules to the engine —
+fit the module, set it `active`, and the panel is the in-state ship
+(sieged Phoenix: ~15× torpedo DPS, speed 0; triage Minokawa: a Capital
+RSB cycles 5.5× the HP in a quarter of the time). Two rules ride along:
+
+- **Bastion's resist bonus never dilutes your hardeners.** Hardeners
+  boost resonance in the `postPercent` penalty group; bastion
+  *multiplies* resonance in the `preMul` group — and stacking penalties
+  compute per group, so the two chains never see each other.
+  Engine-verified (Golem, build 3470007): one hardener ×0.675, bastion
+  ×0.700, together 0.4725 = exactly 0.675 × 0.700 — where a same-chain
+  second module would have given 0.4990. A second *hardener* penalizes
+  normally (×0.7175). Bastion's hull resist bonus is stacking-exempt
+  outright. Source: the `moduleBonusBastionModule` dogma effect as
+  implemented in pyfa's effect handlers plus eos's per-group penalized
+  calculator — not wiki folklore; re-derive it there if a patch moves it.
+- **The panel is the state, not the fight.** Numbers assume the cycle is
+  running; the costs the panel can't show — immobility (speed 0 *is*
+  shown), remote assistance impedance, in-game weapon locks, the
+  end-of-cycle vulnerability — arrive as a `notes` line naming the
+  module. Quote the note with the numbers.

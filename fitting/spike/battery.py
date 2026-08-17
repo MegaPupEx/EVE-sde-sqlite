@@ -235,4 +235,46 @@ FITS = [
         ],
         'drones': [],
     },
+    {
+        'name': 'golem-bastion-shield',
+        'ship': 'Golem',
+        'exercises': 'bastion state: preMul resist chain beside postPercent hardener, '
+                     'torpedo marauder, local shield boost bonus',
+        'modules': [
+            ('Torpedo Launcher II', 'Mjolnir Torpedo'),
+            ('Torpedo Launcher II', 'Mjolnir Torpedo'),
+            ('Torpedo Launcher II', 'Mjolnir Torpedo'),
+            ('Torpedo Launcher II', 'Mjolnir Torpedo'),
+            ('Bastion Module I', None),
+            ('Multispectrum Shield Hardener II', None),
+            ('X-Large Shield Booster II', None),
+            ('Ballistic Control System II', None),
+            ('Damage Control II', None),
+        ],
+        'drones': [],
+    },
+    {
+        'name': 'phoenix-siege-torp',
+        'ship': 'Phoenix',
+        'exercises': 'siege state: weapon multiplier, immobility (speed 0 in panel)',
+        'modules': [
+            ('XL Torpedo Launcher II', 'Mjolnir XL Torpedo'),
+            ('XL Torpedo Launcher II', 'Mjolnir XL Torpedo'),
+            ('XL Torpedo Launcher II', 'Mjolnir XL Torpedo'),
+            ('Siege Module II', None),
+            ('Ballistic Control System II', None),
+        ],
+        'drones': [],
+    },
+    {
+        'name': 'minokawa-triage',
+        'ship': 'Minokawa',
+        'exercises': 'triage state: remote rep amount and cycle bonuses on a FAX',
+        'modules': [
+            ('Capital Remote Shield Booster II', None),
+            ('Triage Module II', None),
+            ('Capital Shield Extender II', None),
+        ],
+        'drones': [],
+    },
 ]

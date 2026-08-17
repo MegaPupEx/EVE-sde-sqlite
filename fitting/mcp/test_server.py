@@ -376,10 +376,42 @@ async def main(pyfa):
             assert lx4 == lx3, 'sweep must not disturb rack layout'
             await call('delete_fit', fit_id=lay['fit_id'])
 
+            # siege-class states: bastion's preMul resist chain multiplies the
+            # hardener's postPercent chain at full strength (engine-verified
+            # 0.675 x 0.700 = 0.4725); hull restriction rejects bastion
+            # off-marauder; siege multiplies dps and pins speed to 0; triage
+            # boosts remote rep amount and cycle
+            gol = await call('import_fit', eft='[Golem, bast]\n'
+                             'Multispectrum Shield Hardener II\n\nBastion Module I')
+            g_stats = await call('get_stats', fit_id=gol['fit_id'])
+            em = g_stats['defense']['resists']['shield']['em']
+            assert abs(em - 0.5275) < 0.002, f'bastion+hardener em resist {em}'
+            assert any('Bastion' in n for n in g_stats.get('notes', [])), g_stats.get('notes')
+            gv = await call('validate_fit', fit_id=gol['fit_id'])
+            assert gv['legal'], gv
+            bad = await call('import_fit', eft='[Rifter, bad]\nBastion Module I')
+            bv = await call('validate_fit', fit_id=bad['fit_id'])
+            assert any('cannot be fitted' in p for p in bv['problems']), bv
+            phx = await call('import_fit', eft='[Phoenix, siege]\n'
+                             'XL Torpedo Launcher II, Mjolnir XL Torpedo\nSiege Module II')
+            p_stats = await call('get_stats', fit_id=phx['fit_id'])
+            assert p_stats['offense']['dps'] > 1500, p_stats['offense']
+            assert p_stats['navigation']['max_velocity_ms'] == 0, p_stats['navigation']
+            mino = await call('import_fit', eft='[Minokawa, tri]\n'
+                              'Capital Remote Shield Booster II\nTriage Module II')
+            tri = await call('module_attrs', fit_id=mino['fit_id'],
+                             item='Capital Remote Shield Booster II',
+                             attrs=['shieldBonus', 'duration'])
+            assert tri['modules'][0]['attrs']['shieldBonus'] > 7000, tri
+            assert tri['modules'][0]['attrs']['duration'] == 5000, tri
+            for f in (gol, bad, phx, mino):
+                await call('delete_fit', fit_id=f['fit_id'])
+
             info = await call('engine_info')
             assert info['engine_build'], info
             assert 'environment effects' not in info['unmodeled'], 'env is modeled now'
             assert 'mutated modules' not in info['unmodeled'], 'mutations are modeled now'
+            assert not any('siege' in u for u in info['unmodeled']), 'siege states modeled now'
             await call('delete_fit', fit_id=c['fit_id'])
 
             print(f"\nengine_build: {info['engine_build']} | all assertions passed")

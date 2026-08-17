@@ -508,3 +508,36 @@ already covered by layer 1 — `controlTowerResources` for towers, and
 gotchas-industry now documents the Upwell per-service fuel dogma next to
 it), and full fighter support. Dropped: custom skill sheets,
 heat-over-time, ISK/ESI.
+
+### 2026-08-17 — v2 item 1: siege/bastion/triage land; bastion stacking sourced
+
+The headline finding: the three states were never unmodeled — they were
+*unverified*. Bastion, siege and triage modules are ordinary active
+modules to eos; their effects fire headless with `state: active` and the
+panel simply becomes the in-state ship (Phoenix torps 126 → 1,890 dps
+sieged at 3 launchers ≈ 15×, speed 0; Minokawa Capital RSB 1,437 hp /
+20 s → 7,906 hp / 5 s in triage).
+
+The owner-flagged bastion question — "where do you find the weird
+stacking rule" — resolved from primary sources, not the wiki: pyfa's
+`moduleBonusBastionModule` handler multiplies each resonance with
+`stackingPenalties=True, penaltyGroup='preMul'` (hull layer:
+`penalize=False`), ordinary hardeners boost resonance in the default
+`postPercent` group, and eos's calculator penalizes **per group**
+(`__penalizedMultipliers[attr][group]`). Separate groups = separate
+chains, so bastion never dilutes hardeners and vice versa.
+Engine-verified on a Golem: hardener ×0.675, bastion ×0.700, both
+0.4725 — the product exactly, where same-chain math gives 0.4990; a
+second hardener meanwhile penalizes normally (×0.7175). Now traps §T16,
+source named.
+
+Productized: battery grows bastion-Golem / siege-Phoenix /
+minokawa-triage reference fits (13 fits, 572 pinned leaves, old 10
+byte-identical); `validate_fit` gains the in-game hull restrictions
+(`fit.canFit`: canFitShipType/Group + fitsToShipType + Standup split,
+plus the capital-size rule) so a bastion Rifter finally fails loudly;
+`get_stats` appends a note naming any active siege-class state and what
+it costs; smoke suite pins the resist product, the restriction, sieged
+dps/immobility and triage rep numbers. `engine_info` unmodeled now
+carries 'industrial core state' (out of scope) instead of 'siege
+states'.

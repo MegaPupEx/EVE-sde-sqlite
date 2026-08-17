@@ -156,6 +156,18 @@ def _problems(fit):
         free = fit.getHardpointsFree(hp)
         if free < 0:
             out.append(f'{label} hardpoints over by {-free}')
+    # Hull restrictions (canFitShipType/Group, fitsToShipType, Standup split)
+    # and the capital-size rule — a Bastion Module on a Rifter must not
+    # validate clean. eos's own checks, module by module.
+    from eos.saveddata.citadel import Citadel
+    capital_hull = isinstance(fit.ship, Citadel) or (attr('isCapitalSize') or 0) == 1
+    for mod in fit.modules:
+        if mod.isEmpty:
+            continue
+        if not fit.canFit(mod.item):
+            out.append(f'{mod.item.typeName} cannot be fitted to {fit.ship.item.typeName}')
+        elif not capital_hull and mod.isCapitalSize:
+            out.append(f'{mod.item.typeName} is capital-sized; {fit.ship.item.typeName} is not')
     bw = sum(d.getModifiedItemAttr('droneBandwidthUsed') * d.amountActive for d in fit.drones)
     if bw > (attr('droneBandwidth') or 0):
         out.append(f'drone bandwidth over: {bw:g} / {attr("droneBandwidth") or 0:g}')
@@ -495,7 +507,17 @@ def get_stats(fit_id: str, profile: dict = None) -> dict:
     # A silent zero-spool number cost a graded eval miss (2026-08-17): name it.
     if any(not m.isEmpty and 'damageMultiplierBonusPerCycle' in m.item.attributes
            for m in fit.modules):
-        panel['notes'] = ['spool-up unmodeled: dps/volley are zero-spool floors']
+        panel.setdefault('notes', []).append(
+            'spool-up unmodeled: dps/volley are zero-spool floors')
+    # Siege-class states (bastion/siege/triage share dogma group 'Siege
+    # Module'): the numbers assume the state is running; name what it costs.
+    siege = sorted({m.item.typeName for m in fit.modules
+                    if not m.isEmpty and m.item.group.name == 'Siege Module'
+                    and m.state >= FittingModuleState.ACTIVE})
+    if siege:
+        panel.setdefault('notes', []).append(
+            f'{", ".join(siege)} active: stats assume the state is running; '
+            'ship is immobile and remote assistance is impeded for the duration')
     return panel
 
 
@@ -700,7 +722,7 @@ def engine_info() -> dict:
     return {
         'engine': 'pyfa-eos (headless)',
         'engine_build': meta.get('client_build'),
-        'unmodeled': ['siege states', 'spool-up',
+        'unmodeled': ['industrial core state', 'spool-up',
                       'structures', 'custom skill sheets',
                       'fighter ability toggles (standard attack only)',
                       'heat burnout timers (overload bonuses ARE modeled: state overheated)'],

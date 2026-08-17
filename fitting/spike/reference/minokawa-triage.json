@@ -1,0 +1,105 @@
+{
+ "name": "minokawa-triage",
+ "ship": "Minokawa",
+ "exercises": "triage state: remote rep amount and cycle bonuses on a FAX",
+ "meta": {
+  "engine": "pyfa-eos",
+  "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
+  "engine_client_build": "3470007",
+  "engine_dump_time": "1786976710",
+  "character": "all-5",
+  "damage_profile": "uniform",
+  "generated": "2026-08-17"
+ },
+ "modules": [
+  [
+   "Capital Remote Shield Booster II",
+   null
+  ],
+  [
+   "Triage Module II",
+   null
+  ],
+  [
+   "Capital Shield Extender II",
+   null
+  ]
+ ],
+ "drones": [],
+ "stats": {
+  "fitting": {
+   "cpu": [
+    367.0,
+    1156.25
+   ],
+   "powergrid": [
+    274375.0,
+    593750.0
+   ],
+   "calibration": [
+    0,
+    400.0
+   ]
+  },
+  "defense": {
+   "hp": {
+    "shield": 221250.0,
+    "armor": 100000.0,
+    "hull": 137500.0
+   },
+   "resists": {
+    "shield": {
+     "em": 0.2,
+     "thermal": 0.36,
+     "kinetic": 0.52,
+     "explosive": 0.6
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.45,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "ehp_uniform": {
+    "shield": 381465.5,
+    "armor": 148148.1,
+    "hull": 205223.9
+   },
+   "ehp_total_uniform": 734837.5,
+   "shield_regen_peak_hps": 49.17
+  },
+  "offense": {
+   "dps_burst": 0.0,
+   "dps_sustained": 0.0,
+   "dps_drones": 0,
+   "volley": 0.0
+  },
+  "capacitor": {
+   "capacity_gj": 79687.5,
+   "recharge_time_s": 3187.5,
+   "stable": false,
+   "stable_pct_or_ttl_s": 310.0
+  },
+  "navigation": {
+   "max_velocity_ms": 0.0,
+   "align_time_s": 294.234,
+   "signature_m": 11900.0,
+   "mass_kg": 13000000000.0,
+   "warp_speed_aus": 1.5
+  },
+  "targeting": {
+   "scan_resolution_mm": 687.5,
+   "lock_range_km": 143.75,
+   "sensor_strength": 84.0,
+   "max_targets": 12,
+   "lock_time_frigate_35m_s": 3.22
+  }
+ }
+}

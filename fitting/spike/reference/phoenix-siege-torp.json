@@ -1,0 +1,113 @@
+{
+ "name": "phoenix-siege-torp",
+ "ship": "Phoenix",
+ "exercises": "siege state: weapon multiplier, immobility (speed 0 in panel)",
+ "meta": {
+  "engine": "pyfa-eos",
+  "pyfa_commit": "8b04f3b271e614b3e103853b44a7851a63d79d0e",
+  "engine_client_build": "3470007",
+  "engine_dump_time": "1786976710",
+  "character": "all-5",
+  "damage_profile": "uniform",
+  "generated": "2026-08-17"
+ },
+ "modules": [
+  [
+   "XL Torpedo Launcher II",
+   "Mjolnir XL Torpedo"
+  ],
+  [
+   "XL Torpedo Launcher II",
+   "Mjolnir XL Torpedo"
+  ],
+  [
+   "XL Torpedo Launcher II",
+   "Mjolnir XL Torpedo"
+  ],
+  [
+   "Siege Module II",
+   null
+  ],
+  [
+   "Ballistic Control System II",
+   null
+  ]
+ ],
+ "drones": [],
+ "stats": {
+  "fitting": {
+   "cpu": [
+    521.25,
+    1237.5
+   ],
+   "powergrid": [
+    402001.0,
+    687500.0
+   ],
+   "calibration": [
+    0,
+    400.0
+   ]
+  },
+  "defense": {
+   "hp": {
+    "shield": 130250.0,
+    "armor": 108500.0,
+    "hull": 130250.0
+   },
+   "resists": {
+    "shield": {
+     "em": 0.2,
+     "thermal": 0.36,
+     "kinetic": 0.52,
+     "explosive": 0.6
+    },
+    "armor": {
+     "em": 0.5,
+     "thermal": 0.45,
+     "kinetic": 0.25,
+     "explosive": 0.1
+    },
+    "hull": {
+     "em": 0.33,
+     "thermal": 0.33,
+     "kinetic": 0.33,
+     "explosive": 0.33
+    }
+   },
+   "ehp_uniform": {
+    "shield": 224569.0,
+    "armor": 160740.7,
+    "hull": 194403.0
+   },
+   "ehp_total_uniform": 579712.7,
+   "shield_regen_peak_hps": 28.94
+  },
+  "offense": {
+   "dps_burst": 6970.82,
+   "dps_sustained": 6812.74,
+   "dps_drones": 0,
+   "volley": 100136.95
+  },
+  "capacitor": {
+   "capacity_gj": 65625.0,
+   "recharge_time_s": 2887.5,
+   "stable": true,
+   "stable_pct_or_ttl_s": 100
+  },
+  "navigation": {
+   "max_velocity_ms": 0.0,
+   "align_time_s": 300.814,
+   "signature_m": 11200.0,
+   "mass_kg": 12700000000.0,
+   "warp_speed_aus": 1.5
+  },
+  "targeting": {
+   "scan_resolution_mm": 87.5,
+   "lock_range_km": 143.75,
+   "sensor_strength": 57.6,
+   "max_targets": 7,
+   "lock_time_frigate_35m_s": 25.32
+  }
+ }
+}
