@@ -91,14 +91,22 @@ Rules around the formula, all load-bearing:
   rate-of-fire `speed` (51) are `stackable = 0`. Read the flag, don't guess.
 - **Environmental effects are stack-penalized; command bursts are not — for
   different reasons.** Wormhole/weather Effect Beacons are category 2
-  (Celestial), which is *not* exempt: a Pulsar's shield bonus joins the same
-  penalty chain as your shield modules. Command bursts apply through the
-  warfare-buff system (`dbuffCollections` in the SDE), which sits outside
-  dogma modifiers entirely — buffs don't stack with each other at all
-  (strongest of each buff ID wins) and don't join penalty chains. The
-  roadmap's earlier "env/burst effects are stacking-exempt" lumped these
-  together wrongly; this split is the corrected claim, and the eval harness
-  should test both directions.
+  (Celestial), which is *not* exempt: a black hole's velocity multiplier
+  lands in the same penalty group as your prop mod's boost, and Pulsar
+  armor-resist / Wolf-Rayet shield-resist maluses are penalized chains
+  (pyfa `eos/effects.py` systemMaxVelocity, systemArmorEmResistance —
+  `stackingPenalties=True`). But category only decides *eligibility*; the
+  attribute's `stackable` flag decides in each case — a Pulsar's shield HP
+  multiplier hits `shieldCapacity` (`stackable = 1`) and applies **in
+  full** (pyfa systemShieldHP has no stacking flag). Command bursts apply
+  through the warfare-buff system (`dbuffCollections` in the SDE), which
+  sits outside dogma modifiers entirely — buffs don't stack with each
+  other at all (strongest of each buff ID wins) and don't join penalty
+  chains. The roadmap's earlier "env/burst effects are stacking-exempt"
+  lumped these together wrongly, and this document's first correction
+  overshot by claiming the Pulsar *shield* bonus penalized (fixed
+  2026-08-17, engine-verified against the beacon handlers); the eval
+  harness should test both directions.
 
 ### Skill and hull bonuses
 

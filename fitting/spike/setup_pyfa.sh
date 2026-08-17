@@ -11,6 +11,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WORK="${1:-$HERE/work}"
+mkdir -p "$WORK"; WORK="$(cd "$WORK" && pwd)"   # absolute — the db build below cd's away
 PYFA_COMMIT=8b04f3b271e614b3e103853b44a7851a63d79d0e   # pinned in docs/fitting-formulas.md
 
 mkdir -p "$WORK"
