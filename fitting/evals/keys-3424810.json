@@ -1,0 +1,120 @@
+{
+ "engine_build": "3424810",
+ "E1_caracal_ehp_uniform": 16943,
+ "E1_caracal_ehp_guristas": 18511,
+ "E2_rifter_align_s": 4.69,
+ "E3_hurricane": {
+  "volley": 4066.9,
+  "dps": 554.1,
+  "dps_sustained": 525.9
+ },
+ "E4_rifter_alpha_clone": {
+  "dps": 137.5,
+  "ehp_uniform": 2920,
+  "max_velocity_ms": 2872.9
+ },
+ "E4_rifter_all5": {
+  "dps": 172.3,
+  "ehp_uniform": 2955,
+  "max_velocity_ms": 3213.2
+ },
+ "E5_seventh_gun_problems": [
+  "powergrid over: 1915.52 / 1425",
+  "turret hardpoints over by 1.0"
+ ],
+ "T1_hurricane_dps_2gyro_te": 554.1,
+ "T1_hurricane_dps_3gyro": 613.0,
+ "T2_vexor_armor_vs_shield_diffs": {
+  "capacitor.stable_pct": [
+   69.9,
+   71.4
+  ],
+  "defense.ehp.armor": [
+   22716,
+   5810
+  ],
+  "defense.ehp.shield": [
+   2167,
+   8384
+  ],
+  "defense.ehp.total": [
+   31102,
+   20413
+  ],
+  "defense.hp.armor": [
+   9775,
+   2500
+  ],
+  "defense.hp.shield": [
+   1375,
+   5319
+  ],
+  "defense.reps_hps.passiveShield": [
+   5.8,
+   22.4
+  ],
+  "fitting.cpu": [
+   [
+    310.0,
+    375.0
+   ],
+   [
+    325.0,
+    375.0
+   ]
+  ],
+  "fitting.powergrid": [
+   [
+    985.4,
+    875.0
+   ],
+   [
+    555.4,
+    875.0
+   ]
+  ],
+  "navigation.align_time_s": [
+   10.25,
+   8.44
+  ],
+  "navigation.mass_kg": [
+   18631250,
+   16100000
+  ],
+  "navigation.max_velocity_ms": [
+   574.9,
+   627.0
+  ],
+  "navigation.signature_m": [
+   145.0,
+   178.5
+  ],
+  "offense.dps": [
+   431.7,
+   471.1
+  ],
+  "offense.dps_drones": [
+   337.3,
+   376.8
+  ],
+  "offense.dps_sustained": [
+   428.9,
+   468.4
+  ],
+  "offense.volley": [
+   1744.9,
+   1902.7
+  ],
+  "problems": [
+   [
+    "powergrid over: 985.4 / 875"
+   ],
+   []
+  ]
+ },
+ "T3_abaddon_cap": {
+  "capacity_gj": 7968.8,
+  "stable": false,
+  "lasts_s": 198.3
+ }
+}

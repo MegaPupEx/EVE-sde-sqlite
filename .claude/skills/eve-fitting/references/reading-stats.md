@@ -54,10 +54,12 @@ variants — deadspace rows differ a few points:
 | Sansha | 58/42/0/0 | Sleepers (W-space) | 26/26/24/24 |
 | Trig subcaps | 0/61/0/39 | Sansha incursion | 16/13/35/35 |
 
-A shield Caracal's uniform 16.9k EHP (battery) drops hard vs Guristas —
-kinetic is shield's structural hole (EM is armor's). Tanking *for the
-enemy* is often worth more than another extender: resist the two types
-they actually deal.
+The swing is large and the *direction* is fit-dependent, so compute, don't
+reason from the bare hull: shield's bare hole is EM and armor's is
+explosive, but hardeners move the holes. The battery Caracal (multispectrum
+hardener) is 16.9k uniform, **18.5k vs Guristas** (kin/therm — its best
+resists) and **15.0k vs Sansha** (EM — its worst): same fit, ±10% either
+way. Tanking *for the enemy* is often worth more than another extender.
 
 - `resists` are fractions per layer/type, already converted (0.598 =
   59.8%) — not the SDE's inverted resonance. Every hull has **33% base

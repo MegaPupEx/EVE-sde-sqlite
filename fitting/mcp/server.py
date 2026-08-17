@@ -232,17 +232,27 @@ def edit_fit(fit_id: str, ops: list) -> dict:
     return _summary(fit_id)
 
 
+_alpha_char = None
+
+
 @mcp.tool()
 def set_skills(fit_id: str, preset: str) -> dict:
     """Set the pilot: 'all-5' or 'alpha' (alpha-clone skill set)."""
+    # The alpha pilot must be its own Character: getAll5() returns a shared
+    # saveddata object, and flipping alphaCloneID on it silently turns every
+    # fit alpha (found by the eval harness, 2026-08-17).
     from eos.saveddata.character import Character
+    global _alpha_char
     fit = _fit(fit_id)
     if preset == 'all-5':
-        fit.character = Character.getAll5()
-    elif preset == 'alpha':
         char = Character.getAll5()
-        char.alphaCloneID = 1
+        char.alphaCloneID = None
         fit.character = char
+    elif preset == 'alpha':
+        if _alpha_char is None:
+            _alpha_char = Character('MCP Alpha', 5)   # in-memory only, never saved
+            _alpha_char.alphaCloneID = 1
+        fit.character = _alpha_char
     else:
         raise ValueError("preset must be 'all-5' or 'alpha'")
     return {'fit_id': fit_id, 'skills': preset}

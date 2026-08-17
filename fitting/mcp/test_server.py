@@ -75,11 +75,20 @@ async def main(pyfa):
             assert s2['offense']['dps'] != stats['offense']['dps']
             assert s2['navigation']['max_velocity_ms'] < base_speed / 3
 
-            # alpha skills weaken the fit
+            # alpha skills weaken the fit — and switching back must fully restore:
+            # the alpha preset once mutated the shared All-5 character, silently
+            # turning every fit alpha for the rest of the session
             await call('set_skills', fit_id=fid, preset='alpha')
             s3 = await call('get_stats', fit_id=fid)
             assert s3['offense']['dps'] < s2['offense']['dps'], (s3['offense'], s2['offense'])
             await call('set_skills', fit_id=fid, preset='all-5')
+            s3b = await call('get_stats', fit_id=fid)
+            assert s3b['offense']['dps'] == s2['offense']['dps'], 'all-5 not restored after alpha'
+            fresh = await call('import_fit', eft=rifter_eft)
+            fresh_stats = await call('get_stats', fit_id=fresh['fit_id'])
+            assert fresh_stats['offense']['dps'] == stats['offense']['dps'], \
+                'alpha preset leaked into a freshly imported fit'
+            await call('delete_fit', fit_id=fresh['fit_id'])
 
             # clone + compare: the diff names what changed
             c = await call('clone_fit', fit_id=fid, name='variant')
