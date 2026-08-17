@@ -118,8 +118,16 @@ default with the floor and ramp time in `offense.spool`
 `set_env` applies a system environment **to that fit only** — set the same
 env on both sides of any comparison. `set_booster` attaches command-burst
 fits; the booster fit's own hull/skills scale the burst. `set_projected`
-applies enemy or friendly fits onto this one (webs, neuts, remote reps) at
-zero range — full strength, so quote it as the worst/best case it is.
+applies enemy or friendly fits onto this one (webs, neuts, remote reps) —
+bare ids project at zero range (full strength: quote it as the worst/best
+case it is); `{fit_id, range_km}` entries apply falloff-aware strength,
+zero past optimal + 3× falloff for most ewar. `graph(projector,
+'ewar_vs_range', item=…)` is the band. `applied_dps(fit, distance_km,
+target={sig_m, speed_ms})` answers "what does this fit actually do to
+that hull there" in one call — turret tracking, missile explosion terms
+and drone mobility, raw vs applied per source class; pull the target's
+base sig/speed from layer 1, and note perfect turret application reads
+~101.5% of paper (wrecking-shot expectation, pyfa's own model).
 `required_skills` gives the fit-wide skill prerequisite closure ("can I
 even sit in this").
 

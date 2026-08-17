@@ -1,6 +1,6 @@
-# eve-fitting MCP server (v1.5)
+# eve-fitting MCP server (v2 in progress)
 
-pyfa's engine behind 18 terse tools. A Claude session launches this process
+pyfa's engine behind 19 terse tools. A Claude session launches this process
 locally over stdio; fits live in the server's memory and travel as short IDs
 (`f1`, `f2`) — the conversation never carries a fit, only the numbers asked
 for. EFT text is the sole import/export payload.
@@ -9,7 +9,7 @@ for. EFT text is the sole import/export payload.
 
 | item | tokens |
 | --- | --- |
-| standing schema overhead (all 18 tools) | **~1,885** |
+| standing schema overhead (all 19 tools) | **~2,180** |
 | `get_stats` full panel | ~260 |
 | `graph` (≤30-point curve + summary) | ~110–190 |
 | `sweep` (~30/candidate row) | ~120 for 3 candidates |
@@ -57,8 +57,8 @@ covers modules, drones, fighters, implants and drugs by item category),
 wormhole class beacons, metaliminal storms, abyssal hazards; applies to
 that fit only), `set_booster` (command-burst fits, computed recursively —
 the booster's own hull/skills scale the burst, strongest same buff wins),
-`set_projected` (other fits' remote reps/ewar/neuts applied at zero
-range).
+`set_projected` (other fits' remote reps/ewar/neuts — zero range by
+default, or `{fit_id, range_km}` for falloff-aware strength).
 Read: `get_stats` (full panel, optional damage-profile weights),
 `module_attrs` (per-module *modified* attribute values — ewar
 range/strength, rep amounts; heat-aware, so "web range overheated" is a
@@ -66,10 +66,13 @@ computed number, not folklore), `sweep` (candidate modules swapped in
 server-side, one compact row each with named panel metrics +
 cpu/pg/problems, fit restored — a 10-variant tradeoff scan is one call,
 not ten conversation round-trips),
+`applied_dps` (raw vs applied dps against a real target's sig/speed at
+range — turret tracking, missile explosion terms, drone mobility, per
+source class),
 `required_skills` (training-queue ends, alpha-trainability flags; full closure on demand), `graph`
 (`dps_vs_range` / `dps_vs_target_speed` / `cap_vs_time` /
-`dps_vs_time`, the spool ramp — ≤30 points + summary + named
-assumptions), `compare_fits` (differing figures only),
+`dps_vs_time`, the spool ramp / `ewar_vs_range`, a projected module's
+effectiveness band — ≤30 points + summary + named assumptions), `compare_fits` (differing figures only),
 `validate_fit` (named constraint violations), `engine_info` (data build +
 the explicit unmodeled list).
 
@@ -123,7 +126,7 @@ silently ignored.
 - Spool-up weapons quote full spool by default (`get_stats` takes
   `spool: 0..1`); the zero-spool floor and ramp time ride in
   `offense.spool`, and `dps_vs_time` graphs the ramp.
-- Not yet here (tracked in the roadmap's v2 list): projection
-  ranges/application context, structures, full fighter abilities.
+- Not yet here (tracked in the roadmap's v2 list): structures, full
+  fighter abilities.
   Out of scope: industrial core, custom skill sheets, heat-over-time,
   ISK cost.

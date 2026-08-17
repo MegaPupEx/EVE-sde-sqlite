@@ -114,7 +114,7 @@ def _recalc(fit, factor_reload=False):
         booster.clear()
         booster.calculateModifiedAttributes(targetFit=fit, type=CalcType.COMMAND)
     fit.calculateModifiedAttributes()
-    for proj_id in PROJECTIONS.get(fit_id, []):
+    for proj_id, proj_range_m in PROJECTIONS.get(fit_id, []):
         projector = FITS.get(proj_id)
         if projector is None:
             continue
@@ -123,6 +123,9 @@ def _recalc(fit, factor_reload=False):
         if projector.getProjectionInfo(fit.ID) is None:
             from eos.db.saveddata.fit import ProjectedFit
             projector.projectedOnto[fit.ID] = ProjectedFit(projector.ID, projector)
+        # None = zero range (calculateRangeFactor returns 1); meters otherwise —
+        # falloff-aware strength, 0 beyond optimal + 3x falloff for most ewar
+        projector.getProjectionInfo(fit.ID).projectionRange = proj_range_m
         projector.calculateModifiedAttributes(targetFit=fit, type=CalcType.PROJECTED)
 
 
@@ -268,9 +271,11 @@ def delete_fit(fit_id: str) -> dict:
     BOOSTS.pop(fit_id, None)
     PROJECTIONS.pop(fit_id, None)
     ENVS.pop(fit_id, None)
-    for ids in (*BOOSTS.values(), *PROJECTIONS.values()):
+    for ids in BOOSTS.values():
         if fit_id in ids:
             ids.remove(fit_id)
+    for key in PROJECTIONS:
+        PROJECTIONS[key] = [(p, r) for p, r in PROJECTIONS[key] if p != fit_id]
     return {'deleted': fit_id}
 
 
@@ -452,14 +457,20 @@ def set_env(fit_id: str, effect: str = '') -> dict:
 @mcp.tool()
 @_engine_thread
 def set_projected(fit_id: str, projector_fit_ids: list) -> dict:
-    """Project other fits' active modules/drones onto this fit ([] clears): remote reps, ewar, neuts. Applied at zero range (full strength); the projector's own skills/hull scale everything."""
+    """Project other fits' active modules/drones onto this fit ([] clears): remote reps, ewar, neuts. Entries: 'f2' (zero range = full strength) or {fit_id:'f2', range_km:20} — strength then follows each module's optimal+falloff (most ewar is zero past optimal+3x falloff). The projector's own skills/hull scale everything."""
     _fit(fit_id)
+    entries = []
     for p in projector_fit_ids:
-        if p == fit_id:
+        pid = p.get('fit_id') if isinstance(p, dict) else p
+        rng_km = p.get('range_km') if isinstance(p, dict) else None
+        if pid == fit_id:
             raise ValueError('a fit cannot project onto itself here; fit a second copy')
-        _fit(p)
-    PROJECTIONS[fit_id] = list(projector_fit_ids)
-    return {'fit_id': fit_id, 'projected_by': list(projector_fit_ids)}
+        _fit(pid)
+        entries.append((pid, None if rng_km is None else float(rng_km) * 1000))
+    PROJECTIONS[fit_id] = entries
+    return {'fit_id': fit_id, 'projected_by': [
+        {'fit_id': pid, **({} if rng is None else {'range_km': rng / 1000})}
+        for pid, rng in entries]}
 
 
 @mcp.tool()
@@ -477,8 +488,9 @@ def set_booster(fit_id: str, booster_fit_ids: list) -> dict:
 
 @mcp.tool()
 @_engine_thread
-def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0) -> dict:
-    """Bounded curve: <=30 points + summary + named assumptions. kind: 'dps_vs_range' | 'dps_vs_target_speed' | 'cap_vs_time' | 'dps_vs_time' (spool ramp). target for dps kinds: {speed_ms, sig_m, atk_speed_ms}; distance_km applies to dps_vs_target_speed."""
+def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0,
+          item: str = None) -> dict:
+    """Bounded curve: <=30 points + summary + named assumptions. kind: 'dps_vs_range' | 'dps_vs_target_speed' | 'cap_vs_time' | 'dps_vs_time' (spool ramp) | 'ewar_vs_range' (needs item: a projected module on THIS fit). target for dps kinds: {speed_ms, sig_m, atk_speed_ms}; distance_km applies to dps_vs_target_speed."""
     fit = _fit(fit_id)
     _recalc(fit)
     t = target or {}
@@ -491,8 +503,59 @@ def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0)
         return graphlib.cap_vs_time(fit)
     if kind == 'dps_vs_time':
         return graphlib.dps_vs_time(fit)
+    if kind == 'ewar_vs_range':
+        if not item:
+            raise ValueError("ewar_vs_range needs item: the projected module's name")
+        return graphlib.ewar_vs_range(fit, item)
     raise ValueError("kind must be 'dps_vs_range', 'dps_vs_target_speed', "
-                     "'cap_vs_time' or 'dps_vs_time'")
+                     "'cap_vs_time', 'dps_vs_time' or 'ewar_vs_range'")
+
+
+@mcp.tool()
+@_engine_thread
+def applied_dps(fit_id: str, distance_km: float, target: dict) -> dict:
+    """Applied (not paper) dps vs a real target: target {sig_m required, speed_ms?, atk_speed_ms?}. pyfa's full application model — turret tracking/sig, missile explosion radius+velocity, drone mobility — at full spool; raw vs applied split per source class."""
+    from eos.saveddata.drone import Drone
+    from eos.saveddata.fighter import Fighter
+    from eos.saveddata.module import Module
+    from eos.const import FittingHardpoint
+    fit = _fit(fit_id)
+    _recalc(fit)
+    if not target or target.get('sig_m') is None:
+        raise ValueError("target needs sig_m (and usually speed_ms) — "
+                         "pull the hull's base values from layer 1")
+    dist = float(distance_km) * 1000
+    tgt_speed = float(target.get('speed_ms', 0))
+    dmg = graphlib._dmg_map(fit)
+    amap = graphlib._application_map(fit, dist, tgt_speed, float(target['sig_m']),
+                                     float(target.get('atk_speed_ms', 0)))
+
+    def bucket(key):
+        if isinstance(key, Drone):
+            return 'drones'
+        if isinstance(key, Fighter):
+            return 'fighters'
+        if isinstance(key, Module) and key.hardpoint == FittingHardpoint.MISSILE:
+            return 'missiles'
+        if isinstance(key, Module) and key.hardpoint == FittingHardpoint.TURRET:
+            return 'turrets'
+        return 'other'
+
+    raw_total = applied_total = 0.0
+    by = {}
+    for key, d in dmg.items():
+        raw = d.total
+        applied = (d * amap.get(key, 0)).total
+        b = by.setdefault(bucket(key), [0.0, 0.0])
+        b[0] += raw
+        b[1] += applied
+        raw_total += raw
+        applied_total += applied
+    return {'fit_id': fit_id, 'distance_km': distance_km,
+            'target': {'sig_m': target['sig_m'], 'speed_ms': tgt_speed},
+            'dps_raw': round(raw_total, 1), 'dps_applied': round(applied_total, 1),
+            'application_pct': round(100 * applied_total / raw_total, 1) if raw_total else 0,
+            'by_source': {k: [round(r, 1), round(a, 1)] for k, (r, a) in sorted(by.items())}}
 
 
 @mcp.tool()

@@ -164,9 +164,50 @@ async def main(pyfa):
             v_neut = await call('get_stats', fit_id=vic['fit_id'])
             assert not v_neut['capacitor']['stable'] and \
                 v_neut['capacitor']['lasts_s'] < v_base['capacitor'].get('lasts_s', 1e9), v_neut['capacitor']
+            # projection at range: inside optimal = full web; far beyond
+            # optimal + 3x falloff = no effect; the curve names the band
+            ma_web = await call('module_attrs', fit_id=ewar['fit_id'],
+                                item='Stasis Webifier I', attrs=['maxRange', 'falloffEffectiveness'])
+            web_opt_km = ma_web['modules'][0]['attrs']['maxRange'] / 1000
+            await call('set_projected', fit_id=vic['fit_id'],
+                       projector_fit_ids=[{'fit_id': ewar['fit_id'], 'range_km': web_opt_km / 2}])
+            v_in = await call('get_stats', fit_id=vic['fit_id'])
+            assert v_in['navigation']['max_velocity_ms'] == v_web['navigation']['max_velocity_ms'], \
+                'inside optimal must equal zero-range strength'
+            await call('set_projected', fit_id=vic['fit_id'],
+                       projector_fit_ids=[{'fit_id': ewar['fit_id'], 'range_km': web_opt_km * 8}])
+            v_out = await call('get_stats', fit_id=vic['fit_id'])
+            assert v_out['navigation']['max_velocity_ms'] == v_base['navigation']['max_velocity_ms'], \
+                'far beyond falloff must be no effect'
+            g_ew = await call('graph', fit_id=ewar['fit_id'], kind='ewar_vs_range',
+                              item='Stasis Webifier I')
+            assert g_ew['summary']['optimal_km'] == web_opt_km, g_ew['summary']
+            assert g_ew['points'][0][1] == 100.0 and g_ew['points'][-1][1] < 5, g_ew['points'][-3:]
             await call('set_projected', fit_id=vic['fit_id'], projector_fit_ids=[])
             v_clear = await call('get_stats', fit_id=vic['fit_id'])
             assert v_clear['navigation']['max_velocity_ms'] == v_base['navigation']['max_velocity_ms']
+
+            # applied_dps: application collapses against a small fast target and
+            # recovers against a big slow one; missiles and turrets both modeled
+            ad_frig = await call('applied_dps', fit_id=fid, distance_km=1.5,
+                                 target={'sig_m': 35, 'speed_ms': 700})
+            ad_bs = await call('applied_dps', fit_id=fid, distance_km=1.5,
+                               target={'sig_m': 400, 'speed_ms': 100})
+            # perfect turret application runs ~1.015x paper (wrecking-shot
+            # expectation, pyfa's own model) — allow it, catch anything larger
+            assert ad_frig['dps_applied'] < ad_bs['dps_applied'] <= ad_bs['dps_raw'] * 1.02, \
+                (ad_frig, ad_bs)
+            assert 'turrets' in ad_bs['by_source'], ad_bs
+            mis = await call('import_fit', eft='[Caracal, rlml]\n'
+                             'Rapid Light Missile Launcher II, Caldari Navy Scourge Light Missile\n'
+                             'Rapid Light Missile Launcher II, Caldari Navy Scourge Light Missile')
+            am_frig = await call('applied_dps', fit_id=mis['fit_id'], distance_km=10,
+                                 target={'sig_m': 35, 'speed_ms': 700})
+            am_bs = await call('applied_dps', fit_id=mis['fit_id'], distance_km=10,
+                               target={'sig_m': 400, 'speed_ms': 100})
+            assert 'missiles' in am_frig['by_source'], am_frig
+            assert am_frig['application_pct'] < am_bs['application_pct'], (am_frig, am_bs)
+            await call('delete_fit', fit_id=mis['fit_id'])
 
             # fighters: squadron dps lands in the panel, tube overflow is named
             than = await call('create_fit', ship='Thanatos')

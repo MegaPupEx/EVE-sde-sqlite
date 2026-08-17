@@ -65,26 +65,36 @@ def _install_shims(pyfa_path):
 
 
 def _dmg_map(fit):
-    """{key: DmgTypes dps} for everything active that deals damage."""
+    """{key: DmgTypes dps} for everything active that deals damage (full spool,
+    matching the panel's default)."""
+    from eos.const import SpoolType
+    from eos.utils.spoolSupport import SpoolOptions
+    spool = SpoolOptions(SpoolType.SPOOL_SCALE, 1.0, True)
     dmg = {}
     for mod in fit.activeModulesIter():
         if mod.isDealingDamage():
-            dmg[mod] = mod.getDps()
+            dmg[mod] = mod.getDps(spoolOptions=spool)
     for drone in fit.activeDronesIter():
         if drone.isDealingDamage():
             dmg[drone] = drone.getDps()
     return dmg
 
 
-def _applied_dps(fit, distance, tgt_speed, tgt_sig, atk_speed, dmg):
+def _application_map(fit, distance, tgt_speed, tgt_sig, atk_speed):
+    """pyfa's full application model per damage source: turret tracking/sig,
+    missile explosion radius+velocity, drone mobility."""
     from graphs.data.fitDamageStats.calc.application import getApplicationPerKey
     from graphs.wrapper import SourceWrapper, TargetWrapper
     from eos.saveddata.targetProfile import TargetProfile
     src = SourceWrapper(fit, 0)
     tgt = TargetWrapper(TargetProfile(maxVelocity=tgt_speed, signatureRadius=tgt_sig), 0, 0)
-    amap = getApplicationPerKey(
+    return getApplicationPerKey(
         src=src, tgt=tgt, atkSpeed=atk_speed, atkAngle=0, distance=distance,
         tgtSpeed=tgt_speed, tgtAngle=90, tgtSigRadius=tgt.getSigRadius())
+
+
+def _applied_dps(fit, distance, tgt_speed, tgt_sig, atk_speed, dmg):
+    amap = _application_map(fit, distance, tgt_speed, tgt_sig, atk_speed)
     total = 0.0
     for key, d in dmg.items():
         total += (d * amap.get(key, 0)).total
@@ -138,6 +148,35 @@ def dps_vs_target_speed(fit, distance_km=5.0, tgt_sig=None, max_speed=3600.0, po
                     **({'half_dps_target_ms': half} if half is not None else {})},
         'assumptions': _assumptions(fit, None, tgt_sig),
     }
+
+
+def ewar_vs_range(fit, item, points=24):
+    """A projected module's effectiveness (%) vs distance — pyfa's own
+    calculateRangeFactor over optimal + falloffEffectiveness."""
+    from eos.calc import calculateRangeFactor
+    mods = [m for m in fit.modules if not m.isEmpty and m.item.typeName == item]
+    if not mods:
+        raise ValueError(f'{item!r} not fitted on this fit')
+    mod = mods[0]
+    optimal = mod.getModifiedItemAttr('maxRange') or 0
+    falloff = mod.getModifiedItemAttr('falloffEffectiveness') \
+        or mod.getModifiedItemAttr('falloff') or 0
+    if not optimal:
+        raise ValueError(f'{item!r} has no range attribute; not a ranged projected module')
+    xmax = (optimal + 3 * falloff) * 1.02 if falloff else optimal * 1.5
+    series = []
+    for i in range(points + 1):
+        d = xmax * i / points
+        series.append([round(d / 1000, 1),
+                       round(100 * calculateRangeFactor(optimal, falloff, d), 1)])
+    summary = {'optimal_km': round(optimal / 1000, 1),
+               'falloff_km': round(falloff / 1000, 1),
+               'pct_at_optimal_plus_falloff':
+                   round(100 * calculateRangeFactor(optimal, falloff, optimal + falloff), 1)}
+    return {'x': 'range_km', 'y': 'effectiveness_pct', 'points': series,
+            'summary': summary,
+            'assumptions': ['module state as currently set (heat included if overheated)',
+                            'most ewar applies zero effect past optimal + 3x falloff']}
 
 
 def dps_vs_time(fit, points=24):

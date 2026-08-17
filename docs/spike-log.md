@@ -567,3 +567,30 @@ the new hull-restriction check covers the whole class the owner asked
 about: covert ops cloaks (Buzzard yes / Rifter no), bomb launchers,
 burst jammers (hull-restricted in the data), clone vats — one
 `fit.canFit` check, covert cloak pinned in the smoke suite.
+
+### 2026-08-17 — v2 item 3: projection ranges + applied damage in one call
+
+`set_projected` now takes `{fit_id, range_km}` entries: the range flows
+into eos's own projected calc (`ProjectedFit.projectionRange` →
+`forcedProjRange` → each effect handler's `calculateRangeFactor`), so a
+web at half its optimal webs at full strength, at 8× optimal it does
+nothing, and everything between follows the module's real
+optimal/falloffEffectiveness — smoke-tested at all three points. Bare
+ids still mean zero range (calculateRangeFactor(None) = 1), so existing
+behavior and its "worst case" framing are unchanged.
+`graph(projector, 'ewar_vs_range', item=…)` returns the effectiveness
+band (pyfa's calculateRangeFactor over the module's modified attrs, heat
+included if overheated).
+
+`applied_dps(fit, distance_km, target={sig_m, speed_ms})` is the
+application half: pyfa's full `getApplicationPerKey` model — turret
+tracking/sig, missile explosion radius+velocity, drone mobility — as a
+single call returning raw vs applied totals and a per-source-class
+split. Smoke-tested both directions: an AC Rifter collapses to ~14%
+application against a 35 m / 700 m/s target and recovers to ~100%
+against 400 m / 100 m/s; an RLML Caracal shows the same shape through
+the missile formula. One honest wrinkle pinned in the test and docs:
+perfect turret application reads ~101.5% of paper dps — the
+wrecking-shot expectation, pyfa's own model, not a bug. Damage maps in
+graphs now use full spool, matching the panel default. 19 tools,
+~2,180 tokens standing; both key sets unchanged.
