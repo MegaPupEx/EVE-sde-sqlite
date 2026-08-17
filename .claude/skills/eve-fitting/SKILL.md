@@ -151,7 +151,11 @@ is in restating, so:
 
 - **Verdict first, once.** One opening sentence answers the question; no
   closing "bottom line" that says it again — end when the support ends.
-- **Each number appears once** — table or prose, never both.
+- **Each number appears once** — table or prose, never both. If a table
+  carries the numbers, the prose around it carries only the verdict and
+  what the table *doesn't* show — restating a cell in sentence form
+  ("that's −4%", "2.1× the damage") is the residual failure measured
+  runs keep finding.
 - **Provenance is one trailing line** ("engine 3470007, all-V, uniform
   profile"), not clauses on every figure.
 - **At most one unsolicited flag**, the most consequential one.

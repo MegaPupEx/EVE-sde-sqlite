@@ -107,6 +107,15 @@ rather than quoting.
   in that faction's high-sec. Filter them out with `factionID IS NULL` before
   quoting a fuel figure, or a tower reads as burning seven things an hour
   instead of one.
+- **Upwell structure fuel is dogma, not `controlTowerResources`.** Service
+  modules carry it as attributes in `type_dogma`:
+  `serviceModuleFuelAmount` (fuel blocks per hour while running, e.g. a
+  Standup Cloning Center burns 10/hr), `serviceModuleFuelOnlineAmount`
+  (one-time cost to online, 720 for that same service) and
+  `serviceModuleFuelConsumptionGroup`. Sum `serviceModuleFuelAmount`
+  across the services a structure runs for its hourly burn; the structure
+  hull itself burns nothing. Towers are the JSON table above; Upwell is
+  per-service dogma — mixing the two models is the natural error.
 - **Reprocessing yields are the theoretical 100% refine, which no player gets.**
   `type_materials` gives the perfect-refine output; what you actually receive is
   that multiplied by the facility rate, your skills and your implants. The

@@ -134,49 +134,60 @@ Everything left, with what building each requires:
    rolls to the mutaplasmid band, round-trip tests in
    `fitting/mcp/test_server.py` (module + drone, clamp, bare-abyssal
    rejection).
-2. **Siege-class states** (siege, bastion, triage, industrial core) —
+**v2 scope settled 2026-08-17 (owner's cut): the five items below, and
+the rest is dropped.**
+
+2. **Siege-class states** (siege, bastion, triage — the three named in
+   scope; industrial core follows the same mechanism if ever wanted) —
    modules whose effects fire in a special state. Needs: a battery fit
    per class (start: bastion Golem), verification the effects run
    headless, and name-it rules for the side conditions the panel can't
-   show (no remote reps in bastion, immobility).
-3. **Spool-up** — DPS becomes a function of time. eos already carries
-   `SpoolOptions`; needs a `spool` parameter on `get_stats`/`graph` (or
-   dps_at_0/50/100 keys), a `dps_vs_time` graph kind, and skill docs for
-   quoting spool honestly (pyfa's own NPC profiles ship at three spool
-   levels).
-4. **Structures** (fittable citadels) — eos has the `isStructure` calc
-   branch. Needs: structure hulls in `create_fit`, service-slot fitting
-   rules and separate validation, structure-specific panel semantics.
-   Decide first whether the product wants it at all.
-5. **Custom skill sheets** — `set_skills` with a {skill: level} sheet.
-   Needs: a compact sheet format, per-sheet eos Character construction
-   (the alpha-preset singleton lesson applies), and eval keys for a
-   mid-SP character.
-6. **Projection range realism** — v1.5 projects at zero range;
-   `ProjectedFit.projectionRange` is already plumbed in eos. Needs: a
-   range argument on `set_projected`, falloff-aware ewar/rep application,
-   and an `ewar_vs_range` graph kind.
-7. **Fighter ability toggles** — abilities beyond the auto-activated
-   standard attack (missiles, bombs, utility), plus light/support/heavy
-   tube split validation.
-8. **Heat over time** — burnout/uptime estimates. Assessed 2026-08-17,
-   inputs verified in the SDE: per-rack `heatCapacity*` (100 everywhere)
-   and `heatDissipationRate*` (0.01 everywhere), per-hull
-   `heatGenerationMultiplier` (1.0 frigates → 0.25 titans — buildup
-   *rate* is the "ship size" effect) and `heatAttenuation*` (0.5 → 0.82
-   — how far damage spreads to neighboring slots; bigger hulls spread
-   wider), per-module `heatDamage` and 40 structure HP, Thermodynamics
-   −5% heat damage/level. Buildup is deterministic; the *damage rolls*
-   are the random part (chance scales with rack heat, targets weighted
-   by slot distance and occupancy). An expected-value model is buildable
-   — but pyfa has no heat-over-time sim, so this is the first feature
-   with no wrap target and no engine ground truth to pin eval keys
-   against; the server-side generation constants are community-measured,
-   not SDE data. Verdict: defer until layer 3 makes the mechanism
-   citable; meanwhile `module_attrs` exposes the SDE inputs and answers
-   name burnout as unmodeled.
-9. **Fit ISK cost** (ESI bolt-on) — roadmap non-goal for v1, unchanged:
-   needs live price data, so it rides on the ESI pointers, not the SDE.
+   show (no remote reps in bastion, immobility). **Bastion sourcing
+   requirement (owner-flagged):** bastion's resist bonus is reputed to
+   interact with stacking differently than a normal hardener — the
+   implementation must derive the actual behavior from the dogma effect
+   data (modifier definitions + per-attribute `stackable` flags) and
+   verify it in the engine, and the docs must cite exactly that source,
+   the way T1's burst-vs-beacon split was settled. No wiki folklore as
+   the authority.
+3. **Spool across time** — DPS quotable at named spool levels/times.
+   eos already carries `SpoolOptions`; needs a `spool` parameter on
+   `get_stats`/`graph` (or dps_at_0/50/100 keys), a `dps_vs_time` graph
+   kind, and skill docs for quoting spool honestly (pyfa's own NPC
+   profiles ship at three spool levels).
+4. **Projection & application realism** — two halves of one feature.
+   Projection: `set_projected` at actual ranges with falloff-aware
+   ewar/rep strength (`ProjectedFit.projectionRange` is already plumbed
+   in eos), plus an `ewar_vs_range` graph kind. Application: target
+   signature and speed as first-class context for **both** weapon
+   systems — turrets (tracking vs transversal, sig vs resolution) and
+   missiles (explosion radius/velocity vs target sig/speed) — so
+   "what does this fit do to a frigate under it" is one computed
+   answer, not a graph the model must interpolate by hand.
+5. **Structures (Upwell)** — eos has the `isStructure` calc branch.
+   Needs: structure hulls in `create_fit`, service-slot fitting rules
+   and separate validation, service-module *interactions* checked, fuel
+   accounting surfaced (per-service `serviceModuleFuelAmount` /
+   `serviceModuleFuelOnlineAmount` dogma — verified present in the SDE
+   2026-08-17), and structure-specific panel semantics. Note: POS
+   (starbase) setup math needs **no engine work** — layer 1 already
+   carries tower fuel (`controlTowerResources`, gotchas-industry
+   documents the `purpose` trap) and the Upwell fuel attributes;
+   gotchas-industry now points at both models.
+6. **Full fighter support** — abilities beyond the auto-activated
+   standard attack (missiles, bombs, utility), light/support/heavy tube
+   split validation, across every fighter-capable hull and, once item 5
+   lands, structures.
+
+Dropped from scope (2026-08-17, owner's call): custom skill sheets;
+heat-over-time (assessed the same day: every input is in the SDE —
+per-rack capacity 100 / dissipation 0.01, per-hull
+`heatGenerationMultiplier` 1.0→0.25 and `heatAttenuation` 0.5→0.82,
+per-module `heatDamage` vs 40 heat HP, Thermodynamics −5%/lvl; buildup
+is deterministic, the damage rolls are the random part — but pyfa has
+no heat-over-time sim, so there is no wrap target and no ground truth
+to pin keys against; revisit only if demand appears once layer 3 makes
+the mechanism citable); and fit ISK cost (ESI stays out entirely).
 
 ### MCP tool surface (v1)
 

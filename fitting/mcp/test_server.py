@@ -57,6 +57,8 @@ async def main(pyfa):
             imp = await call('import_fit', eft=rifter_eft)
             fid = imp['fit_id']
             assert imp['problems'] == [], imp['problems']
+            assert imp['slots']['low'][1] == 4 and imp['slots']['high'][1] == 3, imp['slots']
+            assert imp['hardpoints']['turret'] == [3, 3], imp.get('hardpoints')
             stats = await call('get_stats', fit_id=fid)
             assert stats['offense']['dps'] == round(ref['stats']['offense']['dps_burst'], 1), stats['offense']
             assert stats['defense']['ehp']['total'] == round(ref['stats']['defense']['ehp_total_uniform']), stats['defense']['ehp']
@@ -209,6 +211,7 @@ async def main(pyfa):
             oni = await call('import_fit', eft='[Omen Navy Issue, slots]\n'
                              '10MN Afterburner II\nWarp Scrambler II\n'
                              'X5 Enduring Stasis Webifier\nCap Recharger II')
+            assert oni['slots']['med'] == [4, 3], oni['slots']  # summary shows the rack
             oni_val = await call('validate_fit', fit_id=oni['fit_id'])
             assert any('med slots over by 1' in p for p in oni_val['problems']), oni_val
             await call('delete_fit', fit_id=oni['fit_id'])

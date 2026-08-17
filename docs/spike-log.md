@@ -486,3 +486,25 @@ the fit's job (brawler: prop/tackle/reps; kiter: prop/point; gun racks
 heat as a block), space those with gaps where slots are free, and order
 full racks so the heated module sits next to what the pilot would
 sacrifice first. Engine stats are order-blind; the layout rides the EFT.
+
+### 2026-08-17 — summaries show racks; v2 scope settled (owner's cut)
+
+Fit summaries (`import_fit`/`edit_fit`/`create_fit`/`clone_fit`) now
+carry `slots` ({rack: [used, total]}, subsystems included when the hull
+has them) and `hardpoints` (turret/launcher) — the shape questions that
+used to cost a `validate_fit` round trip are now free with every
+mutation. Writing the assertion produced a tidy own-medicine moment:
+"Rifter has 4 highs" is folklore — the data says 4 low / 3 high, and
+the test now pins the data. The answer-economy rule against restating
+table cells in prose got the explicit wording run 4 showed it needed.
+
+v2 scope is now the owner's five: siege/bastion/triage (with a standing
+requirement that bastion's odd stacking behavior be derived from dogma
+effect data + engine verification, source cited — no wiki folklore),
+spool-across-time, projection & application realism (falloff-aware
+projection plus target sig/speed context for turrets *and* missiles),
+Upwell structures (service interactions + fuel; POS setup math verified
+already covered by layer 1 — `controlTowerResources` for towers, and
+gotchas-industry now documents the Upwell per-service fuel dogma next to
+it), and full fighter support. Dropped: custom skill sheets,
+heat-over-time, ISK/ESI.

@@ -174,17 +174,41 @@ def _problems(fit):
 
 
 def _summary(fit_id):
+    from collections import Counter
+    from eos.const import FittingHardpoint, FittingSlot
     fit = _fit(fit_id)
     _recalc(fit)
     attr = fit.ship.getModifiedItemAttr
-    return {
+    used = Counter(int(m.slot) for m in fit.modules
+                   if not m.isEmpty and m.slot is not None)
+    slots = {}
+    for slot, label, attr_name in (
+            (FittingSlot.HIGH, 'high', 'hiSlots'), (FittingSlot.MED, 'med', 'medSlots'),
+            (FittingSlot.LOW, 'low', 'lowSlots'), (FittingSlot.RIG, 'rig', 'rigSlots'),
+            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems')):
+        total = int(attr(attr_name) or 0)
+        if total or used.get(int(slot)):
+            slots[label] = [used.get(int(slot), 0), total]
+    hardpoints = {}
+    for hpoint, label, attr_name in (
+            (FittingHardpoint.TURRET, 'turret', 'turretSlotsLeft'),
+            (FittingHardpoint.MISSILE, 'launcher', 'launcherSlotsLeft')):
+        total = int(attr(attr_name) or 0)
+        hp_used = total - fit.getHardpointsFree(hpoint)
+        if total or hp_used:
+            hardpoints[label] = [hp_used, total]
+    out = {
         'fit_id': fit_id,
         'ship': fit.ship.item.typeName,
         'name': fit.name,
         'cpu': [round(fit.cpuUsed, 2), round(attr('cpuOutput'), 2)],
         'powergrid': [round(fit.pgUsed, 2), round(attr('powerOutput'), 2)],
+        'slots': slots,
         'problems': _problems(fit),
     }
+    if hardpoints:
+        out['hardpoints'] = hardpoints
+    return out
 
 
 @mcp.tool()
