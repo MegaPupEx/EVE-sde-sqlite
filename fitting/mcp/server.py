@@ -461,16 +461,17 @@ def validate_fit(fit_id: str) -> dict:
 
 
 @mcp.tool()
-def required_skills(fit_id: str) -> dict:
-    """Every skill (with level) needed to use the whole fit — hull, modules, charges, drones, fighters, implants, drugs — including prerequisite chains. validate_fit does NOT check this."""
+def required_skills(fit_id: str, full: bool = False) -> dict:
+    """Skills (with levels) needed to use the whole fit. Default lists only the training-queue ends (prerequisites implied by other entries are pruned) plus any skills an alpha clone cannot train high enough; full=true returns the entire prerequisite closure."""
     fit = _fit(fit_id)
-    need = {}
+    need, items = {}, {}
 
     def walk(item):
         for skill_item, level in item.requiredSkills.items():
             name = skill_item.typeName
             if need.get(name, 0) < int(level):
                 need[name] = int(level)
+                items[name] = skill_item
                 walk(skill_item)
 
     walk(fit.ship.item)
@@ -482,8 +483,37 @@ def required_skills(fit_id: str) -> dict:
     for group in (fit.drones, fit.fighters, fit.boosters, fit.implants):
         for thing in group:
             walk(thing.item)
-    return {'fit_id': fit_id, 'skills': dict(sorted(need.items())),
-            'note': 'prerequisite closure; levels are minimums to use, not to use well'}
+
+    # static prerequisite closure of a single skill (levels are fixed:
+    # training a skill to any level needs its whole prereq tree)
+    closures = {}
+
+    def closure_of(skill_item):
+        name = skill_item.typeName
+        if name not in closures:
+            closures[name] = {}
+            for s2, l2 in skill_item.requiredSkills.items():
+                closures[name][s2.typeName] = max(closures[name].get(s2.typeName, 0), int(l2))
+                for n3, l3 in closure_of(s2).items():
+                    closures[name][n3] = max(closures[name].get(n3, 0), l3)
+        return closures[name]
+
+    ends = {s: lvl for s, lvl in need.items()
+            if not any(closure_of(items[o]).get(s, 0) >= lvl
+                       for o in need if o != s)}
+
+    caps = dict(sqlite3.connect(os.path.join(ARGS.pyfa, 'eve.db')).execute(
+        'SELECT typeID, level FROM alphaCloneSkills').fetchall())
+    alpha_blocked = {s: lvl for s, lvl in need.items()
+                     if caps.get(items[s].ID, 0) < lvl}
+
+    out = {'fit_id': fit_id, 'skills': dict(sorted(need.items() if full else ends.items()))}
+    if not full and len(need) > len(ends):
+        out['implied_prereqs'] = len(need) - len(ends)
+    if alpha_blocked:
+        out['alpha_blocked'] = dict(sorted(alpha_blocked.items()))
+    out['note'] = 'minimums to use, not to use well'
+    return out
 
 
 @mcp.tool()

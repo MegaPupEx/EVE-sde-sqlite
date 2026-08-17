@@ -234,12 +234,17 @@ async def main(pyfa):
                             target={'sig_m': 40}, distance_km=2)
             assert g3['points'][0][1] >= g3['points'][-1][1], 'dps must not rise with target speed'
 
-            # full-fit skill requirements, prerequisite chains included
+            # full-fit skill requirements: ends by default, closure on full=true
             req = await call('required_skills', fit_id=fid)
-            skills = req['skills']
-            assert skills.get('Small Projectile Turret') == 5, skills  # AC II prereq
-            assert 'Gunnery' in skills and 'Minmatar Frigate' in skills, skills
-            assert len(skills) > 8, f'prereq closure looks shallow: {len(skills)}'
+            ends = req['skills']
+            assert 'Small Autocannon Specialization' in ends, ends  # the AC II leaf
+            assert 'Gunnery' not in ends, f'implied prereq not pruned: {ends}'
+            assert req.get('implied_prereqs', 0) > 0, req
+            req_full = await call('required_skills', fit_id=fid, full=True)
+            closure = req_full['skills']
+            assert closure.get('Small Projectile Turret') == 5, closure
+            assert 'Gunnery' in closure and 'Minmatar Frigate' in closure, closure
+            assert len(closure) > len(ends), (len(closure), len(ends))
 
             info = await call('engine_info')
             assert info['engine_build'], info

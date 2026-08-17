@@ -135,9 +135,10 @@ the asker's skills are unknown, the all-0 floor is the default answer**,
 with all-5 as the labeled ceiling — the all-V number alone is what their
 ship will *not* do. Note `validate_fit` checks fitting resources and slots only — it
 does **not** check skill prerequisites: `required_skills(fit)` returns
-the fit-wide prerequisite closure (hull, modules, charges, drones, with
-levels). What an *alpha clone* is allowed to use remains game knowledge —
-say so when it matters.
+the training-queue ends (implied prerequisites pruned; `full=true` for
+the whole closure) and flags `alpha_blocked` — skills an alpha clone
+cannot train high enough, computed from the SDE's `cloneGrades` set, not
+from folklore. Alpha usability is data; quote the tool, not memory.
 
 ## T13 — Three builds can disagree: engine, SDE, CCP
 
