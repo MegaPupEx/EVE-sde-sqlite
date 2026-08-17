@@ -38,7 +38,8 @@ confidently wrong. The engine computes; you interpret.
   (`set_projected` — remote reps/ewar/neuts, zero range), T3D modes
   (`mode` op), fighters, implants and drugs (`edit_fit` add), mutated
   (abyssal) modules — rolls travel in the EFT `[N]` dialect
-  (`references/traps.md` §T15).
+  (`references/traps.md` §T15) — and overload bonuses (`state:
+  'overheated'`; burnout timers are not modeled, so name the tradeoff).
 - **Skills are part of every number.** Presets: `all-0`, `alpha`, `all-5`
   (import default: all-5). **Assume an omega pilot** and quote all-V,
   labeled. Reach for `alpha`/`all-0` only when the question signals it —
@@ -56,10 +57,10 @@ present remembered fit numbers as computed.
 | File | ~tokens | Read it when |
 | --- | --- | --- |
 | `references/reading-stats.md` | 2.1k | interpreting any stat panel or graph — DPS/volley/sustained, EHP and damage profiles (incl. NPC profile table), cap stability, align, targeting, graph summaries, fitting headroom |
-| `references/tradeoffs.md` | 1.5k | choosing between things — buffer vs active, shield vs armor, another damage mod vs a different slot, speed vs resists, and "what should I fit" questions |
+| `references/tradeoffs.md` | 1.7k | choosing between things — buffer vs active, shield vs armor, another damage mod vs a different slot, speed vs resists, and "what should I fit" questions (incl. the sweep-driven authoring loop) |
 | `references/traps.md` | 2.5k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones, abyssal rolls |
 
-Sizes are bytes/4, for budgeting; this router is ~2.1k.
+Sizes are bytes/4, for budgeting; this router is ~2.4k.
 
 ## If you read nothing else
 
@@ -115,6 +116,20 @@ applies enemy or friendly fits onto this one (webs, neuts, remote reps) at
 zero range — full strength, so quote it as the worst/best case it is.
 `required_skills` gives the fit-wide skill prerequisite closure ("can I
 even sit in this").
+
+`module_attrs(fit, item, attrs)` reads a module's *modified* attribute
+values — ewar range and strength, rep amount, neut GJ — the only honest
+source for per-module numbers (the panel is fit-level). Set `state:
+'overheated'` first to quote heated figures. `sweep(fit, item,
+candidates, metrics)` swaps each candidate in server-side and returns
+one row each (~30 tokens): use it for every "which module here" and
+"is the meta version worth the fitting room" question — prune the
+candidate list with knowledge *first* (2–6 plausible options, not the
+market group), then sweep once; never loop `edit_fit`+`get_stats` per
+variant. Mutaplasmid roll feasibility ("can a web roll to X km") is
+layer-1 SQL — `mutaplasmids` × `mutaplasmidAttributes` gives the band ×
+base attribute — then build the winning roll in the engine (EFT `[N]`
+dialect) to verify it in fit context.
 
 Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted

@@ -431,6 +431,102 @@ def get_stats(fit_id: str, profile: dict = None) -> dict:
 
 
 @mcp.tool()
+def module_attrs(fit_id: str, item: str, attrs: list) -> dict:
+    """Modified per-module attribute values (skills/ship bonuses/heat/mutations applied) for every fitted module or drone named `item`. attrs: dogma attribute names, e.g. ['maxRange','speedFactor']; null = not on that module. Overheat first via edit_fit state op to read heated values."""
+    from eos.db.gamedata.queries import getAttributeInfo
+    for name in attrs:
+        if getAttributeInfo(name) is None:
+            raise ValueError(f'unknown attribute {name!r} (dogma names, e.g. maxRange)')
+    fit = _fit(fit_id)
+    _recalc(fit)
+    state_names = {v: k for k, v in STATES.items()}
+    out = []
+    for mod in fit.modules:
+        if not mod.isEmpty and mod.item.typeName == item:
+            vals = {n: (round(v, 4) if isinstance(v, float) else v)
+                    for n in attrs for v in [mod.getModifiedItemAttr(n)]}
+            out.append({'item': mod.item.typeName,
+                        'state': state_names.get(mod.state, str(mod.state)),
+                        'attrs': vals})
+    for drone in fit.drones:
+        if drone.item.typeName == item:
+            vals = {n: (round(v, 4) if isinstance(v, float) else v)
+                    for n in attrs for v in [drone.getModifiedItemAttr(n)]}
+            out.append({'item': drone.item.typeName, 'amount': drone.amount,
+                        'attrs': vals})
+    if not out:
+        raise ValueError(f'{item!r} not fitted')
+    return {'fit_id': fit_id, 'modules': out}
+
+
+@mcp.tool()
+def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dict:
+    """Try each candidate module in place of fitted module `item` (every copy swapped; charge/state carried when valid) and return one compact row per candidate with the named panel metrics (dotted paths, e.g. 'offense.dps', 'defense.ehp.total'; default dps/ehp/speed) plus cpu_free/pg_free/problems. The fit is restored afterwards. Max 20 candidates."""
+    from eos.saveddata.module import Module
+    if len(candidates) > 20:
+        raise ValueError(f'{len(candidates)} candidates; cap is 20 per sweep')
+    metrics = metrics or ['offense.dps', 'defense.ehp.total',
+                          'navigation.max_velocity_ms']
+    fit = _fit(fit_id)
+    originals = [m for m in fit.modules if not m.isEmpty and m.item.typeName == item]
+    if not originals:
+        raise ValueError(f'{item!r} not fitted')
+
+    def pick(panel, path):
+        node = panel
+        for part in path.split('.'):
+            if not isinstance(node, dict) or part not in node:
+                return None
+            node = node[part]
+        return node
+
+    def row(label):
+        panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload))
+        attr = fit.ship.getModifiedItemAttr
+        r = {'candidate': label}
+        r.update({p: pick(panel, p) for p in metrics})
+        r['cpu_free'] = round((attr('cpuOutput') or 0) - fit.cpuUsed, 2)
+        r['pg_free'] = round((attr('powerOutput') or 0) - fit.pgUsed, 2)
+        r['problems'] = len(_problems(fit))
+        return r
+
+    rows = [row(f'{item} (fitted)')]
+    for mod in originals:
+        fit.modules.remove(mod)
+    try:
+        for name in candidates:
+            cand_item = eftlib._lookup(name)
+            if cand_item is None:
+                rows.append({'candidate': name, 'error': 'unknown item'})
+                continue
+            added = []
+            try:
+                for orig in originals:
+                    mod = Module(cand_item)
+                    if orig.charge is not None and mod.isValidCharge(orig.charge):
+                        mod.charge = orig.charge
+                    if mod.isValidState(orig.state):
+                        mod.state = orig.state
+                    elif mod.isValidState(FittingModuleState.ACTIVE):
+                        mod.state = FittingModuleState.ACTIVE
+                    fit.modules.append(mod)
+                    mod.owner = fit
+                    added.append(mod)
+                rows.append(row(name))
+            except ValueError as e:
+                rows.append({'candidate': name, 'error': str(e)})
+            finally:
+                for mod in added:
+                    fit.modules.remove(mod)
+    finally:
+        for mod in originals:
+            fit.modules.append(mod)
+            mod.owner = fit
+        _recalc(fit)
+    return {'fit_id': fit_id, 'swapped_count': len(originals), 'rows': rows}
+
+
+@mcp.tool()
 def compare_fits(fit_id_a: str, fit_id_b: str) -> dict:
     """Stat panels diffed: only figures differing >0.1%, as {stat: [a, b]}."""
     diffs = {}
@@ -526,7 +622,8 @@ def engine_info() -> dict:
         'engine_build': meta.get('client_build'),
         'unmodeled': ['siege states', 'spool-up',
                       'structures', 'custom skill sheets',
-                      'fighter ability toggles (standard attack only)'],
+                      'fighter ability toggles (standard attack only)',
+                      'heat burnout timers (overload bonuses ARE modeled: state overheated)'],
         'skills_presets': ['all-0', 'alpha', 'all-5'],
     }
 

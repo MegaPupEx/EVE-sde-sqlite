@@ -1,6 +1,6 @@
 # eve-fitting MCP server (v1.5)
 
-pyfa's engine behind 16 terse tools. A Claude session launches this process
+pyfa's engine behind 18 terse tools. A Claude session launches this process
 locally over stdio; fits live in the server's memory and travel as short IDs
 (`f1`, `f2`) — the conversation never carries a fit, only the numbers asked
 for. EFT text is the sole import/export payload.
@@ -9,10 +9,11 @@ for. EFT text is the sole import/export payload.
 
 | item | tokens |
 | --- | --- |
-| standing schema overhead (all 16 tools) | **~1,550** |
+| standing schema overhead (all 18 tools) | **~1,885** |
 | `get_stats` full panel | ~260 |
 | `graph` (≤30-point curve + summary) | ~110–190 |
-| `edit_fit` / `import_fit` / `clone_fit` summary | ~30 |
+| `sweep` (~30/candidate row) | ~120 for 3 candidates |
+| `edit_fit` / `import_fit` / `clone_fit` summary / `module_attrs` | ~30 |
 | `compare_fits` (diff-only output) | ~150–300 |
 | `validate_fit`, `set_skills`, `set_env`, `set_booster`, `delete_fit` | ≤ ~25 |
 
@@ -59,6 +60,12 @@ the booster's own hull/skills scale the burst, strongest same buff wins),
 `set_projected` (other fits' remote reps/ewar/neuts applied at zero
 range).
 Read: `get_stats` (full panel, optional damage-profile weights),
+`module_attrs` (per-module *modified* attribute values — ewar
+range/strength, rep amounts; heat-aware, so "web range overheated" is a
+computed number, not folklore), `sweep` (candidate modules swapped in
+server-side, one compact row each with named panel metrics +
+cpu/pg/problems, fit restored — a 10-variant tradeoff scan is one call,
+not ten conversation round-trips),
 `required_skills` (training-queue ends, alpha-trainability flags; full closure on demand), `graph`
 (`dps_vs_range` / `dps_vs_target_speed` / `cap_vs_time` — ≤30 points +
 summary + named assumptions), `compare_fits` (differing figures only),

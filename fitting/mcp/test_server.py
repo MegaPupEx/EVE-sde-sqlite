@@ -291,6 +291,58 @@ async def main(pyfa):
             for f in (mp, mm, mr, mc, md, dr):
                 await call('delete_fit', fit_id=f['fit_id'])
 
+            # module_attrs: per-module modified values, heat-aware (the class
+            # of question: "web range vs point range, both overheated")
+            web = await call('import_fit', eft='[Vigilant, webtest]\n'
+                             'Federation Navy Stasis Webifier\nWarp Disruptor II')
+            ma = await call('module_attrs', fit_id=web['fit_id'],
+                            item='Federation Navy Stasis Webifier', attrs=['maxRange'])
+            cold = ma['modules'][0]['attrs']['maxRange']
+            await call('edit_fit', fit_id=web['fit_id'], ops=[
+                {'op': 'state', 'item': 'Federation Navy Stasis Webifier', 'state': 'overheated'},
+                {'op': 'state', 'item': 'Warp Disruptor II', 'state': 'overheated'}])
+            hot_web = await call('module_attrs', fit_id=web['fit_id'],
+                                 item='Federation Navy Stasis Webifier', attrs=['maxRange'])
+            hot_pt = await call('module_attrs', fit_id=web['fit_id'],
+                                item='Warp Disruptor II', attrs=['maxRange'])
+            assert hot_web['modules'][0]['state'] == 'overheated', hot_web
+            assert abs(hot_web['modules'][0]['attrs']['maxRange'] / cold - 1.3) < 0.01, \
+                (cold, hot_web)  # web overload: +30% range
+            assert abs(hot_pt['modules'][0]['attrs']['maxRange'] / 24000 - 1.2) < 0.01, \
+                hot_pt  # point overload: +20% range
+            try:
+                await call('module_attrs', fit_id=web['fit_id'],
+                           item='Warp Disruptor II', attrs=['maxRnge'])
+                raise AssertionError('typo attribute name must be rejected')
+            except RuntimeError as e:
+                assert 'unknown attribute' in str(e), e
+            await call('delete_fit', fit_id=web['fit_id'])
+
+            # sweep: candidate enumeration in one call, fit restored afterwards
+            # (the class of question: "meta plate to free fitting for a better rep?")
+            sw_fit = await call('import_fit', eft='[Rifter, sweeptest]\n'
+                                '200mm Steel Plates II\nGyrostabilizer II\n\n'
+                                '5MN Y-T8 Compact Microwarpdrive\n\n'
+                                '150mm Light AutoCannon II, Republic Fleet EMP S\n'
+                                '150mm Light AutoCannon II, Republic Fleet EMP S\n'
+                                '150mm Light AutoCannon II, Republic Fleet EMP S')
+            before = await call('get_stats', fit_id=sw_fit['fit_id'])
+            sw = await call('sweep', fit_id=sw_fit['fit_id'], item='Gyrostabilizer II',
+                            candidates=['Counterbalanced Compact Gyrostabilizer',
+                                        'Gyrostabilizer I', 'Hobgoblin II'],
+                            metrics=['offense.dps'])
+            rows = {r['candidate']: r for r in sw['rows']}
+            base_dps = rows['Gyrostabilizer II (fitted)']['offense.dps']
+            assert base_dps > rows['Counterbalanced Compact Gyrostabilizer']['offense.dps'] \
+                > 0, rows
+            assert rows['Gyrostabilizer I']['offense.dps'] < base_dps, rows
+            assert 'error' in rows['Hobgoblin II'], 'a drone is not a module candidate'
+            assert 'cpu_free' in rows['Gyrostabilizer I'], rows
+            after = await call('get_stats', fit_id=sw_fit['fit_id'])
+            assert after['offense']['dps'] == before['offense']['dps'], \
+                'sweep must restore the fit'
+            await call('delete_fit', fit_id=sw_fit['fit_id'])
+
             info = await call('engine_info')
             assert info['engine_build'], info
             assert 'environment effects' not in info['unmodeled'], 'env is modeled now'

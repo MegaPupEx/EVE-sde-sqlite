@@ -174,4 +174,8 @@ the range is fake or mis-transcribed — say which value was used); and
 unrolled attributes still carry the mutaplasmid's own baseline values, so
 a mutated module is never just "base + one attribute". Export → reimport
 round-trips exactly; quote stats from the built fit, never from the roll
-text.
+text. Roll *feasibility* ("what could this roll to") is layer-1 data:
+`mutaplasmids` × `mutaplasmidAttributes` is the band, band × base
+attribute is the reachable window — enumerate candidates there in SQL,
+then build only the winner in the engine to verify it in fit context
+(ship bonuses and heat land on top of the roll).

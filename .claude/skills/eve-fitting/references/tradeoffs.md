@@ -111,3 +111,17 @@ fit or a comparison:
 - **Skills and price are part of the answer**: quote the preset (all-V vs
   alpha changes double digits), and remember T2 guns need real skills a
   new player lacks — offer the meta variant when the asker sounds new.
+
+## Authoring and iterating: knowledge prunes, the engine adjudicates
+
+When building or tuning a fit, the candidate space is yours to cut and
+the engine's to score. Game knowledge names the 2–6 plausible options
+for a slot (the meta plate, the compact variant, the faction one the
+budget allows) — then one `sweep` call scores them all with cpu/pg
+margins and legality per row, and `module_attrs` settles per-module
+questions (does the heated web reach, what does this rep actually cycle
+for). Never enumerate a market group through the engine, and never loop
+`edit_fit`+`get_stats` per variant when one sweep answers the row. The
+tradeoff sentence the pilot needs ("meta plate: −4% raw EHP, frees 12
+CPU for the T2 rep — net +18% sustain") falls straight out of two rows
+of a sweep plus one `module_attrs` read.

@@ -390,3 +390,30 @@ independently installable. Concurrency groups split so push-test runs
 never queue behind release builds; the marker-commit push can't
 retrigger the workflow (path-filtered, and GITHUB_TOKEN pushes don't
 fire workflows anyway).
+
+### 2026-08-17 — module_attrs + sweep: per-module truth and cheap enumeration
+
+Two tools close the gap between "interpret a fit" and "author one". The
+finding that motivated them: eos models overload bonuses fully headless
+(Fed Navy web 14 → 18.2 km at +30%, Warp Disruptor II 24 → 28.8 km at
++20%, both verified) and `edit_fit` already accepted `state:
+'overheated'` — but nothing exposed per-module *modified* attributes, so
+"what's my heated web range" had no computed source; and any tradeoff
+scan cost one conversation round-trip per variant.
+
+`module_attrs(fit, item, attrs)` returns named dogma attributes off the
+live calculated module (or drone) — skills, hull bonuses, heat and
+mutations applied — ~30 tokens. `sweep(fit, item, candidates, metrics)`
+swaps each candidate in server-side, reports dotted panel metrics plus
+cpu/pg margins and problem count per row, and restores the fit
+(smoke-tested: post-sweep panel identical); ~30 tokens a row, 20-candidate
+cap. A ten-variant tradeoff question ("meta plate to free room for a
+better rep?") drops from ~10 round-trips / ~3–4k tokens to one call at
+~350. The division of labor is in the skill now: knowledge prunes the
+candidate list, the engine adjudicates it; mutaplasmid roll feasibility
+stays a layer-1 SQL enumeration with only the winner engine-verified.
+
+18 tools, ~1,885 tokens standing (was ~1,550 at 16 — the two schemas pay
+for themselves the first time a sweep replaces a hand loop).
+`engine_info().unmodeled` now names heat burnout timers explicitly while
+stating overload bonuses ARE modeled, since that split invited folklore.
