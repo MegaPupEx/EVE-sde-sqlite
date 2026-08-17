@@ -86,6 +86,12 @@ ENV_GROUPS = ('Effect Beacon', 'MassiveEnvironments', 'Abyssal Hazards',
 STATES = {'offline': FittingModuleState.OFFLINE, 'online': FittingModuleState.ONLINE,
           'active': FittingModuleState.ACTIVE, 'overheated': FittingModuleState.OVERHEATED}
 
+from eos.const import FittingSlot as _FS  # noqa: E402
+RACKS = ((_FS.HIGH, 'high', 'hiSlots'), (_FS.MED, 'med', 'medSlots'),
+         (_FS.LOW, 'low', 'lowSlots'), (_FS.RIG, 'rig', 'rigSlots'),
+         (_FS.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
+         (_FS.SERVICE, 'service', 'serviceSlots'))
+
 
 def _new_id():
     global _counter
@@ -147,11 +153,7 @@ def _problems(fit):
     from collections import Counter
     used_by_slot = Counter(int(m.slot) for m in fit.modules
                            if not m.isEmpty and m.slot is not None)
-    for slot, label, attr_name in (
-            (FittingSlot.LOW, 'low', 'lowSlots'), (FittingSlot.MED, 'med', 'medSlots'),
-            (FittingSlot.HIGH, 'high', 'hiSlots'), (FittingSlot.RIG, 'rig', 'rigSlots'),
-            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
-            (FittingSlot.SERVICE, 'service', 'serviceSlots')):
+    for slot, label, attr_name in RACKS:
         total = attr(attr_name) or 0
         over = used_by_slot.get(int(slot), 0) - total
         if over > 0:
@@ -213,11 +215,7 @@ def _summary(fit_id):
     used = Counter(int(m.slot) for m in fit.modules
                    if not m.isEmpty and m.slot is not None)
     slots = {}
-    for slot, label, attr_name in (
-            (FittingSlot.HIGH, 'high', 'hiSlots'), (FittingSlot.MED, 'med', 'medSlots'),
-            (FittingSlot.LOW, 'low', 'lowSlots'), (FittingSlot.RIG, 'rig', 'rigSlots'),
-            (FittingSlot.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
-            (FittingSlot.SERVICE, 'service', 'serviceSlots')):
+    for slot, label, attr_name in RACKS:
         total = int(attr(attr_name) or 0)
         if total or used.get(int(slot)):
             slots[label] = [used.get(int(slot), 0), total]
@@ -422,7 +420,7 @@ def edit_fit(fit_id: str, ops: list) -> dict:
             if not hits:
                 raise ValueError(f'{item_name!r} not fitted')
         else:
-            raise ValueError(f'bad op {kind!r}; use add/remove/charge/state')
+            raise ValueError(f'bad op {kind!r}; use add/remove/charge/state/mode/ability')
     return _summary(fit_id)
 
 
@@ -566,6 +564,8 @@ def applied_dps(fit_id: str, distance_km: float, target: dict) -> dict:
                                      float(target.get('atk_speed_ms', 0)))
 
     def bucket(key):
+        if isinstance(key, tuple):  # fighters key as (fighter, effectID)
+            key = key[0]
         if isinstance(key, Drone):
             return 'drones'
         if isinstance(key, Fighter):
@@ -760,6 +760,10 @@ def versus(fit_id_a: str, fit_id_b: str, distance_km: float) -> dict:
                 mix[t] += getattr(d, t) * mult
             raw += d.total
         applied = sum(mix.values())
+        # weigh the victim's EHP by this actual mix, then RESTORE the
+        # pattern — a leaked pattern would silently skew later sweep and
+        # module_attrs reads that use the fit's resident damagePattern
+        saved_pattern = vic.damagePattern
         vic.damagePattern = DamagePattern(
             emAmount=mix['em'] or (0 if applied else 25),
             thermalAmount=mix['thermal'] or (0 if applied else 25),
@@ -768,6 +772,7 @@ def versus(fit_id_a: str, fit_id_b: str, distance_km: float) -> dict:
         _recalc(vic)
         ehp = sum(vic.ehp.values())
         reps_total = sum(v for v in vic.effectiveTank.values() if v)
+        vic.damagePattern = saved_pattern
         caps = [vic.ship.getModifiedItemAttr(a) for a in
                 ('shieldDamageLimit', 'armorDamageLimit', 'structureDamageLimit')]
         caps = [c for c in caps if c]
@@ -791,7 +796,8 @@ def versus(fit_id_a: str, fit_id_b: str, distance_km: float) -> dict:
             'assumptions': [
                 'victim moving at its current max speed, 90 deg (max transversal)',
                 'reps as one continuous pool across layers (favors the defender)',
-                'ewar/links only if already set via set_projected/set_booster']}
+                'ewar/links only if already set via set_projected/set_booster',
+                'spool-up weapons at full spool (the ramp favors the Triglavian side)']}
 
 
 @mcp.tool()

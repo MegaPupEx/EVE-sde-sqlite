@@ -27,6 +27,22 @@ def _resists(item, layer):
     return out
 
 
+def spool_ramp(fit):
+    """(active spool-up modules, seconds to full spool) — the ONE place that
+    decides what counts as a spool weapon; panel and graphs share it."""
+    from eos.const import FittingModuleState, SpoolType
+    from eos.utils.spoolSupport import calculateSpoolup
+    mods = [m for m in fit.modules if not m.isEmpty
+            and 'damageMultiplierBonusPerCycle' in m.item.attributes
+            and m.state >= FittingModuleState.ACTIVE]
+    ramp = max((calculateSpoolup(
+        m.getModifiedItemAttr('damageMultiplierBonusMax'),
+        m.getModifiedItemAttr('damageMultiplierBonusPerCycle'),
+        (m.getModifiedItemAttr('speed') or m.getModifiedItemAttr('duration') or 0) / 1000,
+        SpoolType.SPOOL_SCALE, 1.0)[2] for m in mods), default=0.0)
+    return mods, ramp
+
+
 def stat_panel(fit, recalc=_recalc, spool=None):
     """Full stat panel. Caller sets fit.damagePattern first (default uniform).
 
@@ -45,9 +61,8 @@ def stat_panel(fit, recalc=_recalc, spool=None):
     # convention); the zero-spool floor and ramp time ride along so the
     # answer can name the band instead of a single misleading number.
     from eos.const import SpoolType
-    from eos.utils.spoolSupport import SpoolOptions, calculateSpoolup
-    spool_mods = [m for m in fit.modules if not m.isEmpty
-                  and 'damageMultiplierBonusPerCycle' in m.item.attributes]
+    from eos.utils.spoolSupport import SpoolOptions
+    spool_mods, ramp_s = spool_ramp(fit)
     spool_level = 1.0 if spool is None else max(0.0, min(1.0, float(spool)))
     spool_opts = SpoolOptions(SpoolType.SPOOL_SCALE, spool_level, True) if spool_mods else None
 
@@ -57,11 +72,6 @@ def stat_panel(fit, recalc=_recalc, spool=None):
     dps_drones = fit.getDroneDps().total - dps_fighters  # getDroneDps folds fighters in
     spool_info = None
     if spool_mods:
-        ramp_s = max(calculateSpoolup(
-            m.getModifiedItemAttr('damageMultiplierBonusMax'),
-            m.getModifiedItemAttr('damageMultiplierBonusPerCycle'),
-            (m.getModifiedItemAttr('speed') or m.getModifiedItemAttr('duration') or 0) / 1000,
-            SpoolType.SPOOL_SCALE, 1.0)[2] for m in spool_mods)
         spool_info = {
             'level': spool_level,
             'dps_zero_spool': round(fit.getTotalDps(

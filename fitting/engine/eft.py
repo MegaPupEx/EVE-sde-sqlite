@@ -218,8 +218,10 @@ def build_fit(spec):
             drone.amountActive = entry['quantity']
             fit.drones.append(drone)
             drone.owner = fit
-        elif entry['quantity'] is not None and category == 'Fighter':
+        elif category == 'Fighter':
             fighter = Fighter(item)
+            if entry['quantity'] is not None:
+                fighter.amount = entry['quantity']
             fit.fighters.append(fighter)
             fighter.owner = fit
         elif entry['quantity'] is not None:
@@ -297,6 +299,10 @@ def render_eft(fit):
     for drone in fit.drones:
         name = drone.baseItem.typeName if drone.isMutated else drone.item.typeName
         extras.append(f'{name} x{drone.amount}{_mut_suffix(drone)}')
+    for fighter in fit.fighters:
+        amt = fighter.amount if (fighter.amount or 0) > 0 else \
+            int(fighter.getModifiedItemAttr('fighterSquadronMaxSize') or 1)
+        extras.append(f'{fighter.item.typeName} x{amt}')
     for cargo in fit.cargo:
         extras.append(f'{cargo.item.typeName} x{cargo.amount}')
     if extras:

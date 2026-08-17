@@ -66,7 +66,8 @@ def _install_shims(pyfa_path):
 
 def _dmg_map(fit):
     """{key: DmgTypes dps} for everything active that deals damage (full spool,
-    matching the panel's default)."""
+    matching the panel's default). Fighters key as (fighter, effectID) per
+    ability — the same keys pyfa's application map emits."""
     from eos.const import SpoolType
     from eos.utils.spoolSupport import SpoolOptions
     spool = SpoolOptions(SpoolType.SPOOL_SCALE, 1.0, True)
@@ -77,6 +78,10 @@ def _dmg_map(fit):
     for drone in fit.activeDronesIter():
         if drone.isDealingDamage():
             dmg[drone] = drone.getDps()
+    for fighter in fit.activeFightersIter():
+        for effect_id, d in fighter.getDpsPerEffect().items():
+            if d.total:
+                dmg[(fighter, effect_id)] = d
     return dmg
 
 
@@ -182,18 +187,12 @@ def ewar_vs_range(fit, item, points=24):
 def dps_vs_time(fit, points=24):
     """Spool ramp: total dps as a function of continuous fire time."""
     from eos.const import SpoolType
-    from eos.utils.spoolSupport import SpoolOptions, calculateSpoolup
-    ramp = 0.0
-    for m in fit.modules:
-        if m.isEmpty:
-            continue
-        mx = m.getModifiedItemAttr('damageMultiplierBonusMax')
-        step = m.getModifiedItemAttr('damageMultiplierBonusPerCycle')
-        if mx and step:
-            cyc = (m.getModifiedItemAttr('speed') or m.getModifiedItemAttr('duration') or 0) / 1000
-            ramp = max(ramp, calculateSpoolup(mx, step, cyc, SpoolType.SPOOL_SCALE, 1.0)[2])
-    if not ramp:
-        raise ValueError('no spool-up weapons on this fit; dps_vs_time is the Triglavian ramp')
+    from eos.utils.spoolSupport import SpoolOptions
+    from panel import spool_ramp
+    spool_mods, ramp = spool_ramp(fit)
+    if not spool_mods or not ramp:
+        raise ValueError('no active spool-up weapons on this fit; '
+                         'dps_vs_time is the Triglavian ramp')
     tmax = ramp * 1.15
     series = []
     for i in range(points + 1):

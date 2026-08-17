@@ -291,6 +291,34 @@ async def main(pyfa):
             av2f = await call('validate_fit', fit_id=ast2['fit_id'])
             assert any('light fighter tubes over' in p and 'standup' not in p
                        for p in av2f['problems']), av2f
+            # review findings pinned: fighters count in applied_dps/versus,
+            # survive export/clone with their quantity, and spool detection
+            # ignores offline disintegrators
+            fad = await call('applied_dps', fit_id=th2['fit_id'], distance_km=10,
+                             target={'sig_m': 400, 'speed_ms': 100})
+            assert fad['by_source'].get('fighters', [0, 0])[1] > 100, fad
+            fx = await call('export_fit', fit_id=th2['fit_id'])
+            assert 'Einherji II x' in fx and 'Standup Einherji I x' in fx, fx
+            fclone = await call('import_fit', eft='[Thanatos, part]\nEinherji II x3')
+            fma = await call('module_attrs', fit_id=fclone['fit_id'],
+                             item='Einherji II', attrs=['maxVelocity'])
+            assert fma['modules'][0]['amount'] == 3, fma
+            fcx = await call('export_fit', fit_id=fclone['fit_id'])
+            assert 'Einherji II x3' in fcx, fcx
+            vs_f = await call('versus', fit_id_a=th2['fit_id'], fit_id_b=fclone['fit_id'],
+                              distance_km=10)
+            assert vs_f['a_vs_b']['applied_dps'] > 100, vs_f['a_vs_b']
+            await call('delete_fit', fit_id=fclone['fit_id'])
+            ved_off = await call('import_fit',
+                                 eft='[Vedmak, off]\nHeavy Entropic Disintegrator II /offline')
+            vo_stats = await call('get_stats', fit_id=ved_off['fit_id'])
+            assert not any('spool' in n for n in vo_stats.get('notes', [])), vo_stats.get('notes')
+            try:
+                await call('graph', fit_id=ved_off['fit_id'], kind='dps_vs_time')
+                raise AssertionError('offline disintegrator must not graph a ramp')
+            except RuntimeError as e:
+                assert 'no active spool-up' in str(e), e
+            await call('delete_fit', fit_id=ved_off['fit_id'])
             await call('delete_fit', fit_id=th2['fit_id'])
             await call('delete_fit', fit_id=ast2['fit_id'])
 
@@ -329,7 +357,7 @@ async def main(pyfa):
                 await call('graph', fit_id=fid, kind='dps_vs_time')
                 raise AssertionError('dps_vs_time on a non-spool fit must be rejected')
             except RuntimeError as e:
-                assert 'no spool-up weapons' in str(e), e
+                assert 'no active spool-up' in str(e), e
             try:
                 await call('edit_fit', fit_id=ved['fit_id'], ops=[
                     {'op': 'charge', 'item': 'Heavy Entropic Disintegrator II', 'charge': 'Occult L'}])

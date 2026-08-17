@@ -650,3 +650,34 @@ The panel quotes what's active; toggling missiles off drops it, MWD on
 raises squadron speed in module_attrs. With this, the owner's five-item
 v2 scope is complete: siege states, spool, projection/application,
 structures, fighters — all engine-verified, all pinned.
+
+### 2026-08-17 — post-v2 review: nine findings, two of them serious
+
+A high-effort review of everything since eval run 4 (12 commits) found
+nine real issues, all fixed and pinned the same session:
+
+1. **Fighters were invisible to applied_dps and versus** — the damage
+   map never included them while pyfa's application map keys fighters as
+   `(fighter, effectID)` per ability. A carrier duel computed from ~0
+   attacker dps. Fixed via `getDpsPerEffect` with matching tuple keys;
+   a Thanatos now shows its fighters bucket (794 dps applied at 10 km).
+2. **Fighters were dropped by export/clone** — render_eft never emitted
+   them, so clone_fit produced fighterless copies (and versus's own
+   advice is "clone_fit it first"). Fixed + quantity round-trip
+   ('Einherji II x3' imports as 3, exports as 3; a bare fighter line no
+   longer crashes the builder — and a partial squadron no longer
+   silently quotes full-squadron dps).
+3. **versus leaked the opponent's damage pattern** onto both fits,
+   skewing later sweep/module_attrs reads; now saved and restored.
+4. Offline disintegrators no longer trigger spool notes or graph a
+   flat-zero ramp (spool detection now requires ACTIVE state).
+5. versus names its full-spool assumption.  6. edit_fit's bad-op error
+   lists all six ops.  7. The spool-ramp scan lives in ONE place
+   (`panel.spool_ramp`, graphs import it).  8. The rack table is one
+   module-level constant.  9. (verified non-issue: ewar_vs_range's
+   attr choice matches the effect handlers.)
+
+Battery 616 leaves and both key sets verified unchanged across all nine
+fixes. Lesson recorded: the fighter gaps shipped inside the very item
+called "full fighter support" — review-after-milestone stays in the
+process.
