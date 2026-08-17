@@ -120,7 +120,10 @@ gap is double-digit on most panels (damage skills, fitting skills, cap
 skills all stack up), and alpha clones cannot *use* much T2 equipment at
 all. A number quoted without its preset is unanchored — say "all-V" or
 "alpha" every time, and re-run `set_skills` rather than estimating the
-delta.
+delta. Note `validate_fit` checks fitting resources and slots only — it
+does **not** check skill prerequisites or alpha module restrictions, so
+"validate passed on the alpha preset" is not evidence a clone can use the
+modules; that check is game knowledge, and say so.
 
 ## T13 — Three builds can disagree: engine, SDE, CCP
 
