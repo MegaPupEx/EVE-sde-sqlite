@@ -31,10 +31,11 @@ confidently wrong. The engine computes; you interpret.
   quoting affected numbers — skew produces silently-wrong figures, which is
   the failure class this whole stack exists to kill.
 - **Name what the engine does not model.** `engine_info().unmodeled` lists
-  it (v1: command bursts, projected fits, environment effects, mutated
-  modules, fighters, T3D modes, siege states, spool-up, structures). If the
+  it (currently: projected fits — remote reps/ewar, implants/boosters,
+  mutated modules, fighters, siege states, spool-up, structures). If the
   question touches one, answer with the engine number *plus* the named gap —
-  never silently ignore it.
+  never silently ignore it. Command bursts, environments and T3D modes
+  *are* modeled (`set_booster`, `set_env`, the `mode` edit op).
 - **Skills are part of every number.** The engine defaults to all-V; `alpha`
   is the other preset. Say which preset a number is for — an alpha clone
   loses double-digit percentages on most panels.
@@ -48,11 +49,11 @@ present remembered fit numbers as computed.
 
 | File | ~tokens | Read it when |
 | --- | --- | --- |
-| `references/reading-stats.md` | 1.8k | interpreting any stat panel — DPS/volley/sustained, EHP and damage profiles (incl. NPC profile table), cap stability, align, targeting, fitting headroom |
+| `references/reading-stats.md` | 2.1k | interpreting any stat panel or graph — DPS/volley/sustained, EHP and damage profiles (incl. NPC profile table), cap stability, align, targeting, graph summaries, fitting headroom |
 | `references/tradeoffs.md` | 1.5k | choosing between things — buffer vs active, shield vs armor, another damage mod vs a different slot, speed vs resists, and "what should I fit" questions |
-| `references/traps.md` | 1.9k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones |
+| `references/traps.md` | 2.0k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones |
 
-Sizes are bytes/4, for budgeting; this router is ~1.6k.
+Sizes are bytes/4, for budgeting; this router is ~1.7k.
 
 ## If you read nothing else
 
@@ -97,6 +98,13 @@ is `edit_fit` → `get_stats` (~290 tokens a step); A/B questions are one
 before — CPU/PG needs are themselves dogma-modified. `set_skills` switches
 all-V/alpha. On import failures, quote the parser's error — it names the
 line.
+
+`graph(fit_id, kind)` returns bounded curves (`dps_vs_range`,
+`dps_vs_target_speed`, `cap_vs_time`): ≤30 points, summary stats, named
+assumptions — reason from the summary, chart the points only if asked.
+`set_env` applies a system environment **to that fit only** — set the same
+env on both sides of any comparison. `set_booster` attaches command-burst
+fits; the booster fit's own hull/skills scale the burst.
 
 Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted

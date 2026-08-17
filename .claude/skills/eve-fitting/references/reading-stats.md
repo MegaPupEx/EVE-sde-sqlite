@@ -30,9 +30,9 @@ factor × range factor — angular velocity vs `trackingSpeed·target_sig`, and
 1×falloff, ~6% at +2×falloff). Missiles always hit but scale by
 `min(1, sig/explosionRadius, (explosionVelocity·sig / (explosionRadius·speed))^DRF)`
 — a cruise Raven's paper 838 lands in full on a battleship and in small
-fraction on an orbiting frigate. When the question involves a target, name
-the application caveat; the v1 panel is a zero-range, full-application
-number.
+fraction on an orbiting frigate. When the question involves a target, run
+`graph` (`dps_vs_range` / `dps_vs_target_speed`, below) — the panel itself
+is a zero-range, full-application number.
 
 Spool-up (Triglavian) is **unmodeled in v1** — for those hulls "DPS"
 needs a spool parameter; say so rather than quoting a single figure.
@@ -121,6 +121,26 @@ rest. Sensor strength is jam resistance (ECM is out of v1 scope);
 `max_targets` is already min(ship, skills). Battleships locking frigates
 in 10+ s is a design fact to mention when someone asks "why fit a signal
 amp".
+
+## graphs — bounded curves from the same engine
+
+`graph(fit_id, kind)` returns ≤30 points, summary stats, and its
+assumptions — read the summary first; the points are for when the user
+wants a chart.
+
+- **`dps_vs_range`**: applied DPS with tracking/falloff/missile terms.
+  Default target is *ideal* (stationary, infinite sig) — the curve is then
+  pure range decay; pass `target {speed_ms, sig_m}` for the questions that
+  matter ("can this hit an orbiting frigate"). `summary.half_dps_km` is
+  the falloff crossover; `zero_beyond_km` is the hard edge (missiles).
+- **`dps_vs_target_speed`**: the tracking/application cliff at a fixed
+  distance. A plateau at high speed is the drones keeping up.
+- **`cap_vs_time`**: the event simulation's own trace, everything running —
+  same worst-case assumption as the panel.
+- **Graph DPS at perfect application reads ~1.5% above panel DPS.** That
+  is the wrecking-shot expectation (rolls ≤ 0.01 hit at 3×) which the
+  application model includes and the plain panel does not; pyfa's GUI
+  graph shows the same offset. Name which figure you are quoting.
 
 ## fitting — cpu, powergrid, calibration
 

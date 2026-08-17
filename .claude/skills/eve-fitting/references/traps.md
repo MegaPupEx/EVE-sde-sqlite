@@ -11,8 +11,9 @@ Two different systems, and the difference decides real answers:
 - **Command bursts are warfare buffs** (`dbuffCollections` in the SDE), a
   system *outside* dogma modifiers. Buffs never join stacking chains with
   your modules, and two boosters running the same burst don't add — the
-  strongest single buff of each ID wins. Bursts are **unmodeled in engine
-  v1** (`engine_info().unmodeled`) — name that when they come up.
+  strongest single buff of each ID wins. Modeled via `set_booster`: the
+  booster fit's own hull/skills/mindlink scale the burst (a Vulture's
+  burst beats a Drake's), and strongest-wins is computed, not assumed.
 - **Wormhole/weather beacons are ordinary dogma modifiers** from category 2
   (Celestial), which is **not** on the exempt list (Ship, Charge, Skill,
   Implant, Subsystem — F§1). pyfa applies them with stacking penalties: a
@@ -28,11 +29,14 @@ Two different systems, and the difference decides real answers:
   both halves. (pyfa `eos/effects.py` systemShieldHP vs systemMaxVelocity/
   systemArmorEmResistance, all engine-verified.)
 
-## T2 — Environmental effects hit NPCs too
+## T2 — Environmental effects hit NPCs too — and `set_env` hits one fit
 
-The beacon projects onto every ship in the system. A Pulsar buffs the
-rats' shields and strips their armor resists exactly as it does yours;
-factor both sides before calling a site easier or harder.
+In game the beacon projects onto every ship in the system: a Pulsar buffs
+the rats' shields and strips their armor resists exactly as it does
+yours; factor both sides before calling a site easier or harder. The
+engine's `set_env` applies the beacon **only to the fit it is set on** —
+a fair A-vs-B or you-vs-them comparison sets the same environment on
+every fit involved.
 
 ## T3 — Hull resists: every ship has 33%, and the `hull*` attributes lie
 

@@ -202,3 +202,53 @@ a free mid; a shield tank needn't drop the web), one model-owned nit
 logged. Notable negative result: the control's 69% shows the MCP surface
 itself (problems lists, unit-suffixed keys) carries real discipline —
 every control run that imported a fit caught the PG-illegal battery fits.
+
+## 2026-08-17 — phase 4: graphs + the external-effects pipeline (first slice)
+
+Same day, phase 4 of the roadmap. The MCP grows from 11 to 14 tools
+(~1,281 tokens standing, still an order of magnitude inside the envelope);
+eval keys verified unchanged after the refactor.
+
+**`graph()`** — `dps_vs_range`, `dps_vs_target_speed`, `cap_vs_time`; ≤30
+points + summary stats + named assumptions, ~110–190 tokens a payload.
+Wrap-don't-reimplement held: the application factors are pyfa's own
+`fitDamageStats/calc/application.py` — reached by registering synthetic
+`graphs.*` package entries so the wx GUI `__init__`s never run, with
+`GraphSettings` shimmed to pyfa's pinned defaults — and the cap series is
+eos's event-sim trace (`fit.getCapSimData`, times in seconds). One
+teaching note fell out: applied DPS at perfect hit reads ~1.015× the
+panel figure (the wrecking-shot expectation; the GUI graph shows the
+same) — pinned in `reading-stats.md`.
+
+**`set_env`** — projects a system beacon onto the fit
+(`projectedModules`, one per fit, groups: Effect Beacon,
+MassiveEnvironments, Abyssal Hazards, Destructible Effect Beacon).
+Verified: C5 Wolf-Rayet takes the battery Rifter ×2.69 DPS — the ×2.72
+beacon modifier stack-penalized in the multiply group, exactly the traps
+§T1 story, now engine-computable instead of doc-only. `set_env` affects
+only the fit it is set on; the skill's T2 now says so.
+
+**`set_booster`** — command bursts, pyfa's recursive model without the
+saveddata ORM: each booster fit's own `calculateModifiedAttributes(subject,
+CalcType.COMMAND)` runs before the subject's calc. Measured: Drake burst
++15.0% shield, Vulture +17.25% (hull scaling), both-projected = Vulture
+alone (strongest-wins). Engineering finding worth keeping: **eos consumes
+`commandBonuses` as it applies them** (`__runCommandBoosts` deletes each
+entry), so the booster pass must rerun before *every* calculation —
+`panel.stat_panel` gained an injectable `recalc` for this; the smoke test
+asserts the second read still carries the burst.
+
+**T3D modes** — `edit_fit` op `mode` sets `fit.mode` (group Ship
+Modifiers); Confessor Defense vs Sharpshooter sig 43.3 vs 65 verified.
+
+**Deferred from v1.5, with reasons:** projected fits (remote reps/ewar —
+same CalcType pattern but needs per-module projection wiring and a
+target-fit surface), fighters (ability-level model plus battery
+additions), mutated modules (blocked on the EFT dialect decision).
+`engine_info().unmodeled` names all three, and now also names
+implants/boosters — true since v1, previously unstated.
+
+Docs updated in step: router + traps §T1/T2 no longer call bursts/env
+unmodeled, reading-stats gained a graphs section, MCP README re-measured.
+Eval generation 2 candidates (results-2026-08-17.md) now include
+engine-truth keys for T4/T5's mechanics, which this slice made computable.
