@@ -11,7 +11,7 @@ build step. Releases carry the SDE **split by domain**; fetch only the parts the
 question needs:
 
 ```bash
-BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
+BASE=https://github.com/MegaPupEx/EVE-sde-sqlite-Claude-skill/releases/latest/download
 curl -sSLO $BASE/eve-sde-universe.sqlite.xz && xz -d eve-sde-universe.sqlite.xz
 curl -sSLO $BASE/eve-sde-items.sqlite.xz    && xz -d eve-sde-items.sqlite.xz
 ```

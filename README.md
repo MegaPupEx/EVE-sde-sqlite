@@ -34,7 +34,7 @@ per-file upload limit):
 | `eve-sde-cosmetic.sqlite.xz` + `misc` | ~0.4 MB | skins, icons, the remainder |
 
 ```bash
-BASE=https://github.com/MegaPupEx/eve-sde-sqlite/releases/latest/download
+BASE=https://github.com/MegaPupEx/EVE-sde-sqlite-Claude-skill/releases/latest/download
 curl -sSLO $BASE/eve-sde-universe.sqlite.xz && xz -d eve-sde-*.xz   # keep published names
 ```
 
@@ -47,14 +47,11 @@ python3 .claude/skills/eve-sde/scripts/build_sde_db.py --complete --split --comp
 
 **Query**: each part is a complete database; `ATTACH` several and join
 across them (most real questions need two). Python's built-in `sqlite3`
-needs no install. Two mechanical warnings: `ATTACH` on a mistyped path
-silently creates an empty database, and four columns produce wrong answers
-rather than errors — resonance is inverted (`0.4` = 60% resist), `security`
-alone doesn't identify nullsec (filter `space = 'kspace'`), ship skill
-requirements are dogma not `bp_skills`, and `basePrice` is not a market
-price. Full column reference and trap catalogue:
-[`SKILL.md`](.claude/skills/eve-sde/SKILL.md). Claims are pinned to build
-3466501 — `scripts/verify_claims.py` re-checks all 138 on any newer build.
+needs no install. The SDE is full of columns that return plausible wrong
+numbers rather than errors — the trap catalogue and full column reference
+live in [`SKILL.md`](.claude/skills/eve-sde/SKILL.md); read it before
+trusting a result. Claims are pinned to build 3466501 —
+`scripts/verify_claims.py` re-checks all 138 on any newer build.
 
 **Use as a skill**: loads automatically in this repo. Elsewhere:
 `cp -r .claude/skills/eve-sde ~/.claude/skills/`, or zip that folder and
@@ -73,7 +70,7 @@ desktop pyfa; runs on the same SDE build as layer 1.
 
 | Piece | What |
 | --- | --- |
-| [`fitting/mcp/`](fitting/mcp/) | the server: 11 tools (import/edit/stats/compare/validate…), ~880 tokens standing, ~290 per edit+stats step |
+| [`fitting/mcp/`](fitting/mcp/) | the server: 14 tools (import/edit/stats/graph/env/bursts…), ~1,280 tokens standing, ~290 per edit+stats step |
 | [`fitting/engine/`](fitting/engine/) | EFT parse/build/render + the stat panel |
 | [`fitting/adapter/`](fitting/adapter/) | regenerates pyfa's data from CCP's current export — engine and skill share one data source |
 | [`fitting/spike/`](fitting/spike/) | reproducible setup + the 10-fit reference battery every change is graded against |
