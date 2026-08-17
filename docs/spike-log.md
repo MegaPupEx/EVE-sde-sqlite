@@ -417,3 +417,28 @@ stays a layer-1 SQL enumeration with only the winner engine-verified.
 for themselves the first time a sweep replaces a hand loop).
 `engine_info().unmodeled` now names heat burnout timers explicitly while
 stating overload bonuses ARE modeled, since that split invited folklore.
+
+### 2026-08-17 — run 4: complex composition questions, 6/6, no balloon
+
+The question behind the run: does asking the stack to enumerate (roll
+feasibility, candidate tradeoffs) balloon token and time cost? Answer in
+`fitting/evals/results4-2026-08-17.md`: no — six hard questions
+averaged 42.5k tokens (35.8–56.4k, inside run 3's ordinary turn-one
+band) and 60–192 s. The roll-ceiling question — "which faction web +
+mutaplasmid matches a heated faction point's range" — was answered
+correctly as **impossible** (24.4 km ceiling vs 36 km, engine-verified
+as a built mutated fit overheated), with the enumeration done in SQL
+and the engine reserved for verifying the winner; the legality landmine
+(a pasted fit quietly over powergrid) and the napkin-math trap
+((base+flat)×skill vs base×skill+flat) were both caught. Remaining
+C-axis residue: two answers restated table numbers in prose.
+
+Key preparation earned its keep again: driving the live long-lived
+server crashed it on a sqlite cross-thread error — eos SQLAlchemy
+objects are thread-bound, the MCP SDK dispatches to arbitrary worker
+threads, and the smoke test's client masks it by single-threading —
+fixed by pinning tools to one re-entrant engine thread (naive submit
+self-deadlocked: tools call tools). And the router's mutaplasmid recipe
+pointed at engine-db table names that don't exist in layer 1
+(`dynamicItemAttributes` JSON is the layer-1 home); fixed before
+subjects launched.
