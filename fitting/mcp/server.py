@@ -182,6 +182,21 @@ def _problems(fit):
         tubes = attr('fighterTubes') or 0
         if len(fit.fighters) > tubes:
             out.append(f'fighter tubes over: {len(fit.fighters)} / {tubes:g}')
+        # class-split tubes: light/support/heavy, ship-side and standup —
+        # a Standup fighter on a carrier (or a ship fighter on a structure)
+        # lands in a class the hull has zero slots for, so this also gives
+        # cross-legality for free
+        for flag, slot_attr, label in (
+                ('fighterSquadronIsLight', 'fighterLightSlots', 'light'),
+                ('fighterSquadronIsSupport', 'fighterSupportSlots', 'support'),
+                ('fighterSquadronIsHeavy', 'fighterHeavySlots', 'heavy'),
+                ('fighterSquadronIsStandupLight', 'fighterStandupLightSlots', 'standup light'),
+                ('fighterSquadronIsStandupSupport', 'fighterStandupSupportSlots', 'standup support'),
+                ('fighterSquadronIsStandupHeavy', 'fighterStandupHeavySlots', 'standup heavy')):
+            n = sum(1 for f in fit.fighters if f.getModifiedItemAttr(flag))
+            have = attr(slot_attr) or 0
+            if n > have:
+                out.append(f'{label} fighter tubes over: {n} / {have:g}')
         fvol = sum(f.item.attributes['volume'].value * max(f.amount, 0) for f in fit.fighters)
         fbay = attr('fighterCapacity') or 0
         if fvol > fbay:
@@ -291,7 +306,7 @@ def export_fit(fit_id: str) -> str:
 @mcp.tool()
 @_engine_thread
 def edit_fit(fit_id: str, ops: list) -> dict:
-    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones), keep_slot?:bool (remove: leave an [Empty] gap in place)}. 'charge'/'state' apply to every matching module; 'add' fills the first gap in the rack; 'mode' sets a tactical-destroyer mode item. Returns summary + problems."""
+    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode'|'ability', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones), keep_slot?:bool (remove: leave an [Empty] gap), ability?:name-substring+enabled?:bool (fighter ability toggle)}. 'charge'/'state' apply to every matching module; 'add' fills the first gap in the rack; 'mode' sets a tactical-destroyer mode item. Returns summary + problems."""
     from eos.saveddata.drone import Drone
     from eos.saveddata.module import Module
     fit = _fit(fit_id)
@@ -377,6 +392,24 @@ def edit_fit(fit_id: str, ops: list) -> dict:
             if item is None or item.group.name != 'Ship Modifiers':
                 raise ValueError(f'unknown mode {item_name!r}; want e.g. "Confessor Defense Mode"')
             fit.mode = Mode(item)
+        elif kind == 'ability':
+            want = op.get('ability', '').lower()
+            enabled = bool(op.get('enabled', True))
+            hits = 0
+            names = set()
+            for fighter in fit.fighters:
+                if fighter.item.typeName != item_name:
+                    continue
+                for ability in fighter.abilities:
+                    names.add(ability.name)
+                    if want and want in ability.name.lower():
+                        ability.active = enabled
+                        hits += 1
+            if not hits:
+                if names:
+                    raise ValueError(f'no ability matching {want!r} on {item_name!r}; '
+                                     f'has: {sorted(names)}')
+                raise ValueError(f'{item_name!r} not fitted as a fighter')
         elif kind == 'state':
             state = STATES.get(op.get('state', ''))
             if state is None:
@@ -616,6 +649,14 @@ def module_attrs(fit_id: str, item: str, attrs: list) -> dict:
                     for n in attrs for v in [drone.getModifiedItemAttr(n)]}
             out.append({'item': drone.item.typeName, 'amount': drone.amount,
                         'attrs': vals})
+    for fighter in fit.fighters:
+        if fighter.item.typeName == item:
+            vals = {n: (round(v, 4) if isinstance(v, float) else v)
+                    for n in attrs for v in [fighter.getModifiedItemAttr(n)]}
+            out.append({'item': fighter.item.typeName, 'amount': fighter.amount,
+                        'abilities': [{'name': a.name, 'active': bool(a.active)}
+                                      for a in fighter.abilities],
+                        'attrs': vals})
     if not out:
         raise ValueError(f'{item!r} not fitted')
     return {'fit_id': fit_id, 'modules': out}
@@ -854,7 +895,6 @@ def engine_info() -> dict:
         'unmodeled': ['industrial core state',
                       'structure reinforcement/low-power cycles (fitting, combat and fuel ARE modeled)',
                       'custom skill sheets',
-                      'fighter ability toggles (standard attack only)',
                       'heat burnout timers (overload bonuses ARE modeled: state overheated)'],
         'skills_presets': ['all-0', 'alpha', 'all-5'],
     }

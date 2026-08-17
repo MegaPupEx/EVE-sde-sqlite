@@ -178,10 +178,15 @@ the rest is dropped.**
    carries tower fuel (`controlTowerResources`, gotchas-industry
    documents the `purpose` trap) and the Upwell fuel attributes;
    gotchas-industry now points at both models.
-6. **Full fighter support** — abilities beyond the auto-activated
-   standard attack (missiles, bombs, utility), light/support/heavy tube
-   split validation, across every fighter-capable hull and, once item 5
-   lands, structures.
+6. ~~**Full fighter support**~~ *landed 2026-08-17* — `ability` edit op
+   toggles any squadron ability (matched by name substring, loud error
+   lists the real names), `module_attrs` shows per-squadron abilities
+   and states, and tube validation splits by class (light/support/heavy
+   × ship/standup — which rejects ship fighters on structures and
+   standup fighters on carriers for free). Finding: eos's constructor
+   activates damage abilities it sees before the standard attack, so
+   Einherji II defaults to missiles ON — the panel quotes what is
+   active, and T9 says to name it. **v2 scope: complete.**
 
 Dropped from scope (2026-08-17, owner's call): custom skill sheets;
 heat-over-time (assessed the same day: every input is in the SDE —

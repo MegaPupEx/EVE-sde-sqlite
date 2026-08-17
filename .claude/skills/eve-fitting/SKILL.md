@@ -32,12 +32,12 @@ confidently wrong. The engine computes; you interpret.
   the failure class this whole stack exists to kill.
 - **Name what the engine does not model.** `engine_info().unmodeled` lists
   it (currently: industrial core, structure reinforcement/low-power
-  cycles, custom skill sheets, fighter ability toggles). If the question
-  touches one, answer with the engine number *plus* the named gap —
-  never silently ignore it.
+  cycles, custom skill sheets). If the question touches one, answer with
+  the engine number *plus* the named gap — never silently ignore it.
   Modeled: bursts (`set_booster`), environments (`set_env`), projected
   fits (`set_projected` — remote reps/ewar/neuts, zero range), T3D modes
-  (`mode` op), fighters, implants and drugs (`edit_fit` add), mutated
+  (`mode` op), fighters incl. ability toggles and class tubes (§T9),
+  implants and drugs (`edit_fit` add), mutated
   (abyssal) modules — rolls travel in the EFT `[N]` dialect
   (`references/traps.md` §T15) — overload bonuses (`state: 'overheated'`;
   burnout timers are not modeled, so name the tradeoff), and

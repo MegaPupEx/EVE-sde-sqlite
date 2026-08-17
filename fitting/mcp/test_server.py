@@ -245,6 +245,54 @@ async def main(pyfa):
                     {'op': 'add', 'item': 'Firbolg I'}])
             f_val = await call('validate_fit', fit_id=than['fit_id'])
             assert any('fighter tubes' in p for p in f_val['problems']), f_val
+            assert any('light fighter tubes over' in p for p in f_val['problems']), f_val
+
+            # fighter abilities: visible in module_attrs, toggleable, dps moves
+            th2 = await call('create_fit', ship='Thanatos')
+            await call('edit_fit', fit_id=th2['fit_id'], ops=[
+                {'op': 'add', 'item': 'Einherji II'}])
+            fa = await call('module_attrs', fit_id=th2['fit_id'], item='Einherji II',
+                            attrs=['maxVelocity'])
+            ab_names = {a['name']: a['active'] for a in fa['modules'][0]['abilities']}
+            assert ab_names.get('Missile Attack') is True, ab_names  # eos default: on
+            base_speed = fa['modules'][0]['attrs']['maxVelocity']
+            base_fdps = (await call('get_stats', fit_id=th2['fit_id']))['offense']['dps_fighters']
+            await call('edit_fit', fit_id=th2['fit_id'], ops=[
+                {'op': 'ability', 'item': 'Einherji II',
+                 'ability': 'missile', 'enabled': False}])
+            no_mis = (await call('get_stats', fit_id=th2['fit_id']))['offense']['dps_fighters']
+            assert no_mis < base_fdps, (base_fdps, no_mis)
+            await call('edit_fit', fit_id=th2['fit_id'], ops=[
+                {'op': 'ability', 'item': 'Einherji II',
+                 'ability': 'microwarp', 'enabled': True}])
+            fa2 = await call('module_attrs', fit_id=th2['fit_id'], item='Einherji II',
+                             attrs=['maxVelocity'])
+            assert fa2['modules'][0]['attrs']['maxVelocity'] > base_speed, \
+                (base_speed, fa2['modules'][0]['attrs'])
+            try:
+                await call('edit_fit', fit_id=th2['fit_id'], ops=[
+                    {'op': 'ability', 'item': 'Einherji II', 'ability': 'nosuch'}])
+                raise AssertionError('bad ability name must be rejected with the list')
+            except RuntimeError as e:
+                assert 'has:' in str(e), e
+            # standup fighters: wrong-way tube classes fail, right way flies
+            await call('edit_fit', fit_id=th2['fit_id'], ops=[
+                {'op': 'add', 'item': 'Standup Einherji I'}])
+            sv = await call('validate_fit', fit_id=th2['fit_id'])
+            assert any('standup light fighter tubes over' in p for p in sv['problems']), sv
+            ast2 = await call('create_fit', ship='Astrahus')
+            await call('edit_fit', fit_id=ast2['fit_id'], ops=[
+                {'op': 'add', 'item': 'Standup Einherji I'}])
+            as_stats = await call('get_stats', fit_id=ast2['fit_id'])
+            assert as_stats['offense'].get('dps_fighters', 0) > 0, as_stats['offense']
+            assert (await call('validate_fit', fit_id=ast2['fit_id']))['legal']
+            await call('edit_fit', fit_id=ast2['fit_id'], ops=[
+                {'op': 'add', 'item': 'Einherji II'}])
+            av2f = await call('validate_fit', fit_id=ast2['fit_id'])
+            assert any('light fighter tubes over' in p and 'standup' not in p
+                       for p in av2f['problems']), av2f
+            await call('delete_fit', fit_id=th2['fit_id'])
+            await call('delete_fit', fit_id=ast2['fit_id'])
 
             # implants and drugs apply and remove cleanly
             imp_fit = await call('import_fit', eft='[Rifter, pods]')

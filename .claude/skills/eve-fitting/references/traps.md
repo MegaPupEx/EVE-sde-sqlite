@@ -105,9 +105,14 @@ full on its own. Module states matter: `active` is the boosted state;
 Bay volume caps what you carry, bandwidth caps what launches, and the
 pilot's Drones skill caps **5 active** — the skill cap is in neither ship
 attribute. Drone DPS is inside panel `dps` (broken out as `dps_drones`;
-fighters as `dps_fighters`, standard attack only) and is the first DPS
-you lose: drones get shot, left behind, or exceed control range. Say when
-a quoted DPS depends on drones or fighters staying alive.
+fighters as `dps_fighters`) and is the first DPS you lose: drones get
+shot, left behind, or exceed control range. Say when a quoted DPS
+depends on drones or fighters staying alive. Fighter *abilities* are
+toggleable (`edit_fit` op `ability`; `module_attrs` lists each
+squadron's abilities and states): eos's default turns damage abilities
+on — including limited-shot missiles — so quote what's active, and note
+tube classes (light/support/heavy, ship and standup) validate
+separately from the total tube count.
 
 ## T10 — Fitting headroom: validate after calculation, expect 0.01 skew
 

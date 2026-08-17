@@ -132,6 +132,10 @@ silently ignored.
   per-service fuel in `services`, and the per-layer incoming damage cap
   in `defense.incoming_dps_cap`. Reinforcement/low-power cycles are
   named unmodeled.
-- Not yet here (tracked in the roadmap's v2 list): full fighter
-  abilities. Out of scope: industrial core, custom skill sheets,
-  heat-over-time, ISK cost.
+- Fighters are fully modeled: ability toggles via the `ability` edit op
+  (eos defaults damage abilities ON, missiles included), per-squadron
+  ability/state visibility in `module_attrs`, and class-split tube
+  validation (light/support/heavy, ship-side and standup) — which also
+  rejects ship fighters on structures and vice versa.
+- v2 scope complete. Out of scope: industrial core, custom skill
+  sheets, heat-over-time, ISK cost.

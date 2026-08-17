@@ -632,3 +632,21 @@ victim at max transversal, reps as one pool (defender-favoring), ewar
 only if projected. Smoke test pins both directions on a Rifter/Punisher
 duel and that webbing the victim raises the attacker's applied dps.
 20 tools, ~2,340 tokens standing.
+
+### 2026-08-17 — v2 item 5: full fighters; v2 scope complete
+
+The `ability` edit op toggles any fighter squadron ability (substring
+match; a miss lists the squadron's real ability names), `module_attrs`
+now surfaces fighters with per-ability active flags, and fighter tube
+validation splits by class — light/support/heavy, ship-side and standup
+— on top of the total count, which yields cross-legality for free (a
+Standup Einherji on a Thanatos and an Einherji II on an Astrahus both
+fail with the exact tube class named). One default worth knowing,
+pinned in T9 and the smoke suite: eos's Fighter constructor activates
+every implemented damage ability it iterates before reaching the
+standard attack, so light fighters default to missiles ON — 521 dps for
+a Thanatos Einherji II squad includes the limited-shot missile volley.
+The panel quotes what's active; toggling missiles off drops it, MWD on
+raises squadron speed in module_attrs. With this, the owner's five-item
+v2 scope is complete: siege states, spool, projection/application,
+structures, fighters — all engine-verified, all pinned.
