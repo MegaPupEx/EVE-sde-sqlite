@@ -60,6 +60,11 @@ explosive, but hardeners move the holes. The battery Caracal (multispectrum
 hardener) is 16.9k uniform, **18.5k vs Guristas** (kin/therm — its best
 resists) and **15.0k vs Sansha** (EM — its worst): same fit, ±10% either
 way. Tanking *for the enemy* is often worth more than another extender.
+When you state which way the profile moved the number, read it off both
+panels (uniform and profiled) — never narrate it from the hardener list:
+a hardener-heavy fit can still read *lower* vs its enemy than uniform if
+the profile leans on an uncovered hole (measured miss: both eval arms
+called a kin-holed Drake "up vs Guristas" when it was down 1.8k).
 
 - `resists` are fractions per layer/type, already converted (0.598 =
   59.8%) — not the SDE's inverted resonance. Every hull has **33% base

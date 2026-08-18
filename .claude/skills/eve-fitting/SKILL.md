@@ -104,7 +104,10 @@ Sizes are bytes/4, for budgeting; this router is ~2.4k.
 ## Driving the engine
 
 Fits are server-side objects addressed by short IDs — never re-send EFT
-mid-conversation; it is the import/export currency only. The iteration loop
+mid-conversation; it is the import/export currency only. Ids live only as
+long as the server process: every fit-scoped response echoes the ship, and
+an unknown-id error after a restart means re-import from your own context
+and continue (never reason past a ship echo that doesn't match). The iteration loop
 is `edit_fit` → `get_stats` (~290 tokens a step); A/B questions are one
 `clone_fit` + edits + `compare_fits` (returns only what differs).
 `validate_fit` names the violated constraint; run it after edits, not

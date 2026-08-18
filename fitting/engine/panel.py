@@ -129,12 +129,17 @@ def stat_panel(fit, recalc=_recalc, spool=None):
     if reps:
         panel['defense']['reps_hps'] = reps
     # Upwell structures cap incoming dps per layer (data: *DamageLimit attrs);
-    # EHP / cap is the floor on time-to-kill regardless of attacker count
-    dmg_caps = {layer: round(attr(a))
+    # EHP / cap is the floor on time-to-kill regardless of attacker count.
+    # A "cap" as large as the layer's full HP is no cap at all (Astrahus
+    # shield: limit 14.4M == shield HP) — three of four eval subjects read
+    # the raw number as a per-layer 5k-style cap, so report it as 'none'.
+    raw_hp = {'shield': attr('shieldCapacity'), 'armor': attr('armorHP'),
+              'hull': attr('hp')}
+    dmg_caps = {layer: 'none' if cap >= raw_hp[layer] else round(cap)
                 for layer, a in (('shield', 'shieldDamageLimit'),
                                  ('armor', 'armorDamageLimit'),
                                  ('hull', 'structureDamageLimit'))
-                if attr(a)}
+                for cap in [attr(a)] if cap}
     if dmg_caps:
         panel['defense']['incoming_dps_cap'] = dmg_caps
     if not dps_drones:

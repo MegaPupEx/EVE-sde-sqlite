@@ -13,6 +13,7 @@ Design rules (docs/roadmap-fitting-mcp.md, token budget):
 import argparse
 import json
 import os
+import random as _random
 import sqlite3
 import sys
 
@@ -79,6 +80,10 @@ BOOSTS = {}       # fit_id -> [booster fit_id, ...]
 PROJECTIONS = {}  # fit_id -> [projector fit_id, ...]
 ENVS = {}         # fit_id -> projected env Module
 _counter = 0
+# Ids are salted per boot: after a restart a stale id must fail loudly,
+# never silently resolve to a recycled one (a mid-eval restart once aliased
+# one session's resident Vedmak to another session's Thanatos).
+_BOOT = ''.join(_random.choices('cdfghjkmnpqrtvwxyz', k=2))
 
 ENV_GROUPS = ('Effect Beacon', 'MassiveEnvironments', 'Abyssal Hazards',
               'Destructible Effect Beacon')
@@ -96,13 +101,20 @@ RACKS = ((_FS.HIGH, 'high', 'hiSlots'), (_FS.MED, 'med', 'medSlots'),
 def _new_id():
     global _counter
     _counter += 1
-    return f'f{_counter}'
+    return f'f{_BOOT}{_counter}'
 
 
 def _fit(fit_id):
     if fit_id not in FITS:
-        raise ValueError(f'unknown fit_id {fit_id!r}; known: {sorted(FITS)}')
+        raise ValueError(
+            f'unknown fit_id {fit_id!r}; known: {sorted(FITS)} '
+            '(ids are per-server-boot: if this id worked before, the server '
+            'restarted and its fits are gone — re-import and continue)')
     return FITS[fit_id]
+
+
+def _ship_name(fit):
+    return fit.ship.item.typeName
 
 
 def _recalc(fit, factor_reload=False):
@@ -528,20 +540,22 @@ def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0,
     _recalc(fit)
     t = target or {}
     if kind == 'dps_vs_range':
-        return graphlib.dps_vs_range(fit, tgt_speed=t.get('speed_ms', 0.0),
-                                     tgt_sig=t.get('sig_m'), atk_speed=t.get('atk_speed_ms', 0.0))
-    if kind == 'dps_vs_target_speed':
-        return graphlib.dps_vs_target_speed(fit, distance_km=distance_km, tgt_sig=t.get('sig_m'))
-    if kind == 'cap_vs_time':
-        return graphlib.cap_vs_time(fit)
-    if kind == 'dps_vs_time':
-        return graphlib.dps_vs_time(fit)
-    if kind == 'ewar_vs_range':
+        out = graphlib.dps_vs_range(fit, tgt_speed=t.get('speed_ms', 0.0),
+                                    tgt_sig=t.get('sig_m'), atk_speed=t.get('atk_speed_ms', 0.0))
+    elif kind == 'dps_vs_target_speed':
+        out = graphlib.dps_vs_target_speed(fit, distance_km=distance_km, tgt_sig=t.get('sig_m'))
+    elif kind == 'cap_vs_time':
+        out = graphlib.cap_vs_time(fit)
+    elif kind == 'dps_vs_time':
+        out = graphlib.dps_vs_time(fit)
+    elif kind == 'ewar_vs_range':
         if not item:
             raise ValueError("ewar_vs_range needs item: the projected module's name")
-        return graphlib.ewar_vs_range(fit, item)
-    raise ValueError("kind must be 'dps_vs_range', 'dps_vs_target_speed', "
-                     "'cap_vs_time', 'dps_vs_time' or 'ewar_vs_range'")
+        out = graphlib.ewar_vs_range(fit, item)
+    else:
+        raise ValueError("kind must be 'dps_vs_range', 'dps_vs_target_speed', "
+                         "'cap_vs_time', 'dps_vs_time' or 'ewar_vs_range'")
+    return {'ship': _ship_name(fit), **out}
 
 
 @mcp.tool()
@@ -586,7 +600,7 @@ def applied_dps(fit_id: str, distance_km: float, target: dict) -> dict:
         b[1] += applied
         raw_total += raw
         applied_total += applied
-    return {'fit_id': fit_id, 'distance_km': distance_km,
+    return {'fit_id': fit_id, 'ship': _ship_name(fit), 'distance_km': distance_km,
             'target': {'sig_m': target['sig_m'], 'speed_ms': tgt_speed},
             'dps_raw': round(raw_total, 1), 'dps_applied': round(applied_total, 1),
             'application_pct': round(100 * applied_total / raw_total, 1) if raw_total else 0,
@@ -605,6 +619,7 @@ def get_stats(fit_id: str, profile: dict = None, spool: float = None) -> dict:
         kineticAmount=p.get('kinetic', 25), explosiveAmount=p.get('explosive', 25))
     panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload),
                        spool=spool)
+    panel = {'ship': _ship_name(fit), **panel}
     panel['problems'] = _problems(fit)
     # A silent zero-spool number once cost a graded eval miss: name the level.
     spool_info = panel['offense'].get('spool')
@@ -659,7 +674,7 @@ def module_attrs(fit_id: str, item: str, attrs: list) -> dict:
                         'attrs': vals})
     if not out:
         raise ValueError(f'{item!r} not fitted')
-    return {'fit_id': fit_id, 'modules': out}
+    return {'fit_id': fit_id, 'ship': _ship_name(fit), 'modules': out}
 
 
 @mcp.tool()
@@ -732,7 +747,8 @@ def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dic
             if fit.modules[i] is not orig:
                 fit.modules.replace(i, orig)
         _recalc(fit)
-    return {'fit_id': fit_id, 'swapped_count': len(originals), 'rows': rows}
+    return {'fit_id': fit_id, 'ship': _ship_name(fit),
+            'swapped_count': len(originals), 'rows': rows}
 
 
 @mcp.tool()
@@ -791,6 +807,7 @@ def versus(fit_id_a: str, fit_id_b: str, distance_km: float) -> dict:
         return out
 
     return {'distance_km': distance_km,
+            'ships': {fit_id_a: _ship_name(fa), fit_id_b: _ship_name(fb)},
             'a_vs_b': {'attacker': fit_id_a, 'victim': fit_id_b, **direction(fa, fb)},
             'b_vs_a': {'attacker': fit_id_b, 'victim': fit_id_a, **direction(fb, fa)},
             'assumptions': [
@@ -828,8 +845,10 @@ def compare_fits(fit_id_a: str, fit_id_b: str) -> dict:
 @_engine_thread
 def validate_fit(fit_id: str) -> dict:
     """In-game legality: fitting resources, slots, hardpoints, drone limits."""
-    problems = _problems(_fit(fit_id))
-    return {'fit_id': fit_id, 'legal': not problems, 'problems': problems}
+    fit = _fit(fit_id)
+    problems = _problems(fit)
+    return {'fit_id': fit_id, 'ship': _ship_name(fit),
+            'legal': not problems, 'problems': problems}
 
 
 @mcp.tool()

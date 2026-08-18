@@ -231,12 +231,17 @@ Upwell structures compute like ships (Citadel calc branch — standup
 weapons, EHP layers, resists all engine numbers) with three structural
 differences worth naming every time:
 
-- **Incoming damage is capped per layer** (`*DamageLimit` attributes —
-  Astrahus 5,000 dps on every layer; in the panel as
-  `defense.incoming_dps_cap`). EHP ÷ cap is the *floor* on time-to-kill
-  no matter how many attackers — a 30M EHP Astrahus cannot die faster
-  than ~100 minutes of capped fire. Never quote structure EHP without
-  the cap beside it.
+- **Incoming damage is capped per layer, and the caps are NOT uniform**
+  (`*DamageLimit` attributes; in the panel as `defense.incoming_dps_cap`,
+  where a layer with no practical cap reads `'none'`). Astrahus: armor
+  and hull cap at 5,000 dps each — the shield does NOT cap (its limit
+  attribute equals full shield HP). So a big fleet burns the 18M-EHP
+  shield in minutes, then armor takes 30 minutes whether they bring 8
+  ships or 80. Read the cap per layer from the panel — never assume one
+  cap covers all three (an earlier revision of this very file did, and
+  it graded three eval subjects into the same wrong bash timeline).
+  EHP ÷ cap is the *floor* on time-to-kill for the capped layers; quote
+  structure EHP with the caps beside it.
 - **Fuel is per service module, not per hull** — `services` in the panel
   sums `serviceModuleFuelAmount` (blocks/hr) over online services, with
   the one-time onlining cost per service. Towers (POSes) are a different

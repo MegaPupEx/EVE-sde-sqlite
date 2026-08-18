@@ -56,10 +56,17 @@ async def main(pyfa):
             # import + stats vs pinned reference
             imp = await call('import_fit', eft=rifter_eft)
             fid = imp['fit_id']
+            # ids are boot-salted (f<salt><n>) so stale handles from before a
+            # server restart fail loudly instead of resolving to recycled ids
+            import re as _re
+            assert _re.fullmatch(r'f[a-z]{2}\d+', fid), fid
             assert imp['problems'] == [], imp['problems']
             assert imp['slots']['low'][1] == 4 and imp['slots']['high'][1] == 3, imp['slots']
             assert imp['hardpoints']['turret'] == [3, 3], imp.get('hardpoints')
             stats = await call('get_stats', fit_id=fid)
+            # every fit-scoped response echoes the ship, so a wrong/stale id
+            # is visible at a glance
+            assert stats['ship'] == 'Rifter', stats.get('ship')
             assert stats['offense']['dps'] == round(ref['stats']['offense']['dps_burst'], 1), stats['offense']
             assert stats['defense']['ehp']['total'] == round(ref['stats']['defense']['ehp_total_uniform']), stats['defense']['ehp']
             assert 'reps_hps' in stats['defense'], 'AAR rep rate missing'
@@ -198,6 +205,7 @@ async def main(pyfa):
             assert ad_frig['dps_applied'] < ad_bs['dps_applied'] <= ad_bs['dps_raw'] * 1.02, \
                 (ad_frig, ad_bs)
             assert 'turrets' in ad_bs['by_source'], ad_bs
+            assert ad_bs['ship'] == 'Rifter', ad_bs.get('ship')
             # versus: both directions in one call — applied dps into resist-
             # weighted EHP, reps subtracted; projecting a web onto the victim
             # slows it, so the attacker applies MORE
@@ -210,6 +218,7 @@ async def main(pyfa):
                              'Small Focused Pulse Laser II, Imperial Navy Multifrequency S')
             vs = await call('versus', fit_id_a=fid, fit_id_b=pun['fit_id'], distance_km=1)
             ab, ba = vs['a_vs_b'], vs['b_vs_a']
+            assert vs['ships'] == {fid: 'Rifter', pun['fit_id']: 'Punisher'}, vs.get('ships')
             assert ab['applied_dps'] > 0 and ba['applied_dps'] > 0, vs
             assert ab['applied_dps'] <= ab['raw_dps'] * 1.02, ab
             assert abs(sum(ab['damage_mix_pct'].values()) - 100) <= 2, ab['damage_mix_pct']
@@ -583,7 +592,11 @@ async def main(pyfa):
             assert a_stats['navigation']['max_velocity_ms'] == 0, a_stats['navigation']
             svc = a_stats['services']
             assert svc['fuel_blocks_per_hour'] == 10 and svc['fitted'][0]['fuel_to_online'] == 720, svc
-            assert a_stats['defense']['incoming_dps_cap']['hull'] == 5000, \
+            # armor/hull carry real caps; the shield "cap" equals full shield
+            # HP, i.e. no practical cap — reported as 'none' (eval gen 5:
+            # three of four subjects misread the raw 14.4M as a hard cap)
+            assert a_stats['defense']['incoming_dps_cap'] == \
+                {'shield': 'none', 'armor': 5000, 'hull': 5000}, \
                 a_stats['defense'].get('incoming_dps_cap')
             av = await call('validate_fit', fit_id=ast['fit_id'])
             assert av['legal'], av

@@ -705,11 +705,15 @@ subject's Thanatos got silently-aliased fighter numbers and built a
 confident (wrong) engine-bug narrative on top of an honest refusal to
 quote them. Loud staleness recovers; silent aliasing misleads.
 
-Three product fixes queued from findings: (1) fit-scoped responses echo
-the ship name; (2) fit ids salted per server boot so stale handles never
-silently resolve; (3) `incoming_dps_cap` reports a layer as uncapped when
-its "cap" equals full layer HP — three of four structure subjects
-initially read shield 14.4M as "5k per layer". Also recorded: both arms
+Three product fixes implemented from findings: (1) fit-scoped responses
+echo the ship name; (2) fit ids salted per server boot so stale handles
+never silently resolve; (3) `incoming_dps_cap` reports a layer as 'none'
+when its "cap" equals full layer HP. Root cause of the cap-flatten turned
+out to be the skill itself: traps.md T17 asserted "5,000 dps on every
+layer" — the doc taught the error and three of four subjects repeated it
+over the panel's own 14.4M. T17 rewritten (non-uniform caps, read them
+per layer). A wrong pinned fact grades worse than no fact — in the trap
+catalogue most of all. Also recorded: both arms
 mis-directed the Drake uniform-vs-Guristas comparison (traps.md
 candidate), and the l2only arm can still answer enumeration questions
 from the engine's own staticdata db (legit layer-2 capability; eval-arm
