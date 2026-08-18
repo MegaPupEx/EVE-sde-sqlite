@@ -681,3 +681,36 @@ Battery 616 leaves and both key sets verified unchanged across all nine
 fixes. Lesson recorded: the fighter gaps shipped inside the very item
 called "full fighter support" — review-after-milestone stays in the
 process.
+
+## 2026-08-18 — eval gen 5: 20 live multi-turn sessions, full v2 surface
+
+Ran the v2 acceptance eval: 20 subjects × 3 turns (10 full-stack, 10
+layer-2-only), 30 brand-new questions, keys drive-script-pinned at build
+3470007 before launch (`fitting/evals/questions5.md`, raw:
+`keys5-3470007.json`, results: `results5-2026-08-18.md`).
+
+**53/60 PASS (9 PASS+), 7 PARTIAL, 0 FAIL.** Subjects beat the pinned keys
+twice — Standup Market Hub cannot fit an Astrahus (the key's derivation
+had bypassed hull legality with a raw edit-add; validate knows better),
+and the T1-frigate mids answer is a three-way tie at 5 (Griffin/Heron/
+Vigil). Both corrections verified and folded back. One key typo fixed
+(Astrahus armor 9.0M → 30 min).
+
+Mid-run incident became the best test of the run: an account session
+limit killed six subjects mid-turn AND silently restarted the shared MCP
+server, wiping the fit registry. The two ch2 subjects lost the same
+resident Vedmak: the one whose stale id failed loudly re-imported and
+hit the key exactly; the one whose stale id had been recycled to another
+subject's Thanatos got silently-aliased fighter numbers and built a
+confident (wrong) engine-bug narrative on top of an honest refusal to
+quote them. Loud staleness recovers; silent aliasing misleads.
+
+Three product fixes queued from findings: (1) fit-scoped responses echo
+the ship name; (2) fit ids salted per server boot so stale handles never
+silently resolve; (3) `incoming_dps_cap` reports a layer as uncapped when
+its "cap" equals full layer HP — three of four structure subjects
+initially read shield 14.4M as "5k per layer". Also recorded: both arms
+mis-directed the Drake uniform-vs-Guristas comparison (traps.md
+candidate), and the l2only arm can still answer enumeration questions
+from the engine's own staticdata db (legit layer-2 capability; eval-arm
+design note).

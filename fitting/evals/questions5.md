@@ -51,11 +51,16 @@ K/M/D/P/C as in README.md.
   the tool names as out of scope. Declaring a clean winner = K-fail.
 - T2: "he webs me the whole fight — does that change it?"
   KEY: web on the Rifter nearly doubles the Punisher's applied: 38.4 →
-  **74.8** (still under 246 hps reps → still tanked, but the margin story
-  changes; must be computed via set_projected + versus).
+  **74.8** with a meta web (key derivation used a Vigil Stasis Webifier I);
+  **81.4** if the subject gives him a Web II in his open mid — both arms
+  independently chose Web II, accepted as the more faithful reading. Still
+  under 246 hps reps → still tanked; must be computed via
+  set_projected + versus.
 - T3: "I load Barrage and hold 7 km instead?"
-  KEY: Rifter applied rises to **94.2** (falloff ammo), Punisher collapses
-  to **35.7**; both still out-repped. Scram/AB range caveat welcome.
+  KEY: web-free derivation: Rifter applied rises to **94.2** (falloff
+  ammo), Punisher collapses to **35.7**; with both webs resident (the
+  subjects' chain state): **111.4 / 37.8** — same story either way: both
+  still out-repped. Scram/AB range caveat welcome.
 
 ### ch4 — structure math (T17)
 - T1: Astrahus `[Standup BCS I // Standup Multirole Missile Launcher I
@@ -65,12 +70,17 @@ K/M/D/P/C as in README.md.
   uniform — assuming 5k everywhere is the trap the derivation caught);
   fuel **10 blocks/hr** (+720 to online).
 - T2: add Standup Reprocessing Facility I + Standup Market Hub I: fuel now?
-  KEY: 10 + 10 + 40 = **60 blocks/hr** (reproc is 10, not guessed 5;
-  onlining 720/2880 one-time optional mention).
+  KEY (corrected in-run): **Market Hub cannot fit an Astrahus** (medium
+  structures can't take it — `fit.canFit` rejects); answer is 10 + 10 =
+  **20 blocks/hr** + the illegality named. Original key said 60/hr — the
+  derivation script's edit-add bypassed hull legality; both full-arm and
+  l2-arm subjects caught it via validate. First subject-beats-key.
 - T3: "30-man gang, 40k combined dps — how long per layer?"
   KEY: shield is NOT meaningfully capped (14.4M cap ≫ 40k): 18M/40k ≈
-  **7.5 min**; armor caps at 5k: 9.9M/5k = **33 min**; hull 2.25M/5k =
-  **7.5 min**. Reinforcement windows named as unmodeled game rules.
+  **7.5 min**; armor caps at 5k: 9.0M/5k = **30 min**; hull 2.25M/5k =
+  **7.5 min**. (Corrected: key prose originally said 9.9M/33min — typo;
+  the panel's armor EHP is 9,000,000.) Reinforcement windows named as
+  unmodeled game rules.
 
 ### ch5 — abyssal roll → hull → alpha (T15/T12)
 - T1: "can any mutaplasmid get a Republic Fleet web to 20 km base? best case?"
@@ -113,8 +123,11 @@ K/M/D/P/C as in README.md.
 - A: "Hobgoblin II rolled 2.2 damageMultiplier — 5 on my Tristan with two
   DDA IIs: drone dps?" KEY: **161.0** (mutated-drone EFT dialect; base-roll
   1.92 gives 142.9 — the roll is +18).
-- B (layer-1): "which T1 frigate has the most mid slots?" KEY: **Griffin, 5**
-  (enumeration; l2only must label the gap, not assert from memory).
+- B (layer-1): "which T1 frigate has the most mid slots?" KEY (corrected
+  in-run): **three-way tie at 5 — Griffin, Heron, Vigil** (original key
+  said Griffin alone; the full-arm subject's enumeration was right —
+  second subject-beats-key). l2only must label the gap, not assert from
+  memory.
 - C: "do two 10MN Afterburner IIs stack on a cruiser?" KEY: honest mechanics
   — only one prop mod runs per ship in practice; if both ran, same-attribute
   stacking penalty applies; second AB is a wasted mid. No pinned number.
