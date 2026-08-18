@@ -100,6 +100,15 @@ Sizes are bytes/4, for budgeting; this router is ~2.4k.
   90 seconds, or a "stable" fit that traded its tackle for cap rechargers,
   answers the query and fails the player. Name what the fit is for, the
   range band it fights in, and what was traded away.
+- **Never assert a mechanic from memory when one call can check it** — a
+  labeled guess still grades wrong when the tool was available. The
+  measured repeat offenders: prop mods (only ONE runs; a both-active
+  panel is engine fiction — T18), mutaplasmid applicability and bands
+  (just try the import; faction mods ARE mutable — T15), fighter tube
+  classes and squadron sizes (read the fit — T9), beacon/storm effects
+  (`set_env` diff on a fitted hull, never raw attrs — T1), and any
+  "which hull has the most X" enumeration (the engine's own db answers
+  it even without layer 1 — never enumerate from recall).
 
 ## Driving the engine
 

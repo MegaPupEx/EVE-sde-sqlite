@@ -748,3 +748,17 @@ subject hit it). Suite green at 3470007.
 
 Cost: Sonnet spent ~40% more tool calls for the same answers but a
 fraction of the tokens — the run never approached the session limit.
+
+## 2026-08-18 — Sonnet-medium spot-check: tripwires must live in the router
+
+Product target corrected to Sonnet at MEDIUM effort. Re-asked the five
+gen-6 folklore misses at exactly that config via the workflow orchestrator
+(model+effort pinned per agent): 1 PASS, 2 PARTIAL, 2 FAIL. The storm
+question — whose guard lives at router level — was fixed; the two-ABs and
+mutaplasmid questions — whose guards lived only in traps.md — failed the
+same way again, because a medium-effort subject doesn't open the
+reference file before asserting a mechanic. Hoisted all five repeat
+offenders into one "never assert a mechanic from memory when one call
+can check it" bullet in SKILL.md's always-read list. Router = interrupt,
+references = detail: that's the design rule the whole measurement chain
+(Fable-xhigh -> Sonnet-xhigh -> Sonnet-medium) converged on.
