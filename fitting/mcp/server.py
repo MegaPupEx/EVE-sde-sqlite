@@ -174,6 +174,23 @@ def _problems(fit):
         free = fit.getHardpointsFree(hp)
         if free < 0:
             out.append(f'{label} hardpoints over by {-free}')
+    # maxGroupFitted: the game caps some module groups at N fitted per ship
+    # (Warp Core Stabilizers = 1, etc.); eos doesn't enforce it — gen-7 key
+    # derivation found two WCS validating clean
+    group_fitted = Counter()
+    group_cap = {}
+    for mod in fit.modules:
+        if mod.isEmpty:
+            continue
+        cap = mod.getModifiedItemAttr('maxGroupFitted')
+        gname = mod.item.group.name
+        group_fitted[gname] += 1
+        if cap:
+            group_cap[gname] = min(cap, group_cap.get(gname, cap))
+    for gname, cap in group_cap.items():
+        if group_fitted[gname] > cap:
+            out.append(f'{group_fitted[gname]:g}x {gname} fitted; '
+                       f'game allows {cap:g} (maxGroupFitted)')
     # Hull restrictions (canFitShipType/Group, fitsToShipType, Standup split)
     # and the capital-size rule — a Bastion Module on a Rifter must not
     # validate clean. eos's own checks, module by module.

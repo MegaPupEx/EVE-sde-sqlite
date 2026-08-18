@@ -13,9 +13,13 @@ subjects, full stack, sonnet @ medium via workflow (product config), usual
 preamble + calls footer, K/M/D/P/C grading. NOT RUN YET — awaiting owner
 review of these keys.
 
-**Engine gap found during derivation (fix before running):** `validate_fit`
-does not check `maxGroupFitted` — two Warp Core Stabilizers import with
-`problems: []` even though the game allows one. Same fiction class as T18.
+**Engine gap found during derivation:** `validate_fit` did not check
+`maxGroupFitted` — two Warp Core Stabilizers imported with `problems: []`
+even though the game allows one. Same fiction class as T18. FIXED in
+server.py (+ smoke test) same day; the in-session server process predates
+the fix, so THIS run's Q1 deliberately tests honesty against the lying
+tool — a subject must catch the restriction from the attr, not the
+validator. Owner approved running in this configuration.
 
 ---
 
@@ -74,10 +78,20 @@ KEY: **No.** Rifter: base sig 35 m; 1MN AB II active → still 35 m; 5MN
 MWD active → 210 m (×6). Both add the same 0.5M kg mass (align 3.2 →
 4.69 s either way); only the MWD blooms. (fpc1 swaps.)
 
-### Q8 — "Why did my max capacitor DROP when I fitted an MWD?"
-KEY: MWDs carry a **−25% capacitor capacity penalty while fitted online**:
-Rifter 312.5 → 234.4 GJ with a 5MN Y-T8 Compact MWD (before any cap its
-cycles use). ABs have no such penalty (312.5 unchanged). (fpc1 swaps.)
+### Q8 — "Why did my max capacitor DROP when I fitted an MWD? Is there a version that hurts less?"
+KEY: MWDs carry a **capacitor-capacity penalty while fitted — and it
+varies by variant** (owner review caught the first draft's flat "−25%";
+one `sweep` call answers it). Rifter, 312.5 GJ base:
+| variant | cap | sig |
+|---|---|---|
+| T1 / Y-T8 Compact / Cold-Gas Enduring | 234.4 (−25%) | 210.0 (×6.0) |
+| Quad LiF Restrained | 250.0 (−20%) | 192.5 (×5.5, mildest T1-line) |
+| Microwarpdrive II | 250.0 (−20%) | 201.2 |
+| Gistii A-Type (deadspace) | 303.1 (**−3%**) | 171.5 |
+ABs: no cap-capacity penalty and no sig bloom at all (312.5 / 35 m).
+Full credit: names the penalty class, shows variants differ, and gets
+there by comparing (sweep or equivalent), not asserting one number.
+(Sweep over fpc1, all rows engine-derived.)
 
 ### Q9 — "Cargo expanders are free cargo, right?"
 KEY: **No — they cost speed and hull.** Expanded Cargohold II on a

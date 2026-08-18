@@ -623,6 +623,17 @@ async def main(pyfa):
             bad_r = await call('import_fit', eft='[Rifter, bad2]\nStandup Cloning Center I')
             br_val = await call('validate_fit', fit_id=bad_r['fit_id'])
             assert any('cannot be fitted' in p for p in br_val['problems']), br_val
+            # maxGroupFitted: two Warp Core Stabilizers validated clean before
+            # gen-7 key derivation caught it — the game allows one per ship
+            wcs2 = await call('import_fit', eft='[Rifter, wcs2]\n'
+                              'Warp Core Stabilizer I\nWarp Core Stabilizer I')
+            wcs_val = await call('validate_fit', fit_id=wcs2['fit_id'])
+            assert any('maxGroupFitted' in p for p in wcs_val['problems']), wcs_val
+            wcs1 = await call('import_fit', eft='[Rifter, wcs1]\n'
+                              'Warp Core Stabilizer I')
+            assert (await call('validate_fit', fit_id=wcs1['fit_id']))['legal']
+            await call('delete_fit', fit_id=wcs2['fit_id'])
+            await call('delete_fit', fit_id=wcs1['fit_id'])
             for f in (ast, bad_s, bad_r):
                 await call('delete_fit', fit_id=f['fit_id'])
 
