@@ -634,6 +634,17 @@ async def main(pyfa):
             assert (await call('validate_fit', fit_id=wcs1['fit_id']))['legal']
             await call('delete_fit', fit_id=wcs2['fit_id'])
             await call('delete_fit', fit_id=wcs1['fit_id'])
+            # rig size: a Large rig on a battlecruiser hull is illegal in
+            # game (second gen-7 derivation find)
+            bigrig = await call('import_fit', eft='[Drake, bigrig]\n\n\n\n'
+                                'Large Core Defense Field Extender I')
+            br2 = await call('validate_fit', fit_id=bigrig['fit_id'])
+            assert any('rig' in p and 'medium' in p for p in br2['problems']), br2
+            okrig = await call('import_fit', eft='[Drake, okrig]\n\n\n\n'
+                               'Medium Core Defense Field Extender I')
+            assert (await call('validate_fit', fit_id=okrig['fit_id']))['legal']
+            await call('delete_fit', fit_id=bigrig['fit_id'])
+            await call('delete_fit', fit_id=okrig['fit_id'])
             for f in (ast, bad_s, bad_r):
                 await call('delete_fit', fit_id=f['fit_id'])
 

@@ -44,10 +44,16 @@ divides by mass). Saying "plates slow you down" flat = imprecise; saying
 on/off.)
 
 ### Q3 — "What's the hidden cost of shield extender rigs on my Drake?"
-KEY: **Signature radius.** One Large Core Defense Field Extender I:
-shield 6,875 → 7,906 HP (+15%) and sig 295 → 309.8 m (+5% per rig,
-stacking-penalized across multiple). Bigger sig = more incoming applied
-damage, partially offsetting the buffer. (fpc5/fpc6 compare.)
+KEY: **Signature radius.** One Medium Core Defense Field Extender I:
+shield 6,875 → 7,906 HP (+15%) and sig 295 → 309.8 m — the SDE base
+drawback is **10%**, halved to the panel's **+5%** by Shield Rigging at V
+(rigging skills cut rig drawbacks 10%/level). Either figure is correct
+WITH its label; quoting "10%" as the fitted effect at all-V is the miss.
+Bigger sig = more incoming applied damage, partially offsetting the
+buffer. (fpc5/fpc6 compare; first key draft used a Large CDFE — the
+engine accepted it on a battlecruiser, exposing a second validation gap
+(rigSize unchecked), fixed same day; Medium rig gives identical
+percentages.)
 
 ### Q4 — "Do cap batteries actually do anything against neuts?"
 KEY: **Yes, two things.** Large Cap Battery II on an Apocalypse under one

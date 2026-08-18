@@ -108,7 +108,12 @@ Sizes are bytes/4, for budgeting; this router is ~2.4k.
   classes and squadron sizes (read the fit — T9), beacon/storm effects
   (`set_env` diff on a fitted hull, never raw attrs — T1), and any
   "which hull has the most X" enumeration (the engine's own db answers
-  it even without layer 1 — never enumerate from recall).
+  it even without layer 1 — never enumerate from recall). The audit is
+  mechanical: a mechanics answer produced with zero engine/SDE calls
+  this turn is unverified by definition — make the one call, or label
+  every such claim as unchecked memory. "This is general mechanics, no
+  tools needed" is the exact thought that precedes a measured wrong
+  answer.
 
 ## Driving the engine
 

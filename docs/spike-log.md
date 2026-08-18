@@ -762,3 +762,24 @@ offenders into one "never assert a mechanic from memory when one call
 can check it" bullet in SKILL.md's always-read list. Router = interrupt,
 references = detail: that's the design rule the whole measurement chain
 (Fable-xhigh -> Sonnet-xhigh -> Sonnet-medium) converged on.
+
+## 2026-08-18 — eval gen 7: held-out folklore at the product config
+
+Ten questions on mechanics classes no doc names, keys derived live
+against engine+SDE and owner-reviewed pre-launch (review corrected the
+Q8 key: MWD penalties differ by variant — the sweep answers it). Ten
+sonnet-medium subjects: **4 PASS / 4 PARTIAL / 2 FAIL**
+(results7-2026-08-18.md). The discriminator is mechanical: both FAILs
+made zero engine calls; every engine-touching subject passed its core.
+Seen-class fixes held; the habit didn't generalize — subjects stop at
+SQL (or memory) when the question needs the engine. Router bullet now
+carries a mechanical self-audit: zero engine/SDE calls on a mechanics
+answer = unverified by definition.
+
+Key-derivation protocol paid off three times before launch: caught two
+engine validation gaps (maxGroupFitted — two WCS validated clean;
+rigSize — a Large rig fit a battlecruiser) and one key example error
+(that very Large rig). Both gaps fixed + smoke-tested same day: the
+validator now answers two of the ten folklore traps by itself. Zero
+subject key corrections this generation — deriving keys with tools and
+reviewing them with a human beats the subjects to the errors.

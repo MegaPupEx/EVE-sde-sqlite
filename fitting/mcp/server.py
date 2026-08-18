@@ -191,6 +191,18 @@ def _problems(fit):
         if group_fitted[gname] > cap:
             out.append(f'{group_fitted[gname]:g}x {gname} fitted; '
                        f'game allows {cap:g} (maxGroupFitted)')
+    # Rig size must match the hull's rigSize (a Large rig on a battlecruiser
+    # validated clean — found during gen-7 key derivation)
+    ship_rig_size = attr('rigSize')
+    if ship_rig_size:
+        for mod in fit.modules:
+            if mod.isEmpty or int(mod.slot or 0) != int(FittingSlot.RIG):
+                continue
+            rs = mod.getModifiedItemAttr('rigSize')
+            if rs and rs != ship_rig_size:
+                sizes = {1: 'small', 2: 'medium', 3: 'large', 4: 'capital'}
+                out.append(f'{mod.item.typeName} is a {sizes.get(int(rs), rs)} rig; '
+                           f'{fit.ship.item.typeName} takes {sizes.get(int(ship_rig_size), ship_rig_size)}')
     # Hull restrictions (canFitShipType/Group, fitsToShipType, Standup split)
     # and the capital-size rule — a Bastion Module on a Rifter must not
     # validate clean. eos's own checks, module by module.
