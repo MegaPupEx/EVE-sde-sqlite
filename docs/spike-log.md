@@ -783,3 +783,19 @@ rigSize — a Large rig fit a battlecruiser) and one key example error
 validator now answers two of the ten folklore traps by itself. Zero
 subject key corrections this generation — deriving keys with tools and
 reviewing them with a human beats the subjects to the errors.
+
+## 2026-08-18 — eval gen 8: the audit rule moves the needle
+
+Second held-out folklore round (questions8/results8): **6 PASS (3 PASS+),
+2 PARTIAL, 2 FAIL** vs gen 7's 4/4/2 at identical protocol. Nine of ten
+subjects used tools (was three of ten); the strongest answers now run
+their own experiments (a cross-ship SeBo projection to measure the 86.9%
+step; a rebuilt dual-tank fit matching the key to the decimal). Residual
+classes sharpened to two: one holdout zero-call folklore answer (ASB
+confused with an ancillary armor rep), and SQL-without-engine — six
+resource-arithmetic queries concluding an MJD fits a cruiser when one
+import_fit names the rejection; the same resource-math-isn't-legality
+error this project's own gen-5 key derivation made. Router gains the
+"can X fit Y = import + validate" line. Per-round trend on the folklore
+fringe: 20% confident-wrong holding, but shifting from pure memory
+toward one-layer-short — a narrower, more fixable shape.
