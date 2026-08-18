@@ -1,6 +1,6 @@
 ---
 name: eve-fitting
-description: Interpret EVE Online ship fittings and fitting-engine output - DPS vs alpha vs sustained damage, EHP and damage profiles, capacitor stability, align and speed, stacking penalties, buffer vs active tank, shield vs armor, module and rig tradeoffs. Use whenever a question involves combining a ship with modules, skills or charges ("what does this fit do", "is this cap stable", "which tank", "why is my DPS lower than pyfa says"), generating or comparing fits, or reading a stat panel from the eve-fitting MCP server. Pairs with the eve-sde skill (raw game data) and the eve-fitting MCP server (the calculator).
+description: Interpret EVE Online ship fittings and fitting-engine output - DPS vs alpha vs sustained damage, EHP and damage profiles, capacitor stability, align and speed, stacking penalties, buffer vs active tank, shield vs armor, module and rig tradeoffs. Use whenever a question involves combining a ship with modules, skills or charges ("what does this fit do", "is this cap stable", "which tank", "why is my DPS lower than pyfa says"), generating or comparing fits, or reading a stat panel from the eve-fitting MCP server. ALSO load for quick mechanics questions that look like general knowledge - "do two of these stack", "can X be mutated", prop-mod/fighter/storm rules - measured runs show memory answers these wrong exactly when the skill isn't loaded. Pairs with the eve-sde skill (raw game data) and the eve-fitting MCP server (the calculator).
 ---
 
 # EVE fitting knowledge
