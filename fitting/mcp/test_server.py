@@ -458,7 +458,18 @@ async def main(pyfa):
             dr = await call('import_fit', eft=dx)
             dr_dps = (await call('get_stats', fit_id=dr['fit_id']))['offense']['dps_drones']
             assert dr_dps == d_dps, f'drone round trip drifted: {dr_dps} != {d_dps}'
-            for f in (mp, mm, mr, mc, md, dr):
+            # a mutated drone line WITHOUT 'xN' used to fall into the module
+            # branch and die on eos's opaque 'Passed item is not a Module'
+            # (eval gen 6 hit it) — it now imports as one drone
+            md1 = await call('import_fit', eft=(
+                '[Tristan, mutdrone1]\n\n'
+                'Hobgoblin II [1]\n\n'
+                '[1] Hobgoblin II\n'
+                '  Exigent Light Drone Firepower Mutaplasmid\n'
+                '  damageMultiplier 2.3\n'))
+            md1_stats = await call('get_stats', fit_id=md1['fit_id'])
+            assert md1_stats['offense'].get('dps_drones', 0) > 0, md1_stats['offense']
+            for f in (mp, mm, mr, mc, md, dr, md1):
                 await call('delete_fit', fit_id=f['fit_id'])
 
             # module_attrs: per-module modified values, heat-aware (the class

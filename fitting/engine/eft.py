@@ -205,7 +205,11 @@ def build_fit(spec):
                 f'{item.typeName!r} is a mutated item with no [N] mutation block — '
                 'its stats are the roll, not the type. Paste the fit with its '
                 'mutation section (base item, mutaplasmid, rolled attributes).')
-        if entry['quantity'] is not None and category == 'Drone':
+        if category == 'Drone':
+            # route by category, not by quantity: a drone line without 'xN'
+            # (common on hand-typed mutated drones) used to fall into the
+            # module branch and die on eos's opaque 'Passed item is not a
+            # Module' — treat it as one drone instead
             if entry['mutation'] is not None:
                 dyn, attrs = _mutation_parts(entry, spec)
                 drone = Drone(dyn.resultingItem, item, dyn)
@@ -214,8 +218,9 @@ def build_fit(spec):
                         drone.mutators[attr_id].value = value
             else:
                 drone = Drone(item)
-            drone.amount = entry['quantity']
-            drone.amountActive = entry['quantity']
+            qty = 1 if entry['quantity'] is None else entry['quantity']
+            drone.amount = qty
+            drone.amountActive = qty
             fit.drones.append(drone)
             drone.owner = fit
         elif category == 'Fighter':

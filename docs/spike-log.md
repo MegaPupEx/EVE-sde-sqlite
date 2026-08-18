@@ -718,3 +718,33 @@ mis-directed the Drake uniform-vs-Guristas comparison (traps.md
 candidate), and the l2only arm can still answer enumeration questions
 from the engine's own staticdata db (legit layer-2 capability; eval-arm
 design note).
+
+## 2026-08-18 — eval gen 6: Sonnet re-run, doc-fix regression test
+
+Owner call: run 5's Fable-xhigh subjects ate the session budget for no
+product signal; all subagents run Sonnet from now on (CLAUDE.md). Run 6
+re-ran the identical 20x3 protocol on `claude-sonnet-5` with byte-identical
+prompts (`fitting/evals/results6-2026-08-18.md`).
+
+**51/60 PASS (11 PASS+), 6 PARTIAL, 3 FAIL** vs Fable's 53/7/0 — same PASS
+rate, different tail. Every run-5 systematic miss came back clean off the
+doc fixes alone (the old server process still prints the raw cap shape, so
+the T17 rewrite carried it unaided). Sonnet matched or beat Fable wherever
+the answer came from a tool call — including catches Fable never made
+(1-of-4 hardpoints; the Rifter's own 22.5s cap-out) — and failed in exactly
+one shape: confident game-knowledge folklore where one tool call would
+have arbitrated (storm read from sign-inverted raw SDE attrs instead of
+set_env; "faction webs can't be mutated"; invented fighter tube/squadron
+facts; a recall hull-list that forgot the Heron; the engine's fictional
+both-active-AB panel quoted as real).
+
+Each miss became a doc line the same day: traps T18 (prop-mod exclusivity
++ engine-fiction warning), T15 (applicability is data — try the import),
+T9 (fighter tubes/squadrons are read, not recalled), T1 (beacons via
+set_env diff on a fitted hull only), SKILL.md (l2 enumeration goes to the
+engine's own db). One code fix: eft.py now imports a quantity-less drone
+line as one drone instead of dying on eos's opaque module error (a live
+subject hit it). Suite green at 3470007.
+
+Cost: Sonnet spent ~40% more tool calls for the same answers but a
+fraction of the tokens — the run never approached the session limit.

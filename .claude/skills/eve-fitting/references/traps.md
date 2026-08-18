@@ -34,6 +34,14 @@ Two different systems, and the difference decides real answers:
   *malus* does not weaken your hardener's *bonus* — each stacks within
   its own direction. Don't tell a pilot the wormhole nerfs their
   hardeners; it nerfs their resists directly.
+- **Quote a beacon only from a `set_env` diff on a FITTED hull — never
+  from the beacon's raw SDE attributes.** Raw resonance multipliers are
+  inverted (a ×1.25 kinetic resonance is a resist *penalty*); a measured
+  run read them straight and called a −25%-resist storm "a pure buff".
+  And a bare-hull diff hides everything modules feel — the same exotic
+  storm boosts armor-rep amount and cuts cap endurance ~⅓ on an active
+  fit, invisible on an empty hull. Rep/import the pilot's fit (or a
+  representative one, labeled), clone, `set_env`, diff.
 
 ## T2 — Environmental effects hit NPCs too — and `set_env` hits one fit
 
@@ -112,7 +120,12 @@ toggleable (`edit_fit` op `ability`; `module_attrs` lists each
 squadron's abilities and states): eos's default turns damage abilities
 on — including limited-shot missiles — so quote what's active, and note
 tube classes (light/support/heavy, ship and standup) validate
-separately from the total tube count.
+separately from the total tube count. **Tube class, tube count and
+squadron size are data, never recall**: add the fighter and read what
+the engine fit (a measured run "filled both heavy tubes" with Einherji
+II — a *light* fighter whose full squadron is larger than it guessed —
+and under-quoted every number by a squad). If you set an `amount`
+yourself, say why; the engine's default is the full squadron.
 
 ## T10 — Fitting headroom: validate after calculation, expect 0.01 skew
 
@@ -183,7 +196,14 @@ module (ask for the full export); rolls outside the mutaplasmid's band are
 clamped by the engine to the band edge (a "god roll" claim that exceeds
 the range is fake or mis-transcribed — say which value was used); and
 unrolled attributes still carry the mutaplasmid's own baseline values, so
-a mutated module is never just "base + one attribute". Export → reimport
+a mutated module is never just "base + one attribute". **Applicability is
+data too — never assert from memory which items a mutaplasmid accepts.**
+Faction modules ARE mutable (web mutaplasmids take a Republic Fleet web
+to 18,750 m; a measured run declared faction webs un-mutable and built a
+whole answer on it). When in doubt, just try the import: the engine
+accepts legal (module, mutaplasmid) pairs and clamps the roll, so the
+attempt itself is the check; the bands are in layer 1's
+`dynamicItemAttributes` or the engine's own db. Export → reimport
 round-trips exactly; quote stats from the built fit, never from the roll
 text. Roll *feasibility* ("what could this roll to") is data-layer SQL:
 layer 1 stores the bands in `dynamicItemAttributes` (JSON `attributeIDs`
@@ -251,3 +271,18 @@ differences worth naming every time:
   vulnerability timers and the low-power state (no fueled service =
   reduced defenses) are in-game rules the panel can't see — the numbers
   are the full-power structure, and answers say so.
+
+## T18 — One prop mod runs, and the engine will happily compute two
+
+Propulsion modules carry `maxGroupActive = 1` (read it off the module via
+`module_attrs`): the game server refuses to activate a second AB/MWD
+while one runs, so prop bonuses never combine — a second prop mod is a
+spare plus dead mass (it slows your align even offline-fitted-online).
+The headless engine does NOT enforce this: set both active and it
+cheerfully computes a stacked-speed panel with no problem flagged — a
+measured run took that fiction at face value and told the player two ABs
+"stack with the standard penalty". Same class of fiction anywhere a
+server-side activation rule isn't dogma-attribute math: if a panel shows
+a state the server would refuse (two prop mods, two siege modules…),
+say so instead of quoting it. `validate_fit` checks fitting legality,
+not activation legality.

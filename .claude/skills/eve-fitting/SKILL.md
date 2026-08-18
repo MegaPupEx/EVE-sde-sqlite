@@ -158,7 +158,11 @@ data-layer SQL — in layer 1 the bands live in `dynamicItemAttributes`
 types and resulting type in `inputOutputMapping`); the engine's own db
 has the same data relational as `mutaplasmids`/`mutaplasmidAttributes`.
 Band × base attribute is the reachable window; build the winning roll
-in the engine (EFT `[N]` dialect) to verify it in fit context.
+in the engine (EFT `[N]` dialect) to verify it in fit context. The same
+engine db covers any type/attribute enumeration ("which T1 frigate has
+the most mids") when layer 1 is absent — query it rather than
+enumerating hulls from recall; recall-driven lists silently drop
+members.
 
 Panel keys carry units (`_s`, `_ms` = m/s, `_km`, `_gj`, `_hps`); resists
 are fractions (0.598 = 59.8%), already converted from the SDE's inverted
