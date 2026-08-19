@@ -30,9 +30,26 @@ def unwrap(result):
     return json.loads(result.content[0].text)
 
 
+def deployed_command(sde):
+    """Launch the server exactly the way `.mcp.json` does.
+
+    Launching with `sys.executable` hid a real outage: the test ran under
+    layer 2's virtualenv (which has the `mcp` SDK) while `.mcp.json` used a
+    bare `python3` (which does not), so the server failed to connect in every
+    real session while the test stayed green. Read the command from the
+    config so the two can never drift again.
+    """
+    cfg = os.path.join(os.path.dirname(os.path.dirname(HERE)), '.mcp.json')
+    with open(cfg) as fh:
+        entry = json.load(fh)['mcpServers']['eve-sde']
+    args = [a if a != '.' else sde for a in entry['args']]
+    return entry['command'], args
+
+
 async def main(sde):
-    params = StdioServerParameters(
-        command=sys.executable, args=[os.path.join(HERE, 'server.py'), '--sde', sde])
+    command, args = deployed_command(sde)
+    print(f'launching as .mcp.json does: {command} {" ".join(args)}')
+    params = StdioServerParameters(command=command, args=args)
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as s:
             await s.initialize()

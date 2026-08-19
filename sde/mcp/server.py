@@ -19,7 +19,8 @@ import re
 import sqlite3
 import sys
 
-from mcp.server.mcpserver import MCPServer
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _stdio import MCPServer   # stdlib only: layer 1 installs without a venv
 
 _parser = argparse.ArgumentParser()
 _parser.add_argument('--sde', default=os.environ.get('EVE_SDE_DIR', '.'))

@@ -40,3 +40,13 @@ resistance attributes (unitID 108: `1.0` = 0% resist) and misreports units for
 produced wrong answers in measured eval runs.
 
 Standing schema cost: ~390 tokens.
+
+## Dependencies
+
+None. The server speaks JSON-RPC over stdio from the standard library
+(`_stdio.py`), so the SDE skill installs with nothing but a `python3` and the
+`eve-sde-*.sqlite` files — no virtualenv, no `pip install`. That is deliberate:
+layer 1 has to be usable by someone who never installs the fitting engine.
+
+`test_server.py` reads the launch command out of `.mcp.json` rather than using
+`sys.executable`, so the test always exercises the deployment path.
