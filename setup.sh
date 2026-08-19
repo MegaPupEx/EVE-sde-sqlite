@@ -18,8 +18,18 @@ if ls eve-sde-*.sqlite >/dev/null 2>&1; then
     echo "layer 1: databases already present"
 else
     echo "layer 1: building SDE databases from CCP (~1 min)..."
+    # --db sets the stem the split parts inherit. It must be `eve-sde` because
+    # that is what the server and the skill glob for; the script's own default
+    # produces `sde-*.sqlite`, which builds fine and is then invisible to both.
     python3 .claude/skills/eve-sde/scripts/build_sde_db.py \
-        --complete --positions --split --parts-only
+        --db eve-sde.sqlite --complete --positions --split --parts-only
+    # --parts-only skips compressing the monolith but still leaves it behind;
+    # the parts carry everything, so it is ~160 MB of dead weight.
+    rm -f eve-sde.sqlite
+    ls eve-sde-*.sqlite >/dev/null 2>&1 || {
+        echo "layer 1: FAILED — the build produced no eve-sde-*.sqlite parts" >&2
+        exit 1
+    }
     echo "layer 1: built $(ls eve-sde-*.sqlite | wc -l) parts"
 fi
 
