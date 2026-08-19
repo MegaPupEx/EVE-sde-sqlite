@@ -1054,3 +1054,60 @@ passing. Nothing compares them. Still unimplemented, now with a real sighting.
 round**, against the 41k measured here. Cost is rounds x floor, so the product
 number is ~37% worse than this container suggests: a 2-round answer is ~112k,
 not ~85k. Item 5 of the cost model should be decided against 56k.
+
+## 2026-08-19 — second mobile run: one clean win, three defects, all fixed
+
+Owner ran five questions with tool calls expanded. The expansion is what made
+this useful — the failures are only visible in the call sequence.
+
+**Q1 "sig radius and scan res on a Vexor" — 2 calls (ToolSearch + `attrs`).**
+Down from 13 rounds in gen-11 for the equivalent hull question. This is the
+floor; the chain-collapse works.
+
+But the response carried 13 lines of "unitID N has no correction rule —
+confirm before quoting", including for metres and millimetres. Warning about
+every honest unit buried the two that matter. **Fixed:** unit symbols now come
+from the `dogmaUnits` table at call time (`145 m`, `280 mm`); overrides still
+win for the liars; the warning survives only for units with no label AND no
+rule.
+
+**Q2 "which T1 cruiser has the most powergrid" — 8 calls, 6 of them wasted.**
+The model wrote `t.typeName`, `g.groupName`, `attributeName` — CCP's canonical
+SDE names — and this builder stores all three as `name`. Each miss cost an
+error round plus a `SELECT * ... LIMIT 1` discovery round. **Fixed:** a
+`no such column` / `no such table` error now returns the actual columns of
+every table the statement mentions. The database already knew; it just wasn't
+saying. (Enumerating them needs `PRAGMA database_list` — every real table is
+in an ATTACHed part and the main `sqlite_master` is empty.)
+
+**Q4 "do three Damage Control IIs stack" — WRONG, and the same root cause as
+last time.** The model answered 100%/87%/57% stacking. They do not stack at
+all: `Damage Control II` carries **`maxGroupFitted = 1`**, so the second one
+cannot be fitted. It reasoned from a general rule because the engine was
+absent — the `/context` shows **MCP tools 642**, only the three eve-sde tools,
+no eve-fitting at all.
+
+**Root cause, finally.** `.mcp.json` launched the fitting server with
+`fitting/work/eosenv/bin/python` — an interpreter inside a gitignored tree. If
+the venv is not built the process cannot start at all, so no amount of
+in-server error handling helps: the server is absent, not broken. **Fixed:**
+`.mcp.json` now launches with plain `python3`; the server re-execs into the
+venv when it exists, and falls back to layer 1's stdlib stdio implementation
+when it does not, so all 20 tools still appear and every one of them explains
+itself. The prefix comparison matters — a venv's `bin/python` is a symlink to
+the system interpreter, so comparing `realpath(sys.executable)` says they are
+the same file and the hop silently never happens; compare `sys.prefix`.
+
+**Q3 was a near-miss worth noting.** Asked which resist to plug against
+Serpentis, the model ran one `query`, found `basePrice` NULL on all 184
+hardeners, correctly said the SDE has no market prices — and then answered the
+resist half from memory without the engine. Its damage-split claim is
+unverified: pyfa's NPC damage patterns live in saveddata defaults, not in
+`eve.db`, so neither layer can currently source them. Exposing them is
+unbuilt work.
+
+**Floor on the real surface, refined.** Final `/context`: system tools 29.3k +
+system prompt 11.9k + skills 4.1k + MCP 0.6k + memory 0.3k = **~46k per round**
+with layer 1 only; add the fitting tools' ~3.7k of schemas for **~50k** with
+both servers. Against 41k measured in this container. The earlier 56k reading
+included several unrelated MCP servers.

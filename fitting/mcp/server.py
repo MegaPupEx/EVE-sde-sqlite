@@ -19,12 +19,41 @@ import sqlite3
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'engine'))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'spike'))
 
-from mcp.server.mcpserver import MCPServer
+# `.mcp.json` must not name an interpreter that lives in a gitignored tree: if
+# fitting/work/eosenv is not built yet the process cannot even start, the
+# server is absent rather than broken, and the model answers fit questions from
+# doctrine. Measured 2026-08-19 — a session with no eve-fitting tools said
+# three Damage Controls "stack with the standard penalty"; they do not stack at
+# all, maxGroupFitted is 1. So: launch under any python3, hop into the venv
+# when it exists, and serve a useful error when it does not.
+VENV_DIR = os.path.join(ROOT, 'fitting', 'work', 'eosenv')
+VENV_PY = os.path.join(VENV_DIR, 'bin', 'python')
+# Compare PREFIXES, not interpreter paths: a venv's bin/python is a symlink to
+# the system interpreter, so realpath() says they are the same file and the
+# hop never happens. sys.prefix is what actually differs.
+if (os.path.exists(VENV_PY)
+        and os.path.realpath(sys.prefix) != os.path.realpath(VENV_DIR)):
+    os.execv(VENV_PY, [VENV_PY, os.path.abspath(__file__)] + sys.argv[1:])
 
-from headless import bootstrap  # noqa: E402
+try:
+    from mcp.server.mcpserver import MCPServer
+    _WRONG_INTERPRETER = False
+except ImportError:
+    # No venv, so no SDK. Serve with layer 1's stdlib implementation instead of
+    # dying: the tools appear and every one of them explains itself.
+    sys.path.insert(0, os.path.join(ROOT, 'sde', 'mcp'))
+    from _stdio import MCPServer
+    _WRONG_INTERPRETER = True
+
+try:
+    from headless import bootstrap  # noqa: E402
+except Exception:                     # engine helpers may pull unavailable deps
+    def bootstrap(_path):
+        raise RuntimeError('engine support modules unavailable')
 
 _parser = argparse.ArgumentParser()
 _parser.add_argument('--pyfa', default=os.environ.get('PYFA_PATH'),
@@ -75,8 +104,11 @@ def _load_engine():
     except Exception as _exc:                 # noqa: BLE001 — any import failure
         ENGINE_ERROR = (
             f'the fitting engine is not built ({type(_exc).__name__}: {_exc}). Run '
-            '`./setup.sh` at the repo root (~2 min); the next call picks it up, no '
-            'restart needed. Until then this server cannot compute anything — say '
+            '`./setup.sh` at the repo root (~2 min)' +
+            (', then start a new session so the server can use the engine venv. '
+             if _WRONG_INTERPRETER else
+             '; the next call picks it up, no restart needed. ') +
+            'Until then this server cannot compute anything — say '
             'so rather than deriving fit numbers by hand. Stacking, calibration and '
             'slot legality are exactly what hand-derivation gets wrong.')
 

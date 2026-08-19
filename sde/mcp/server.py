@@ -84,15 +84,41 @@ NOT_CORRECTED = [
 ]
 
 
-def _interpret(value, unit_id):
+_UNIT_NAMES = None
+
+
+def _unit_names(db):
+    """unitID -> display symbol, read from the DB rather than baked in.
+
+    Most units are honest: metres, mm, MW, GJ, HP. Warning about every one of
+    them buried the two that matter — a measured session got 13 lines of "no
+    correction rule" on one Vexor, including metres and millimetres. Label
+    what CCP labels, override the liars, warn only on genuine unknowns.
+    """
+    global _UNIT_NAMES
+    if _UNIT_NAMES is None:
+        _UNIT_NAMES = {}
+        try:
+            for key, display in db.execute('SELECT _key, displayName FROM dogmaUnits'):
+                if display:
+                    _UNIT_NAMES[key] = display
+        except sqlite3.Error:
+            pass                      # a renamed table costs labels, not answers
+    return _UNIT_NAMES
+
+
+def _interpret(value, unit_id, db=None):
     """Return (human_value, note) for a raw dogma value."""
     if value is None:
         return None, None
     if unit_id is not None and unit_id not in UNITS:
-        # Silence here would read as "no correction needed". A unit this server
-        # has no rule for is exactly where a future SDE build breaks it.
-        return None, (f'unitID {unit_id} has no correction rule in this server — '
-                      'raw value shown; confirm its meaning before quoting')
+        symbol = _unit_names(db).get(unit_id) if db is not None else None
+        if symbol:
+            return f'{value} {symbol}', None
+        # Silence here would read as "no correction needed". A unit with no
+        # rule AND no label is exactly where a future SDE build breaks this.
+        return None, (f'unitID {unit_id} has no label in dogmaUnits and no correction '
+                      'rule here — raw value shown; confirm it before quoting')
     if unit_id not in UNITS:
         return None, None
     kind, why = UNITS[unit_id]
@@ -104,6 +130,41 @@ def _interpret(value, unit_id):
     if kind == 'modifier':
         return f'{round((value - 1) * 100, 1)}%', why
     return None, why
+
+
+def _schema_hint(db, message, stmt):
+    """Turn a column/table error into the answer instead of another round.
+
+    Measured 2026-08-19: "which T1 cruiser has the most powergrid" took eight
+    calls, six of them rediscovering that this builder stores `name` where
+    CCP's SDE says typeName/groupName/attributeName. The database already
+    knows; saying so costs nothing and saves a round each time.
+    """
+    # Every real table lives in an ATTACHed part, and each schema has its own
+    # sqlite_master — the main one is empty, so walk database_list.
+    tables = []
+    for _, schema, _path in db.execute('PRAGMA database_list'):
+        try:
+            tables += [r[0] for r in db.execute(
+                f"SELECT name FROM {schema}.sqlite_master WHERE type='table'")]
+        except sqlite3.Error:
+            pass
+    tables = sorted(set(tables))
+    if 'no such table' in message:
+        missing = message.rsplit(':', 1)[-1].strip()
+        near = [t for t in tables if missing.lower().strip('_') in t.lower()]
+        return {'tables_available': sorted(near or tables)[:40]}
+    if 'no such column' not in message:
+        return {}
+    # Report the columns of every table this statement actually mentions.
+    hint = {}
+    for t in tables:
+        if re.search(r'\b' + re.escape(t) + r'\b', stmt):
+            try:
+                hint[t] = [r[1] for r in db.execute(f'PRAGMA table_info({t})')]
+            except sqlite3.Error:
+                pass
+    return {'columns_available': hint} if hint else {'tables_available': sorted(tables)[:40]}
 
 
 @mcp.tool()
@@ -146,6 +207,7 @@ def query(statements: list[str], limit: int = 40) -> dict:
             cur = db.execute(stmt)
         except sqlite3.Error as e:
             item['error'] = str(e)          # one bad statement never kills the batch
+            item.update(_schema_hint(db, str(e), stmt))
             out.append(item)
             continue
         if cur.description is None:
@@ -307,7 +369,7 @@ def attrs(items: list, attributes: list = None, full: bool = False) -> dict:
             sql += ' AND a.published = 1'
         vals, hoisted, uncorrected = {}, [], set()
         for attr_id, attr_name, unit_id, value in db.execute(sql, params):
-            human, why = _interpret(value, unit_id)
+            human, why = _interpret(value, unit_id, db)
             entry = {'raw': value, 'attributeID': attr_id}
             if human is not None:
                 entry['value'] = human
