@@ -41,7 +41,10 @@ def _conn():
     PARTS = sorted(f for f in os.listdir(root)
                    if f.startswith('eve-sde-') and f.endswith('.sqlite'))
     if not PARTS:
-        raise RuntimeError(f'no eve-sde-*.sqlite in {root}')
+        raise RuntimeError(
+            f'no eve-sde-*.sqlite in {root} — the databases are gitignored, so a '
+            'fresh clone has to build them: `./setup.sh` at the repo root (~1 min, '
+            'stdlib only). Say so plainly rather than answering from memory.')
     _db = sqlite3.connect(':memory:', check_same_thread=False)
     for f in PARTS:
         alias = f[len('eve-sde-'):-len('.sqlite')].replace('-', '_')
@@ -105,7 +108,7 @@ def _interpret(value, unit_id):
 
 @mcp.tool()
 def query(statements: list[str], limit: int = 40) -> dict:
-    """Run SDE statements. `statements` is a LIST — put every query you already know you need in one call, because a second call re-reads the whole conversation. A '-- comment' line above a statement labels it. Every eve-sde part is pre-ATTACHed so table names need no prefix (except `meta`, which exists in all of them). Rows are capped with the true count reported; raw dogma values are linted for the unit traps."""
+    """SQL escape hatch for set and aggregate questions — "which ore", "how many jumps", "list every hull that…". For the stats of a type you can NAME, use `attrs` instead: it answers in one call where SQL takes several. `statements` is a LIST — put every query you already know you need in one call, because a second call re-reads the whole conversation. A '-- comment' line above a statement labels it. Every eve-sde part is pre-ATTACHed so table names need no prefix (except `meta`, in all of them); note the group table is `groups_`. Rows are capped with the true count reported; raw dogma values are linted for the unit traps."""
     # Measured over gen-10: 22 of 24 calls to the old `sql: str` form sent a
     # single statement. A string invites one statement no matter what the
     # docstring asks for, so the parameter is a list and the schema says so.
@@ -178,9 +181,82 @@ def query(statements: list[str], limit: int = 40) -> dict:
     return result
 
 
+# Hull facts live on `types` as ordinary columns, not in dogma. Measured in
+# gen-11: a "how much cargo" question burned 13 rounds because the model went
+# looking for a dogma attribute that does not exist. Returning both halves is
+# the point of this tool.
+HULL_COLUMNS = ['mass', 'volume', 'capacity', 'packagedVolume', 'radius',
+                'basePrice', 'portionSize', 'metaLevel', 'techLevel', 'published']
+HULL_HINTS = {'capacity': 'cargo hold, m3', 'volume': 'assembled volume, m3',
+              'packagedVolume': 'packaged volume, m3', 'mass': 'kg'}
+
+# The attributes people actually ask about, by category. Anything absent on a
+# given type is simply skipped; `full=True` returns everything.
+_SHIP = [
+    'shieldCapacity', 'armorHP', 'hp',
+    'shieldEmDamageResonance', 'shieldThermalDamageResonance',
+    'shieldKineticDamageResonance', 'shieldExplosiveDamageResonance',
+    'armorEmDamageResonance', 'armorThermalDamageResonance',
+    'armorKineticDamageResonance', 'armorExplosiveDamageResonance',
+    'maxVelocity', 'agility', 'signatureRadius', 'scanResolution',
+    'maxTargetRange', 'maxLockedTargets',
+    'capacitorCapacity', 'rechargeRate', 'shieldRechargeRate',
+    'hiSlots', 'medSlots', 'lowSlots', 'rigSlots', 'upgradeCapacity',
+    'turretSlotsLeft', 'launcherSlotsLeft',
+    'droneCapacity', 'droneBandwidth',
+    'powerOutput', 'cpuOutput', 'warpSpeedMultiplier',
+]
+_MODULE = [
+    'cpu', 'power', 'capacitorNeed', 'duration', 'maxRange', 'falloff',
+    'trackingSpeed', 'damageMultiplier', 'speedFactor', 'speedBoostFactor',
+    'shieldBonus', 'armorDamageAmount', 'massAddition', 'maxVelocityBonus',
+    'signatureRadiusBonus', 'warpScrambleStrength', 'activationBlockedStrenght',
+    'metaLevel', 'techLevel', 'hp',
+]
+_CHARGE = [
+    'emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage',
+    'weaponRangeMultiplier', 'fallofMultiplier', 'aoeCloudSize', 'aoeVelocity',
+    'explosionDelay', 'capacityNeeded', 'metaLevel', 'techLevel',
+]
+_DRONE = [
+    'emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage',
+    'damageMultiplier', 'maxVelocity', 'droneBandwidthUsed', 'entityFlyRange',
+    'trackingSpeed', 'optimalSigRadius', 'hp', 'armorHP', 'shieldCapacity',
+]
+PANELS = {6: _SHIP, 7: _MODULE, 8: _CHARGE, 18: _DRONE}
+
+
+def _type_row(db, type_id):
+    """The `types` row plus group/category names. Returns (dict, categoryID).
+
+    The group table is `groups_` — `groups` is a SQL keyword, so the builder
+    renamed it. Exactly the kind of thing a caller should not have to discover.
+    """
+    cols = {r[1] for r in db.execute('PRAGMA table_info(types)')}
+    want = [c for c in HULL_COLUMNS if c in cols]
+    row = db.execute(f'SELECT groupID, categoryID, {", ".join(want)} '
+                     'FROM types WHERE typeID = ?', (type_id,)).fetchone()
+    group_id, category_id = row[0], row[1]
+    hull = {}
+    for key, value in zip(want, row[2:]):
+        if value is None:
+            continue
+        hint = HULL_HINTS.get(key)
+        hull[key] = f'{value} ({hint})' if hint else value
+    for label, table, key, ident in (('group', 'groups_', 'groupID', group_id),
+                                     ('category', 'categories', 'categoryID', category_id)):
+        try:
+            got = db.execute(f'SELECT name FROM {table} WHERE {key} = ?', (ident,)).fetchone()
+            if got:
+                hull[label] = got[0]
+        except sqlite3.Error:
+            pass                              # a renamed table must not break the lookup
+    return hull, category_id
+
+
 @mcp.tool()
-def attrs(items: list, attributes: list = None) -> dict:
-    """Dogma attributes for named types, UNIT-CORRECTED: resonances come back as resist %, millisecond attributes as seconds, modifier percents as ±%, each with its raw value beside it. items: type names (exact) or typeIDs. attributes: attribute names or IDs; omitted returns every published attribute on the type. This is the honest read — raw `type_dogma.value` inverts for 58 resistance attributes and lies about units for 92 more."""
+def attrs(items: list, attributes: list = None, full: bool = False) -> dict:
+    """START HERE for any question about a named ship, module, charge or drone. One call walks the whole chain — name to typeID, hull columns AND dogma attributes, unit-corrected (resonances as resist %, millisecond attributes as seconds, modifier percents as ±%), each with its raw value beside it. Omit `attributes` for the panel people actually ask about; pass names/IDs for specific ones; `full` for every published attribute. Hull stats like cargo `capacity`, `mass` and `volume` are columns on `types`, NOT dogma attributes — this returns both, which hand-written SQL usually misses."""
     db = _conn()
     if not items:
         raise ValueError('items: at least one type name or typeID')
@@ -208,10 +284,15 @@ def attrs(items: list, attributes: list = None) -> dict:
                         'did_you_mean': [n for (n,) in near]})
             continue
         type_id, name = row
+        hull, category_id = _type_row(db, type_id)
+        panel = None if (attributes or full) else PANELS.get(category_id)
         sql = ('SELECT a.attributeID, a.name, a.unitID, d.value FROM type_dogma d '
                'JOIN dogma_attributes a ON a.attributeID = d.attributeID WHERE d.typeID = ?')
         params = [type_id]
-        if attributes:
+        if panel:
+            sql += ' AND a.name IN (%s) COLLATE NOCASE' % ','.join('?' * len(panel))
+            params += list(panel)
+        elif attributes:
             ids = [int(a) for a in attributes if str(a).isdigit()]
             names = [str(a) for a in attributes if not str(a).isdigit()]
             clauses = []
@@ -224,22 +305,43 @@ def attrs(items: list, attributes: list = None) -> dict:
             sql += ' AND (' + ' OR '.join(clauses) + ')'
         else:
             sql += ' AND a.published = 1'
-        vals = {}
+        vals, hoisted, uncorrected = {}, [], set()
         for attr_id, attr_name, unit_id, value in db.execute(sql, params):
             human, why = _interpret(value, unit_id)
             entry = {'raw': value, 'attributeID': attr_id}
             if human is not None:
                 entry['value'] = human
             if why:
-                entry['unit_note'] = why
+                # A panel repeats the same sentence for all eight resonances,
+                # and once per uncorrected unit on top of that. Say each real
+                # correction once, and roll the "no rule" cases into one line.
+                if not panel:
+                    entry['unit_note'] = why
+                elif unit_id is not None and unit_id not in UNITS:
+                    uncorrected.add(unit_id)
+                elif why not in hoisted:
+                    hoisted.append(why)
             vals[attr_name] = entry
+        if uncorrected:
+            hoisted.append(
+                'raw values shown for unitID ' + ', '.join(str(u) for u in sorted(uncorrected))
+                + ' — no correction rule in this server; confirm meaning before quoting')
         missing = []
         if attributes:
             asked = {str(a).lower() for a in attributes if not str(a).isdigit()}
             missing = sorted(a for a in asked if a not in {k.lower() for k in vals})
-        rec = {'item': name, 'typeID': type_id, 'attributes': vals}
+        rec = {'item': name, 'typeID': type_id, 'hull': hull, 'attributes': vals}
+        if hoisted:
+            rec['unit_notes'] = hoisted
         if missing:
             rec['not_on_this_type'] = missing
+        if panel:
+            total = db.execute('SELECT COUNT(*) FROM type_dogma d JOIN dogma_attributes a '
+                               'ON a.attributeID = d.attributeID '
+                               'WHERE d.typeID = ? AND a.published = 1', (type_id,)).fetchone()[0]
+            if total > len(vals):
+                rec['more'] = (f'{total - len(vals)} further published attributes — name them '
+                               'in `attributes`, or pass full=true')
         out.append(rec)
     return {'sde_build': BUILD, 'types': out}
 

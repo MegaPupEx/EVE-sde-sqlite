@@ -298,12 +298,21 @@ not rows.
 
 There is no `sqlite3` CLI on many systems; Python's built-in module needs none.
 
-**Prefer the `eve-sde` MCP server when it is registered.** `query` runs many
-statements in one call (every part pre-attached, `-- comment` labels, row caps,
-one bad statement never kills the batch); `attrs` returns **unit-corrected**
-values, which is the only way to read resonances and millisecond attributes
-without the inversions below biting. Raw SQL stays available for anything they
-do not cover.
+**Prefer the `eve-sde` MCP server when it is registered, and reach for `attrs`
+first.** If you can name the thing — a ship, module, charge or drone — `attrs`
+answers in ONE call: it resolves the name, returns the hull columns *and* the
+dogma panel, and unit-corrects both. That matters twice over. Resonances and
+millisecond attributes are unreadable raw (the inversions below), and the stats
+players ask about most — cargo `capacity`, `mass`, `volume` — are **columns on
+`types`, not dogma attributes at all**, so SQL aimed at `type_dogma` silently
+finds nothing and the search goes long.
+
+Use `query` for the questions `attrs` cannot answer: sets, aggregates and
+rankings ("which ore", "how many jumps", "every hull that…"). It takes a list
+of statements in one call, with every part pre-attached, `-- comment` labels,
+row caps, and one bad statement never killing the batch. Note the group table
+is `groups_` — `groups` is a SQL keyword. Raw SQL over the files stays
+available for anything neither tool covers.
 
 ## Coordinates
 

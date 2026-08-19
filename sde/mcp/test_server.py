@@ -82,6 +82,26 @@ async def main(sde):
             # the raw-value lint fires on statement 2 (selects `value` by attribute)
             assert any('unitID' in n for n in r[1].get('notes', [])), r[1]
 
+            # the default panel: one call must answer a hull question whole,
+            # hull columns included. Gen-11 burned 13 rounds on "how much
+            # cargo" because `capacity` is a types column, not a dogma attr.
+            pan = await call('attrs', items=['Iteron Mark V'])
+            t0 = pan['types'][0]
+            assert t0['hull']['capacity'].startswith('5800'), t0['hull']
+            assert t0['hull']['group'] == 'Hauler', t0['hull']
+            assert t0['hull']['category'] == 'Ship', t0['hull']
+            assert 20 < len(t0['attributes']) < 40, len(t0['attributes'])
+            assert 'more' in t0, 'the panel must say what it left out'
+            # the eight resonances share one note, not eight copies
+            assert sum(1 for n in t0['unit_notes'] if 'resonance' in n) == 1, t0['unit_notes']
+            assert sum(1 for n in t0['unit_notes'] if 'no correction rule' in n) == 1, t0['unit_notes']
+            # non-ship categories get their own panels
+            for name, cat in (('Warp Scrambler II', 'Module'),
+                              ('Hammerhead II', 'Drone')):
+                one = (await call('attrs', items=[name]))['types'][0]
+                assert one['hull']['category'] == cat, one['hull']
+                assert one['attributes'], name
+
             # unit corrections — the traps measured subjects actually got wrong
             a = await call('attrs', items=['Rifter'],
                            attributes=['shieldEmDamageResonance', 'shieldRechargeRate'])
