@@ -887,3 +887,48 @@ says nothing about batching.
 
 Corollary: the mutate→stats fold is real but small — only 4 such pairs in
 gen 8, ~20k/question. It stands, but it is not the lever.
+
+## 2026-08-19 — gen-9: cost by layer need (baseline, pre eve-sde-server)
+
+15 subjects x 3 turns, split by which layer the opening question needs
+(`fitting/evals/questions9.md`, results in `results9-2026-08-19.md`). Run on
+the current stack — the new `eve-sde` MCP server is in `.mcp.json` but a
+session reads that at startup, so this is the **baseline**, not a test of it.
+
+Three findings worth carrying forward:
+
+1. **Layer 1 costs what layer 2 costs** — 418k vs 403k mean billed per opening
+   question. A "just look it up" layer should not price like engine work. It
+   does because layer-1 answers are produced by exploratory hand-written SQL
+   (one subject: 21 SQL calls / 14 rounds to compare two hulls' cargo). This is
+   the number the `eve-sde` server has to beat, and the cleanest justification
+   for it yet measured.
+2. **Cross-layer questions are superlinear** — 924k against an additive
+   expectation of ~821k, driven by rounds (16.4 vs ~9). Lookup and engine
+   iterate against each other rather than running in sequence.
+3. **Warm sessions tax unrelated questions.** The same question asked cold as
+   a T1 and warm as a T3 cost 219k vs 402-584k (1.8-2.7x). Rounds barely
+   change; context per round grows 48k -> 86k. Corollary: **shrinking what
+   tools return beats shrinking how often they are called** — returned bytes
+   are paid once per call and then on every subsequent round for the rest of
+   the session.
+
+Design questions answered this session (accuracy risk of encoding the layer-1
+docs into `sde/mcp/server.py`; exposure to a live-refreshing SDE):
+
+- Encoding shifts risk rather than raising it uniformly. A doc nobody reads
+  misleads 1-in-29 subjects; wrong code misleads 29-in-29 and wears authority.
+  Mitigations shipped: raw + interpreted side by side, a loud note on any
+  unitID with no rule, a `NOT_CORRECTED` list of five classes the server
+  explicitly does not fix, and `units_without_a_rule` computed from the live DB
+  (8 unit types / 490 attributes uncovered). Unmeasured until a run with the
+  server live.
+- Live-refresh exposure ranks: a unitID *changing meaning* is the only silent
+  failure (no guardrail); a *new* unitID degrades loudly to raw-plus-warning;
+  schema changes break with SQL errors. Fix for the silent case: have the
+  server diff each rule against the live `dogmaUnits` row and flag drift.
+- **Unlogged hazard found: layer 1 and layer 2 can drift apart.** eos carries
+  its own snapshot (engine build 3470007); the SQLite SDE refreshes separately
+  (items build 3466501). Nothing compares them, so a cross-layer answer can mix
+  two game versions. Arguably a bigger live-version risk than the unit table.
+  Cheap fix: a build-skew check. Not implemented.
