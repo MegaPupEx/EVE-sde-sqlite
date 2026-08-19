@@ -1245,3 +1245,49 @@ did not have (another layer exists and answers a different class of question).
 Those are different asks, and the second is the kind prose is actually good at.
 It should still be measured rather than assumed — the routing claim is testable
 by asking a pure fitting question in a session and seeing which skills load.
+
+## 2026-08-19 — the import rule holds; hull selection is the next gap
+
+Fresh solo-hunter question, deliberately unlike the ESS one (whose specifics I
+had written into the skill, contaminating it as a test).
+
+**Every mechanism built today fired.** eve-fitting loaded unprompted from a
+question that never says "fitting"; both MCP servers were used; the fit was
+**imported before it was published**; `edit_fit` iterated against the panel
+seven times; `validate_fit` and `required_skills` ran; `advisories` were read
+AND answered in prose ("every combat filler blew the CPU budget; leaving them
+open beats stripping tank"); and the EFT came from `export_fit` rather than
+being retyped from memory. That is the whole chain the Machariel session
+skipped.
+
+**The fit is nonetheless weak: 113.5 dps / 7,154 EHP on an assault frigate.**
+The model chose the Jaguar from raw `attrs` across four hulls, hit a CPU wall,
+and paid for it by deleting a Ballistic Control System, dropping to a single
+Small Shield Extender and leaving two slots empty. Sanity-checked against
+other hulls in the same role (both my comparison fits needed trimming, so read
+these as upper bounds, not recommendations): a Wolf lands near 257 dps at
+comparable EHP, an Enyo far higher still. 113 dps is low for the class.
+
+**The gap is that hull selection was never A/B'd.** The skill's "A/B anything
+you are unsure of" was applied to module swaps *within* the chosen hull and
+never to the hull itself — which was the larger uncertainty. Four hulls were
+compared on static attributes; none was built. Choosing on `attrs` and then
+degrading the fit to make that choice work is the failure, and it is invisible
+to `advisories`, which only sees the fit it is given.
+
+**Correction to my own first instinct**: I assumed meta/compact tackle would
+have relieved the CPU crunch. Measured, it saves ~26 CPU (scram 36->30, web
+30->20, MWD 25->21) where a second BCS needs ~52. The model's diagnosis that
+CPU forced the compromise was right; my assumption was wrong.
+
+**Corroboration from my own analysis**: building comparison fits by hand, I
+invented three rig names that do not exist (`Small Anti-EM Screen Reinforcer
+II`, `Small Anti-Explosive Pump II` twice) and two of my three fits came back
+illegal on CPU or slots. Every one was caught in a single `import_fit`. The
+hard rule is not a formality — hand-built fits are unreliable even when the
+builder knows exactly what to watch for.
+
+Next lever, and it is a tool rather than prose: `sweep` already enumerates
+candidates server-side. A hull-level comparison — same role fit across N hulls,
+one call, panels back — would make "which ship" answerable the same way "which
+module" already is.
