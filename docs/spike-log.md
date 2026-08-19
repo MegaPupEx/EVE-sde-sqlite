@@ -971,3 +971,43 @@ behavior, the tool's shape does. `query(sql: str)` takes a string and a string
 invites one statement; `query(statements: list[str])` would make the single
 query the awkward case. That is the next experiment, and a better one than
 re-running these turns.
+
+## 2026-08-19 — gen-11: the tool-shape lever, and why batching was the wrong one
+
+`query(sql: str)` became `query(statements: list[str])`, so the schema
+advertises an array (`fitting/evals/results11-2026-08-19.md`).
+
+**The shape moved behavior, as the hierarchy predicts** — multi-statement calls
+went 8% -> 17% (mean statements/call 1.1 -> 1.2) where gen-10's docstring
+asking for batching had moved nothing. **But the cost did not follow**: opening
+questions 281k -> 360k, the wrong way, and 83% of calls still send one
+statement.
+
+**Batching was the wrong lever, and the reason generalises.** SDE lookups are a
+dependency chain — typeID before attributes, unitID before the value means
+anything. You cannot batch a query whose text depends on the previous result,
+so a list parameter only helps for independent lookups, which are the minority.
+The tool that already collapses the chain server-side is `attrs` (name ->
+typeID -> attributes -> unit correction, one round). It was used 4 times in
+gen-10 and **0 times in gen-11**, against 35 `query` calls: subjects reach for
+the general-purpose escape hatch and hand-walk the chain rather than take the
+specific tool that does it in one call.
+
+So the design rule sharpens: **collapse dependency chains into one tool call;
+do not ask the caller to batch independent ones.** The next experiment is the
+scope and discoverability of `attrs` against `query` — possibly narrowing
+`query` so `attrs` is the obvious path — not another parameter shape.
+
+**The noise floor is the other lesson.** The layer-2 control (the align
+question, untouchable by any SDE change) read 420k / 494k / 372k across gens
+9-11, a +/-18% swing on a slice that should be flat. Every cost claim across
+these three generations sits inside that band. At n=5 this rig cannot resolve
+the effects it is being asked to measure; either subject count goes up
+substantially or the metric moves to something less variance-prone than billed
+tokens per turn (round counts and tool-choice counts behaved far more stably).
+
+Caveat on gen-11: it ran in fresh headless `claude -p` sessions because the
+in-session server held a stale schema and did not respawn after `pkill`, so
+cross-generation cost comparison carries a harness confound. The batching and
+tool-choice numbers are within-generation and clean. Layer 1 is now fully on
+the server: zero Bash calls across all five sessions, against 49 in gen-9.
