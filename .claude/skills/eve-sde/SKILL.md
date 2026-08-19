@@ -298,6 +298,33 @@ not rows.
 
 There is no `sqlite3` CLI on many systems; Python's built-in module needs none.
 
+## Ask everything at once (`sde.py`)
+
+**Every separate shell call re-reads the whole conversation (~45k tokens), so
+ten questions asked in ten calls cost ten context re-reads.** Measured runs
+spend two-thirds of their budget here — one subject burnt 18 of its 27 rounds
+on 18 one-query invocations. Batch instead: list the queries you already know
+you need and send them together.
+
+`sde.py` (beside this file) does that — every part attached for you, a
+`-- comment` above each statement becomes its label, one bad query reports its
+error without killing the batch, and wide results truncate with a row count
+instead of flooding the conversation:
+
+```bash
+python3 .claude/skills/eve-sde/sde.py <<'SQL'
+-- hull basics
+SELECT name, mass FROM types WHERE name = 'Rifter';
+-- scram strengths
+SELECT t.name, d.value FROM type_dogma d JOIN types t ON t.typeID = d.typeID
+JOIN dogma_attributes a ON a.attributeID = d.attributeID
+WHERE a.name = 'warpScrambleStrength';
+SQL
+```
+
+Write your own Python when you need logic between queries; use this whenever
+the queries are independent, which is most of the time.
+
 ## Coordinates
 
 `x`, `y`, `z` on systems, planets, moons, belts and stargates are in **metres**;
