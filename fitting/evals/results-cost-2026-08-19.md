@@ -42,3 +42,32 @@ from anything anyone read.
 3. **A doc only acts where it is loaded.** eve-sde: 1/10. Anything that must
    change SQL behaviour has to live where the reader already is (the
    eve-fitting router, loaded 8/10) or in the tool surface itself.
+
+## Postscript: the layer-1 docs are essentially never read
+
+Measured across all three runs (29 subjects), by every route — `Skill()`
+invocation, `Read`, `Grep`, or shell `cat`:
+
+| run | subjects | eve-fitting loaded | eve-sde loaded | direct reads of layer-1 `.md` | touched layer 1 at all |
+|---|---|---|---|---|---|
+| gen 8 | 10 | 6 | 1 | none | 1 |
+| run 2 | 9 | 7 | 1 | none | 1 |
+| run 3 | 10 | 8 | 1 | 1 path touch | 1 |
+
+**Zero direct file reads.** The `gotchas-*.md` files — ~21.7k tokens of
+trap knowledge (inverted resonance, attribute families where the name lies,
+`destStargateID` column order, coordinate units) — were opened by nobody.
+Subjects write SQL from scratch against a schema they infer from the
+prompt's file path.
+
+Scope caveat: this is a *fitting*-flavoured question mix. eve-sde's
+description matches "SDE data" questions; these subjects read "look up an
+attribute" as an incidental SQL chore, not a reason to load a data skill,
+so eve-fitting triggers and eve-sde does not. A pure layer-1 question
+("build materials for a Raven") would likely trigger it.
+
+This reframes the problem: it is not only that batching guidance failed to
+land. **Layer 1's accumulated trap knowledge is not protecting layer-2
+sessions at all** — and several measured misses (gen 6's inverted-resonance
+storm answer, gen 7's base-vs-skill-modified rig drawback) are precisely
+the classes those files document.
