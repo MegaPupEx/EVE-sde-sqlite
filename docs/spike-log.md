@@ -932,3 +932,42 @@ docs into `sde/mcp/server.py`; exposure to a live-refreshing SDE):
   (items build 3466501). Nothing compares them, so a cross-layer answer can mix
   two game versions. Arguably a bigger live-version risk than the unit table.
   Cheap fix: a build-skew check. Not implemented.
+
+## 2026-08-19 — gen-10: the layer-1 server measured, and a server that never ran
+
+Paired rerun of gen-9's layer-1 arm with `eve-sde` live
+(`fitting/evals/results10-2026-08-19.md`).
+
+**The server had never worked.** It imported the `mcp` SDK, which lives only in
+layer 2's virtualenv, while `.mcp.json` launched it with a bare `python3`. Every
+start was `CONNECTION_CLOSED`. `test_server.py` hid it by launching via
+`sys.executable`: run under the virtualenv the import resolved, so every
+assertion passed against a server that could not start in deployment. Two
+lessons, both general: a smoke test must launch the thing the way production
+launches it (it now reads the command out of `.mcp.json`), and a layer that is
+meant to ship alone must not import anything (`_stdio.py` is stdlib-only).
+
+**The cost result is a non-result, and that is the finding.** Paired across
+comparable turns: **-2%**. The opening-question slice looks good at -33% (9.6
+-> 7.0 rounds), but the control arm — the T3 align question, pure layer 2,
+where the SDE server is unreachable — moved **+30%**. A -21% treatment beside a
++30% control at n=5 is not separable from variance. Gen-9's "418k is the number
+to beat" was the wrong frame: five samples cannot size this.
+
+What did move unambiguously is the **mechanism**: shell round-trips for raw SQL
+went 49 -> 4 calls, replaced by 27 server calls; four of five subjects used no
+shell at all. Skill loads and ToolSearch held flat, so it is not discovery
+overhead shuffling. The variance has a shape worth keeping: the server
+compresses the worst cases (recharge 14 rounds -> 4, -70%) and costs a round on
+the cheapest ones (blueprint 5 -> 8, +54%). Cost lives in the tail, so that is
+the right direction — but it is a tail claim, not a mean one.
+
+**Batching is unused — 22 of 24 `query` calls sent exactly one statement**
+(mean 1.1). The tool was designed around "the round is the unit of cost, so
+send many statements"; that premise is simply not being exercised, and the
+-33% comes from deleting the shell round-trip instead. This is the placement
+hierarchy again, one level down: a docstring saying "batch" does not change
+behavior, the tool's shape does. `query(sql: str)` takes a string and a string
+invites one statement; `query(statements: list[str])` would make the single
+query the awkward case. That is the next experiment, and a better one than
+re-running these turns.
