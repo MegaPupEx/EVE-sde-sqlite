@@ -66,6 +66,25 @@ async def main(pyfa):
             # the mutate-then-stats pair is folded: import/create/clone/edit
             # return the panel inline, so a round is not spent on get_stats
             assert 'stats' in imp and imp['stats']['offense']['dps'] > 0, list(imp)
+            # cargo/ammo lines: Cargo takes the item only and sets `amount`
+            # after, so passing it positionally made EVERY EFT carrying ammo
+            # fail to import — which killboard and pyfa exports routinely do.
+            cargo_fit = await call('import_fit', stats=False, eft=(
+                '[Rifter, cargo]\n'
+                '200mm AutoCannon II, Republic Fleet EMP S\n'
+                'Republic Fleet EMP S x2000\n'
+                'Nanite Repair Paste x50\n'))
+            assert cargo_fit.get('fit_id'), cargo_fit
+
+            # a quantity suffix on a MODULE is the commonest paste error and
+            # must name itself, not die inside pyfa's drone constructor
+            try:
+                await call('import_fit', stats=False,
+                           eft='[Rifter, bad]\n200mm AutoCannon II x3\n')
+                raise AssertionError('module xN must be rejected')
+            except RuntimeError as exc:
+                assert 'own line' in str(exc) or 'once per module' in str(exc), exc
+
             lean = await call('import_fit', eft=rifter_eft, stats=False)
             assert 'stats' not in lean, 'stats=False must return the id alone'
             await call('delete_fit', fit_id=lean['fit_id'])

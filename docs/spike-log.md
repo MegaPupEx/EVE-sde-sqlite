@@ -1155,3 +1155,56 @@ neut pressure; and in-space rules like ESS field restrictions are not modeled
 at all. The skill now also says to A/B uncertain choices with `compare_fits`
 rather than guessing, and to take boosters and implants when the player offers
 them.
+
+## 2026-08-19 — the Machariel session: a fit recommended before it was checked
+
+Owner's ESS question again, in a session with **no MCP servers at all**. The
+transcript shows it: `find` located no local databases, so it downloaded
+`eve-sde-items.sqlite` from the GitHub release into a scratchpad and queried it
+with raw `python3 sqlite3` through Bash. Zero `mcp__eve-sde__*` calls, zero
+`mcp__eve-fitting__*` calls, and the skill it loaded was **eve-sde, never
+eve-fitting**. So the fitting engine was not merely unused — it was absent, for
+the third session running, and the hook had not populated the databases.
+
+**The order of operations was backwards.** The first message recommended a
+complete Machariel fit from memory. Only when asked for EFT did it look module
+names up — and several did not exist: "Adaptive Invulnerability Field II" (long
+since renamed Multispectrum), "Faction Large Armor Plate", "Anti-Explosive
+Screen Reinforcer". The fit changed materially between the two messages because
+half of it had been invented. A name-verification pass ran over 12 items, and
+`Republic Fleet Barrage L` — which does not exist, Barrage being T2-only — was
+not among them and shipped in the "verified against the current SDE build"
+answer.
+
+Run through the engine afterwards, the delivered fit:
+
+- **`Machariel` has 7 turret hardpoints, not "6 turret + 2 missile".** The
+  answer left two highs empty and explained them as launcher hardpoints. One
+  was a seventh gun. `hardpoints: {turret: [6.0, 7]}`.
+- **50MN MWD on a battleship**, up from 5MN in the previous session but still
+  two size classes short: 5,000,000 kg on a 94,680,000 kg hull (5.3%),
+  385 m/s. With the 500MN: **1,495 m/s**, and the signature is 2,415 m against
+  2,520 m — again the bloom does not shrink with the module.
+- EHP 212,899, `problems: []`. Legal, and still wrong in three places.
+
+**Two engine bugs this surfaced, both now fixed:**
+
+1. **`Cargo(item, amount)` — every EFT with an ammo or cargo line failed to
+   import.** `Cargo.__init__` takes the item only and `amount` is assigned
+   after. Killboard and pyfa exports carry cargo lines as a matter of course,
+   so this was breaking real pastes, and the symptom was the opaque
+   `__init__() takes 2 positional arguments but 3 were given`. That same
+   TypeError was what the earlier `Module xN` investigation hit — the module
+   diagnosis was right but this was the mechanism underneath it.
+2. `Republic Fleet Barrage L` now fails as `unknown item` rather than being
+   swallowed, because the import gets far enough to resolve it.
+
+Regression tests added for both: an EFT with ammo and paste must import, and a
+module with a quantity suffix must name itself.
+
+**The standing lesson**: three sessions, three different silent absences —
+databases missing, engine venv missing, both servers missing — and each time
+the model answered anyway, fluently and wrongly. Graceful degradation is now in
+both servers, but nothing yet makes a *session with no servers at all* announce
+itself, because there is no server present to say so. That is a skill-level
+job: the fitting skill should refuse to publish a fit it has not imported.

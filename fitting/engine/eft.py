@@ -239,14 +239,22 @@ def build_fit(spec):
                     'for fitted modules — repeat the line once per module. " xN" '
                     'is drone/fighter/cargo syntax; on a module it silently '
                     'misfiles the line instead of filling slots.')
-            fit.cargo.append(Cargo(item, entry['quantity']))
+            # Cargo.__init__ takes the item only; `amount` is a separate
+            # attribute. Passing it positionally raised a TypeError, so every
+            # EFT carrying an ammo or cargo line — which killboard and pyfa
+            # exports routinely do — failed to import at all.
+            cargo = Cargo(item)
+            cargo.amount = entry['quantity']
+            fit.cargo.append(cargo)
         elif category == 'Implant':
             if item.group.name == 'Booster':
                 fit.boosters.append(Booster(item))
             else:
                 fit.implants.append(Implant(item))
         elif category == 'Charge':
-            fit.cargo.append(Cargo(item, 1))
+            cargo = Cargo(item)
+            cargo.amount = 1
+            fit.cargo.append(cargo)
         else:
             if entry['mutation'] is not None:
                 dyn, attrs = _mutation_parts(entry, spec)
