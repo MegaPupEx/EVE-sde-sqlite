@@ -85,6 +85,24 @@ async def main(pyfa):
             except RuntimeError as exc:
                 assert 'own line' in str(exc) or 'once per module' in str(exc), exc
 
+            # hull sweep: name a CLASS, not remembered candidates. The whole
+            # point is that the caller never enumerates — a hull picked from a
+            # recalled shortlist and then made to work is the commonest way a
+            # fit answer goes wrong.
+            sw = await call('sweep_hulls', fit_id=fid, group='Assault Frigate')
+            assert len(sw['hulls']) > 8, sw['hulls']
+            ok = [h for h in sw['hulls'] if 'problems' not in h and 'error' not in h]
+            assert ok, 'at least one hull must carry the fit legally'
+            # bonuses ride along: they are already applied in the numbers, and
+            # are shown so a low rank reads as "wrong weapons for this hull"
+            assert any(h.get('bonuses') for h in sw['hulls']), sw['hulls'][0]
+            assert sw['ranked_by'] == 'offense.dps', sw['ranked_by']
+            try:
+                await call('sweep_hulls', fit_id=fid, group='Not A Real Group')
+                raise AssertionError('unknown group must be rejected')
+            except RuntimeError as exc:
+                assert 'group' in str(exc).lower(), exc
+
             lean = await call('import_fit', eft=rifter_eft, stats=False)
             assert 'stats' not in lean, 'stats=False must return the id alone'
             await call('delete_fit', fit_id=lean['fit_id'])

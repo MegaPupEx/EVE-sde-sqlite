@@ -1291,3 +1291,43 @@ Next lever, and it is a tool rather than prose: `sweep` already enumerates
 candidates server-side. A hull-level comparison — same role fit across N hulls,
 one call, panels back — would make "which ship" answerable the same way "which
 module" already is.
+
+## 2026-08-19 — sweep_hulls: enumeration as a tool call
+
+Both probes failed the same way, and it was neither the math nor the
+verification: the model worked from a **remembered candidate set**. Four
+destroyers compared when twenty-four exist; four assault frigates compared on
+static attributes, none built. Whatever layer it reached for, it used
+correctly — on the shortlist that happened to come to mind.
+
+`sweep_hulls(fit_id, group=…|hulls=…)` rebuilds a fit's module list on every
+published hull in a class and ranks them. The general lever is the `group`
+argument: the caller names a **class**, not members, so enumeration happens
+server-side and a shortlist never forms. `sweep` already did this for modules;
+this is the same idea on the hull axis, deliberately not a bespoke tool for the
+case that surfaced it.
+
+Measured on the delivered Jaguar fit, same modules across Assault Frigate:
+
+| hull | dps | ehp | legal |
+| --- | --- | --- | --- |
+| Geri | 149.8 | 9,398 | yes |
+| Jaguar (delivered) | 113.5 | 7,154 | yes |
+| Cambion | 90.8 | 9,431 | yes |
+| Vengeance | 124.9 | 7,746 | no (cpu -9.75) |
+
+So the shipped answer was beaten on both axes at once by a hull it never
+considered, with no module changes.
+
+**On bonuses** (owner asked whether the sweep should return them): the engine
+applies every hull, role and skill bonus when it builds each fit, so they are
+already inside the dps/ehp/speed numbers and the ranking needs no correction.
+The trait text is returned anyway, because the ranking alone is misleading in
+one specific way — a turret-bonused hull scored with a missile fit places low
+because the fit is wrong for it, not because the hull is. Enyo, Harpy and
+Freki all land at 68.1 dps in the table above for exactly that reason, and the
+`bonuses` line is what makes that legible rather than a false verdict.
+
+Rows that do not fit are kept, flagged with their `problems`, and sorted below
+the legal ones — a hull that would win with a small adjustment is worth seeing,
+so long as nothing reads its numbers as achievable as-is.

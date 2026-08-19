@@ -254,6 +254,21 @@ checkable in the engine and none of them was checked.
   `compare_fits`. One round gives you the real delta; guessing gives you the
   5MN. Size classes especially: prop mods, reps, cap boosters and guns all
   come in hull-size tiers, and the wrong tier is usually legal.
+- **Never answer "which X is best" from a remembered shortlist — enumerate.**
+  This is the failure that survives everything else: the tools get used
+  correctly, but only on the two or three candidates that came to mind. Asked
+  which T1 destroyer had the most powergrid, a measured run compared four and
+  never queried the twenty-four. Asked for a solo hull, another compared four
+  assault frigates on static attributes, built none, and shipped a fit doing
+  113 dps where the same modules on a hull it never considered do 150 with
+  more EHP. The set is a tool call, not a memory: `sweep_hulls(group=…)` ranks
+  every hull in a class with the fit actually built on each, `sweep` does the
+  same for module candidates, and layer 1's `query` returns the whole group in
+  one statement. Reach for one of those before you type a candidate list.
+- **Hull bonuses are already inside every number the engine returns**, so a
+  ranking needs no adjustment for them — but read the `bonuses` line before
+  concluding a hull is bad. A turret-bonused hull scored with a missile fit
+  places low because the fit is wrong for it, not because the hull is.
 - **Fill the slots or justify the gaps.** An empty high on a brawler is DPS or
   utility you declined to take; say which.
 - **Take the free stats when the player offers them.** If they say "any

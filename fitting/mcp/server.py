@@ -15,6 +15,7 @@ import importlib
 import json
 import os
 import random as _random
+import re
 import sqlite3
 import sys
 
@@ -959,6 +960,106 @@ def sweep(fit_id: str, item: str, candidates: list, metrics: list = None) -> dic
         _recalc(fit)
     return {'fit_id': fit_id, 'ship': _ship_name(fit),
             'swapped_count': len(originals), 'rows': rows}
+
+
+def _group_by_name(name):
+    """Find a ship group by name without assuming a member is known.
+
+    eos.db.getGroup takes the name directly; the Group class is a classical
+    mapping with no __table__, so a hand-built query does not work here.
+    """
+    import eos.db
+    try:
+        return eos.db.getGroup(name)
+    except Exception:                     # noqa: BLE001 — unknown name is a miss
+        return None
+
+
+def _trait_text(item, cap=170):
+    """Hull bonuses as plain text, compressed.
+
+    Bonuses are already IN every number this server returns — the engine
+    applies them — but the ranking alone hides WHY a hull placed where it did.
+    A hull whose damage bonus does not touch the weapons in the fit looks
+    simply bad, when it is really "bad with these guns". Naming the bonus is
+    what stops that reading.
+    """
+    traits = getattr(item, 'traits', None)
+    raw = getattr(traits, 'traitText', None) if traits is not None else None
+    if not raw:
+        return None
+    txt = re.sub(r'<[^>]+>', ' ', raw)
+    txt = re.sub(r'\s+', ' ', txt).strip()
+    return txt[:cap] + ('…' if len(txt) > cap else '')
+
+
+@mcp.tool()
+@_engine_thread
+def sweep_hulls(fit_id: str, hulls: list = None, group: str = None,
+                metrics: list = None, limit: int = 20) -> dict:
+    """Rebuild this fit's modules on OTHER hulls and rank them. Name a `group` ("Destroyer", "Assault Frigate", "Combat Battlecruiser") to enumerate every published hull in it server-side, or pass explicit `hulls`. Use this instead of picking a hull from remembered candidates: a hull chosen on static attributes and then made to work is the commonest way a fit answer goes wrong. Rows carry the named panel metrics (default dps/ehp/speed), cpu_free/pg_free, any legality problems, and the hull's per-skill and role bonuses — those are already applied in the numbers, and are shown so a low rank reads as "wrong weapons for this hull" when that is what it is."""
+    if not hulls and not group:
+        raise ValueError('name `group` to enumerate a class, or pass `hulls`')
+    src = _fit(fit_id)
+    metrics = metrics or ['offense.dps', 'defense.ehp.total',
+                          'navigation.max_velocity_ms']
+    eft = eftlib.render_eft(src)
+    body = eft.split('\n', 1)[1] if '\n' in eft else ''
+
+    names = list(hulls or [])
+    if group:
+        grp = _group_by_name(group)
+        if grp is None:
+            raise ValueError(f'no ship group named {group!r} — group names are the '
+                             'engine\'s own ("Destroyer", "Assault Frigate", '
+                             '"Combat Battlecruiser")')
+        names += sorted(i.typeName for i in grp.items
+                        if getattr(i, 'published', True) and i.typeName not in names)
+    if len(names) > limit:
+        raise ValueError(f'{len(names)} hulls; raise `limit` (currently {limit}) '
+                         'or narrow the group')
+
+    def pick(panel, path):
+        node = panel
+        for part in path.split('.'):
+            if not isinstance(node, dict) or part not in node:
+                return None
+            node = node[part]
+        return node
+
+    rows = []
+    for name in names:
+        item = eftlib._lookup(name)
+        if item is None:
+            rows.append({'hull': name, 'error': 'unknown hull'})
+            continue
+        try:
+            spec = eftlib.parse_eft(f'[{name}, sweep]\n{body}')[0]
+            fit = eftlib.build_fit(spec)
+        except Exception as exc:          # noqa: BLE001 — a hull that cannot take
+            rows.append({'hull': name, 'error': str(exc)[:120]})
+            continue
+        panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload))
+        attr = fit.ship.getModifiedItemAttr
+        row = {'hull': name}
+        row.update({m: pick(panel, m) for m in metrics})
+        row['cpu_free'] = round((attr('cpuOutput') or 0) - fit.cpuUsed, 2)
+        row['pg_free'] = round((attr('powerOutput') or 0) - fit.pgUsed, 2)
+        probs = _problems(fit)
+        if probs:
+            row['problems'] = probs
+        bonus = _trait_text(item)
+        if bonus:
+            row['bonuses'] = bonus
+        rows.append(row)
+
+    key = metrics[0]
+    rows.sort(key=lambda r: (r.get('problems') is not None, -(r.get(key) or 0)))
+    return {'from_fit': fit_id, 'modules_of': _ship_name(src),
+            'ranked_by': key, 'hulls': rows,
+            'note': 'rows with `problems` do not fit as-is — the module list came '
+                    'from another hull, so slots, hardpoints and grid differ. Treat '
+                    'those numbers as an upper bound until the fit is adjusted.'}
 
 
 @mcp.tool()
