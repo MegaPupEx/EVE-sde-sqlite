@@ -10,6 +10,16 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Two sessions bootstrapping the same checkout at once would both download and
+# build into the same paths and clobber each other. Serialise: the second
+# waits, then finds the work already done and skips it. (On Claude Code on the
+# web each chat gets its own container, so this only matters when several
+# sessions share one machine.)
+exec 9>".setup.lock"
+if command -v flock >/dev/null 2>&1; then
+    flock 9 || { echo "could not take the setup lock" >&2; exit 1; }
+fi
+
 SDE_ONLY=0
 [ "${1:-}" = "--sde-only" ] && SDE_ONLY=1
 
