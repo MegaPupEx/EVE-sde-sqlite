@@ -215,6 +215,38 @@ damage doesn't chain to neighbors) come back un-scrambled. The gaps
 change no stats; `edit_fit` add fills the first gap, like fitting
 in-game.
 
+## Building a fit, as opposed to reading one
+
+When you are the one choosing modules, a choice you cannot show a delta for is
+a choice you have not made. Measured 2026-08-19: a generated Vindicator passed
+`validate_fit` clean while carrying a cruiser-size prop mod (+36% speed for the
+full battleship signature bloom), three empty slots, and a charge whose faction
+variant holds the same capacitor in 25% less volume. Every one of those was
+checkable in the engine and none of them was checked.
+
+- **Read `advisories` on every panel.** Separate from `problems`: `problems`
+  is legality, `advisories` is "legal but does nothing" — empty slots,
+  undersized prop mods, a strictly better charge. Act on each one or say why
+  you are not. `problems: []` does not mean the fit is good.
+- **A/B anything you are unsure of** with `clone_fit` + `edit_fit` +
+  `compare_fits`. One round gives you the real delta; guessing gives you the
+  5MN. Size classes especially: prop mods, reps, cap boosters and guns all
+  come in hull-size tiers, and the wrong tier is usually legal.
+- **Fill the slots or justify the gaps.** An empty high on a brawler is DPS or
+  utility you declined to take; say which.
+- **Take the free stats when the player offers them.** If they say "any
+  module/rig/implant/whatever", that includes boosters and implants — most
+  combat boosters are a straight buff with a side effect worth naming, and
+  hardwirings cost only ISK. `set_booster` applies boosters; implants ride in
+  the EFT text. Leaving them out of a "best fit I can train for" answer is
+  leaving the question unanswered.
+- **Say what the engine cannot see.** Its capacitor simulation assumes NO
+  incoming neutralisation, so a triple-rep panel reads beautifully and tells
+  you nothing about a fight with neut pressure — that is the case for resist
+  modules over a third repper, and the panel will never make it for you.
+  In-space rules (ESS field restrictions, gate/jump mechanics) are not modeled
+  at all; name them rather than fitting around them silently.
+
 ## Answer economy
 
 Answers are read on a phone between undocks. Measured runs show the cost

@@ -1111,3 +1111,47 @@ system prompt 11.9k + skills 4.1k + MCP 0.6k + memory 0.3k = **~46k per round**
 with layer 1 only; add the fitting tools' ~3.7k of schemas for **~50k** with
 both servers. Against 41k measured in this container. The earlier 56k reading
 included several unrelated MCP servers.
+
+## 2026-08-19 — "legal" is not "good": the advisory pass
+
+Owner's ESS-robbing fit request produced a Vindicator that passed
+`validate_fit` clean and was, in their words, indefensible. The engine had
+every fact needed to catch most of it and was never asked. Verified against
+build 3470007:
+
+- **5MN MWD on a battleship**: 179.9 m/s against 1,181.6 m/s for the 500MN,
+  and the signature is **2,300 m either way** — the bloom is a flat
+  percentage, so an undersized prop mod pays the entire cost for a fraction
+  of the speed. Strictly dominated; worse than fitting nothing.
+- **Cap Booster 800 vs 3200**: cap "not stable, 93.8 s" becomes **stable at
+  36.2%**. Same 12 s module cycle, 4x the capacitor per cycle. The whole
+  "93.8 s is your clock" framing was an artifact of the wrong charge.
+- **Navy Cap Booster 800**: same 800 GJ in 24 m3 instead of 32.
+- Three empty slots, never mentioned.
+- No boosters or implants, despite the player explicitly offering them.
+
+**Fix — `advisories`, separate from `problems`.** `problems` stays strictly
+legality; `advisories` reports legal-but-pointless choices: slots left empty,
+a prop mod undersized for the hull, a charge with a same-value smaller-volume
+variant. All computed, none hardcoded.
+
+The prop-mod test is worth recording because the obvious version was wrong. A
+speed-gain threshold rejects the 5MN only if you set it above 36%, which would
+false-positive on plenty of legitimate fits. **Mass is the honest
+discriminator**: a size-matched prop mod adds roughly half the hull's mass and
+the boost divides by mass, so the 5MN's 500,000 kg against a 105,200,000 kg
+hull (0.5%) is unambiguous where "+36% speed" is not.
+
+**Also fixed**: `Module xN` in EFT. It is drone/fighter/cargo syntax; on a
+module pyfa died with `__init__() takes 2 positional arguments but 3 were
+given` (constructing a Drone from a module), and the `x6, Void L` variant
+missed the quantity regex and returned "unknown item". Both now give a real
+message naming the item and the one-line-per-module rule.
+
+**Not mechanised, and named instead** (SKILL.md, "Building a fit"): the
+capacitor simulation assumes NO incoming neutralisation, which is exactly why
+a triple-rep panel reads well and why resist modules beat a third repper under
+neut pressure; and in-space rules like ESS field restrictions are not modeled
+at all. The skill now also says to A/B uncertain choices with `compare_fits`
+rather than guessing, and to take boosters and implants when the player offers
+them.

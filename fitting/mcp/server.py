@@ -233,6 +233,85 @@ def _recalc(fit, factor_reload=False):
         projector.calculateModifiedAttributes(targetFit=fit, type=CalcType.PROJECTED)
 
 
+def _advisories(fit):
+    """Choices that are legal but do nothing, or leave free value on the table.
+
+    Distinct from `problems`, which stays strictly about in-game legality — a
+    fit can be `problems: []` and still be indefensible. Measured 2026-08-19:
+    a generated Vindicator passed validation with a cruiser-size prop mod
+    contributing +38% speed for the full signature bloom, three empty slots,
+    and a charge whose faction variant is the same capacitor in 25% less
+    volume. None of that is illegal; all of it is checkable.
+    """
+    _recalc(fit)
+    out = []
+    attr = fit.ship.getModifiedItemAttr
+
+    from collections import Counter
+    used_by_slot = Counter(int(m.slot) for m in fit.modules
+                           if not m.isEmpty and m.slot is not None)
+    empty = []
+    for slot, label, attr_name in RACKS:
+        total = int(attr(attr_name) or 0)
+        free = total - used_by_slot.get(int(slot), 0)
+        if free > 0:
+            empty.append(f'{free} {label}')
+    if empty:
+        out.append('slots left empty: ' + ', '.join(empty)
+                   + ' — say why, or fill them')
+
+    # A prop mod divides its boost by hull mass, so an undersized one buys
+    # almost no speed while still paying the full signature bloom.
+    # Size-matching is mass, not the speed gain: a size-matched prop mod adds
+    # roughly half the hull's mass, and the boost divides by mass. A 5MN on a
+    # battleship adds ~0.5% and buys ~+38% speed where the 500MN buys ~+800%,
+    # while the signature bloom is a flat percentage either way — so a raw
+    # "+38%" reads acceptable and is not.
+    base_m = fit.ship.item.attributes.get('mass')
+    base_m = base_m.value if base_m is not None else None
+    base_v = fit.ship.item.attributes.get('maxVelocity')
+    base_v = base_v.value if base_v is not None else None
+    now_v = attr('maxVelocity')
+    for prop in (m for m in fit.modules if not m.isEmpty
+                 and m.item.group.name == 'Propulsion Module'):
+        added = prop.getModifiedItemAttr('massAddition') or 0
+        if not base_m or added / base_m >= 0.10:
+            continue
+        gain = f'{(now_v / base_v - 1) * 100:.0f}%' if (base_v and now_v) else 'little'
+        out.append(
+            f'{prop.item.typeName} is undersized for this hull: it adds {added:g} kg '
+            f'to a {base_m:g} kg ship ({added / base_m * 100:.1f}%), so it buys only '
+            f'+{gain} max velocity. The signature bloom is a flat percentage and does '
+            'NOT shrink with the module — an undersized prop mod pays the full '
+            'signature cost for a fraction of the speed. Compare the size-matched one.')
+
+    # Same capacitor, less cargo volume: more reloads carried per m3.
+    for mod in fit.modules:
+        if mod.isEmpty or mod.charge is None:
+            continue
+        loaded = mod.charge
+        cap_now = loaded.attributes.get('capacitorBonus')
+        vol_now = loaded.attributes.get('volume')
+        if cap_now is None or vol_now is None:
+            continue
+        try:
+            candidates = list(mod.getValidCharges())
+        except Exception:                    # noqa: BLE001 — advisory only
+            continue
+        for cand in candidates:
+            cap = cand.attributes.get('capacitorBonus')
+            vol = cand.attributes.get('volume')
+            if cap is None or vol is None or cand.typeName == loaded.typeName:
+                continue
+            if cap.value == cap_now.value and vol.value < vol_now.value:
+                out.append(
+                    f'{cand.typeName} carries the same {cap.value:g} GJ in '
+                    f'{vol.value:g} m3 instead of {vol_now.value:g} — same cap per '
+                    'cycle, more reloads per hold')
+                break
+    return out
+
+
 def _problems(fit):
     """Named in-game legality violations. Empty list = legal."""
     from eos.const import FittingHardpoint, FittingSlot
@@ -749,6 +828,9 @@ def get_stats(fit_id: str, profile: dict = None, spool: float = None) -> dict:
                        spool=spool)
     panel = {'ship': _ship_name(fit), **panel}
     panel['problems'] = _problems(fit)
+    advisories = _advisories(fit)
+    if advisories:
+        panel['advisories'] = advisories
     # A silent zero-spool number once cost a graded eval miss: name the level.
     spool_info = panel['offense'].get('spool')
     if spool_info:
