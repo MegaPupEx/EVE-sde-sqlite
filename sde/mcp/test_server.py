@@ -63,17 +63,16 @@ async def main(sde):
                 print(f'  {_tool:10} -> ~{tokens(out)} tokens')
                 return out
 
-            # batch: four statements, one round, one bad statement isolated
-            q = await call('query', sql="""
--- rifter hull
-SELECT name, mass FROM types WHERE name = 'Rifter';
--- scram strengths
-SELECT t.name, d.value FROM type_dogma d JOIN types t ON t.typeID = d.typeID
-JOIN dogma_attributes a ON a.attributeID = d.attributeID
-WHERE a.name = 'warpScrambleStrength' AND t.name LIKE 'Warp Scrambler%';
--- deliberately broken
-SELECT * FROM no_such_table;
-""")
+            # batch: three statements as separate list elements, one round,
+            # one bad statement isolated
+            q = await call('query', statements=[
+                "-- rifter hull\nSELECT name, mass FROM types WHERE name = 'Rifter'",
+                "-- scram strengths\n"
+                'SELECT t.name, d.value FROM type_dogma d JOIN types t ON t.typeID = d.typeID\n'
+                'JOIN dogma_attributes a ON a.attributeID = d.attributeID\n'
+                "WHERE a.name = 'warpScrambleStrength' AND t.name LIKE 'Warp Scrambler%'",
+                '-- deliberately broken\nSELECT * FROM no_such_table',
+            ])
             r = q['results']
             assert len(r) == 3, r
             assert r[0]['label'] == 'rifter hull' and r[0]['data'][0][0] == 'Rifter', r[0]

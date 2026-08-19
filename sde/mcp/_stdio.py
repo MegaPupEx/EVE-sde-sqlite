@@ -22,11 +22,26 @@ _JSON_TYPES = {
 }
 
 
+def _entry(annotation):
+    """One property schema. `list[str]` becomes a typed array.
+
+    The element type is worth carrying: a bare `array` leaves the caller
+    guessing, and for `query(statements)` the whole point of the parameter is
+    that it holds MANY items — the schema is what says so.
+    """
+    origin = getattr(annotation, '__origin__', None)
+    if origin is list:
+        args = getattr(annotation, '__args__', ())
+        item = _JSON_TYPES.get(args[0]) if args else None
+        return {'type': 'array', 'items': {'type': item}} if item else {'type': 'array'}
+    return {'type': _JSON_TYPES.get(annotation, 'string')}
+
+
 def _schema(fn):
     """Derive an inputSchema from the function signature."""
     props, required = {}, []
     for name, p in inspect.signature(fn).parameters.items():
-        entry = {'type': _JSON_TYPES.get(p.annotation, 'string')}
+        entry = _entry(p.annotation)
         if p.default is inspect.Parameter.empty:
             required.append(name)
         elif p.default is not None:

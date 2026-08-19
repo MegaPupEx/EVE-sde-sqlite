@@ -104,8 +104,17 @@ def _interpret(value, unit_id):
 
 
 @mcp.tool()
-def query(sql: str, limit: int = 40) -> dict:
-    """Run MANY SDE statements in ONE call (separate with ';'; a '-- comment' above a statement labels it). Every eve-sde part is pre-ATTACHed so table names need no prefix (except `meta`, which exists in all of them). Batch every query you already know you need — a separate call re-reads the whole conversation. Rows are capped with the true count reported; raw dogma values are linted for the unit traps."""
+def query(statements: list[str], limit: int = 40) -> dict:
+    """Run SDE statements. `statements` is a LIST — put every query you already know you need in one call, because a second call re-reads the whole conversation. A '-- comment' line above a statement labels it. Every eve-sde part is pre-ATTACHed so table names need no prefix (except `meta`, which exists in all of them). Rows are capped with the true count reported; raw dogma values are linted for the unit traps."""
+    # Measured over gen-10: 22 of 24 calls to the old `sql: str` form sent a
+    # single statement. A string invites one statement no matter what the
+    # docstring asks for, so the parameter is a list and the schema says so.
+    # A bare string still works -- refusing it would cost the round the shape
+    # change is meant to save -- but it is answered with a nudge.
+    coerced = isinstance(statements, str)
+    sql = statements if coerced else '\n'.join(
+        s if s.rstrip().endswith(';') else s + ';' for s in statements)
+
     db = _conn()
     blocks, label, buf = [], None, []
     for line in sql.splitlines():
@@ -161,7 +170,12 @@ def query(sql: str, limit: int = 40) -> dict:
         if notes:
             item['notes'] = notes
         out.append(item)
-    return {'sde_build': BUILD, 'parts': [p[8:-7] for p in PARTS], 'results': out}
+    result = {'sde_build': BUILD, 'parts': [p[8:-7] for p in PARTS], 'results': out}
+    if coerced:
+        result['note'] = ('`statements` is a list — pass each query as its own '
+                          'element, and send every one you already know you need '
+                          'in a single call.')
+    return result
 
 
 @mcp.tool()
