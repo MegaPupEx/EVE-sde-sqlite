@@ -799,3 +799,29 @@ error this project's own gen-5 key derivation made. Router gains the
 "can X fit Y = import + validate" line. Per-round trend on the folklore
 fringe: 20% confident-wrong holding, but shifting from pure memory
 toward one-layer-short — a narrower, more fixable shape.
+
+## 2026-08-18 — cost profile: the token bill is context re-reads, not output
+
+Built `fitting/evals/cost-profile.html` (published artifact) charting the
+three usability factors across gens 5–8, 140 graded answers. Numbers
+recomputed consistently from transcripts: billed = fresh input + cache
+reads + cache writes + output, per-request max to dedupe streamed usage
+rows.
+
+Findings that change how we optimise:
+- **~0.25% of the bill is output.** Gen 8: 1.3k output against 511k
+  billed per question. Prompt/answer brevity is a UX lever, not a cost
+  lever.
+- **Cost ≈ tool rounds × context size.** Across five runs the two track
+  almost linearly (6.4 rounds/292k → 13.0 rounds/694k). One tool round
+  saved ≈ 50k tokens. This is what makes the skill's batch-your-calls
+  and resident-fit guidance load-bearing.
+- **Cold start dominates a session.** A 1-turn session costs MORE per
+  question (511–577k) than a 3-turn one (292–479k): skill read, tool
+  schemas and fit setup are per-session, not per-answer. Follow-ups are
+  the cheap questions — gen 6 turn 1 495k → turn 3 229k.
+- Sonnet bills ~1.6x Fable's tokens for the same work (more tool rounds)
+  at a fraction of the per-token rate; volume and price move opposite
+  ways, so neither number alone is the cost story.
+- Latency confirmed third: 53–73s median per question, worst case ~2 min
+  on a cold first turn.
