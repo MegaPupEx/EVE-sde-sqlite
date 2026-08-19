@@ -65,9 +65,31 @@ UNITS = {
 BIG_TABLES = ('type_dogma', 'types', 'moons', 'planets', 'type_effects')
 
 
+# Traps this server does NOT mechanise. Named for the same reason the engine
+# names `unmodeled`: a tool that silently covers some cases invites the reader
+# to assume it covers all of them.
+NOT_CORRECTED = [
+    'ties — many attributes have huge tie groups (409 of 423 ships share one '
+    'web-resist value); never lift a top row as "the best"',
+    'attribute families whose NAME lies (resists, sensor strength, tech level) '
+    '— match on attributeID, not name',
+    'highIsGood is unreliable (remoteRepairImpedance is inverted and flagged 1)',
+    'derived values — regen peaks, stacking, skills, hull bonuses: engine work, '
+    'not raw attributes',
+    'attributeID and unitID are separate ID spaces that overlap',
+]
+
+
 def _interpret(value, unit_id):
     """Return (human_value, note) for a raw dogma value."""
-    if value is None or unit_id not in UNITS:
+    if value is None:
+        return None, None
+    if unit_id is not None and unit_id not in UNITS:
+        # Silence here would read as "no correction needed". A unit this server
+        # has no rule for is exactly where a future SDE build breaks it.
+        return None, (f'unitID {unit_id} has no correction rule in this server — '
+                      'raw value shown; confirm its meaning before quoting')
+    if unit_id not in UNITS:
         return None, None
     kind, why = UNITS[unit_id]
     value = float(value)          # ints must still format as 0.0%, not 0%
@@ -193,6 +215,7 @@ def attrs(items: list, attributes: list = None) -> dict:
             entry = {'raw': value, 'attributeID': attr_id}
             if human is not None:
                 entry['value'] = human
+            if why:
                 entry['unit_note'] = why
             vals[attr_name] = entry
         missing = []
@@ -210,10 +233,17 @@ def attrs(items: list, attributes: list = None) -> dict:
 def sde_info() -> dict:
     """SDE build number, the parts present, and the traps this server corrects for."""
     _conn()
+    db = _conn()
+    unknown = db.execute(
+        'SELECT unitID, COUNT(*) FROM dogma_attributes WHERE unitID IS NOT NULL '
+        'AND unitID NOT IN (%s) GROUP BY unitID ORDER BY COUNT(*) DESC LIMIT 8'
+        % ','.join(str(k) for k in UNITS)).fetchall()
     return {
         'sde_build': BUILD,
         'parts': [p[8:-7] for p in PARTS],
         'unit_corrections': {str(k): v[1] for k, v in UNITS.items()},
+        'units_without_a_rule': [{'unitID': u, 'attributes': n} for u, n in unknown],
+        'not_corrected': NOT_CORRECTED,
         'reminder': 'batch statements into one `query` call; each call re-reads the conversation',
     }
 
