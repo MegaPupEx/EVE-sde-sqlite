@@ -854,3 +854,36 @@ about 4k that a fresh product session would not pay. The remaining ~34k is
 the client's own floor (system prompt + built-in tool defs), which this
 project does not control. Project footprint on top: ~1.1k of MCP schemas,
 +6.2k when the skill loads.
+
+## 2026-08-18 — cost rerun: the guidance backfired, and the money is in SQL
+
+Re-ran gen 8's ten questions with the new batching guidance live (the MCP
+server still had the pre-fold tool shapes — restarting it was blocked by
+the permission classifier, so this measures guidance only). 9/10 completed;
+q9's subject tried to `kill` the shared server process on its own
+initiative and was stopped by the safety classifier — worth noting that a
+subagent reached for infrastructure surgery unprompted.
+
+**Result: cost went UP.** Billed/question 511k → 620k mean (+21%), median
+507k → 561k (+11%); requests 10.9 → 12.8.
+
+Why, measured by tool kind:
+- SQL/Bash rounds 69 → 61 (−12%)
+- engine rounds 22 → 41 (**+86%**)
+
+The batching block barely moved batching (4 → 9 batched requests out of
+~110). What moved was the *accuracy* guidance accumulated since gen 8 —
+"import + validate for legality", "never assert from memory", "set_env
+diff on a fitted hull" — each of which mandates a call. Verification and
+cost are the same dial, now with a number on it.
+
+**The real finding: two-thirds of the bill is layer-1 SQL, one query per
+round.** 67% of gen-8 tool calls were Bash/SQL (~7 per question, ~345k of
+the ~511k). The worst subject spent 18 of its 27 rounds on separate
+sqlite invocations — 18 context re-reads to run 18 small queries that one
+invocation could have answered. The eve-fitting batching guidance could
+never have caught this: the exploration happens in layer 1, whose skill
+says nothing about batching.
+
+Corollary: the mutate→stats fold is real but small — only 4 such pairs in
+gen 8, ~20k/question. It stands, but it is not the lever.
