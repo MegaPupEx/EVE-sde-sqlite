@@ -5,7 +5,14 @@ description: Interpret EVE Online ship fittings and fitting-engine output - DPS 
 
 # EVE fitting knowledge
 
-Layer 2 of the stack. The **eve-fitting MCP server** (pyfa's engine, headless)
+Layer 2 of the stack, and it depends on layer 1: the **eve-sde** skill plus its
+MCP server answer what a thing *is* — every type, attribute, blueprint and
+system — while this layer answers what a ship *does* once they combine. Reach
+for eve-sde whenever you need an exact item name, a hull's raw attributes, or a
+set question ("which cruiser has the most powergrid"); a module name recalled
+rather than looked up is the single commonest way a fit answer goes wrong.
+
+The **eve-fitting MCP server** (pyfa's engine, headless)
 computes what a fit does; this skill teaches what the numbers mean and what
 they cost. The eve-sde skill (layer 1) is the raw data underneath; every base
 attribute question belongs there.
@@ -76,6 +83,21 @@ present remembered fit numbers as computed.
 Sizes are bytes/4, for budgeting; this router is ~3.6k.
 
 ## If you read nothing else
+
+- **Never publish a fit you have not imported.** If you are naming modules,
+  every one of them goes through `import_fit` before it reaches the player —
+  no exceptions, not for a "quick suggestion", not for a shape you are sure
+  of. Measured twice on 2026-08-19: a Machariel recommended from memory
+  carried three module names that do not exist (`Adaptive Invulnerability
+  Field II`, renamed years ago; `Faction Large Armor Plate`;
+  `Republic Fleet Barrage L`, Barrage being T2-only), left a seventh turret
+  hardpoint empty while explaining it as a launcher slot, and changed
+  materially between two messages because half of it was invented. The engine
+  catches every one of those in one call. If the eve-fitting tools are not
+  available in this session, say the engine is missing and answer no further
+  — do NOT hand-derive. Stacking, calibration, hardpoints and slot legality
+  are precisely what memory gets wrong, and a fit that was never imported is
+  a guess wearing a stat panel.
 
 - **EHP is meaningless without a damage profile.** The panel default is
   uniform 25/25/25/25 — pyfa's convention, not a law. Name the profile;

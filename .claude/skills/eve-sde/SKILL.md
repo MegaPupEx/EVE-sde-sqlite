@@ -1,12 +1,21 @@
 ---
 name: eve-sde
-description: Query the EVE Online Static Data Export (SDE) - ships, modules, dogma attributes, blueprints and manufacturing, planetary industry (PI) schematics, reprocessing yields, and the New Eden universe (regions, systems, planets, moons, stargates, stations). Use whenever a question involves EVE Online game data such as ship stats, fitting attributes, build materials, ore yields, PI chains, system security, planet or moon data, jump routes, market groups, or type/group/category lookups. Covers building the local SQLite database and querying it with SQL.
+description: Query the EVE Online Static Data Export (SDE) - ships, modules, dogma attributes, blueprints and manufacturing, planetary industry (PI) schematics, reprocessing yields, and the New Eden universe (regions, systems, planets, moons, stargates, stations). Use whenever a question involves EVE Online game data such as ship stats, fitting attributes, build materials, ore yields, PI chains, system security, planet or moon data, jump routes, market groups, or type/group/category lookups. Covers building the local SQLite database and querying it with SQL. Raw data only: anything that COMBINES a ship with modules — will this fit, is it cap stable, what is its DPS or EHP, is this module legal on that hull — also needs the eve-fitting skill and its MCP server, which compute what static attributes cannot. Load both for a fitting question.
 ---
 
 # EVE Online SDE
 
 The SDE is CCP's static game-data export: everything in EVE that isn't live
 player state. This skill covers getting it into SQLite and querying it.
+
+**This is layer 1 — what a thing *is*.** Layer 2 is the **eve-fitting** skill
+plus its MCP server, and it answers what a ship *does* once a hull, modules,
+skills and charges combine: DPS, EHP, capacitor, align, and whether the fit is
+even legal. Static attributes cannot substitute — slot counts and hardpoints
+here will not tell you a module fits, and raw resonances are not resists. If a
+question crosses that line, load eve-fitting too; if its tools are absent from
+the session, say the engine is missing rather than deriving fit numbers by
+hand.
 
 **Not in the SDE:** market prices, kills, sovereignty, character or corp data.
 Those are live data — use ESI (`https://esi.evetech.net`) instead.

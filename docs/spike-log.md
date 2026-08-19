@@ -1208,3 +1208,40 @@ the model answered anyway, fluently and wrongly. Graceful degradation is now in
 both servers, but nothing yet makes a *session with no servers at all* announce
 itself, because there is no server present to say so. That is a skill-level
 job: the fitting skill should refuse to publish a fit it has not imported.
+
+## 2026-08-19 — the import rule, and cross-layer routing
+
+Two changes from the Machariel session.
+
+**Hard rule, first bullet of eve-fitting's "If you read nothing else":** never
+publish a fit you have not imported. Every named module goes through
+`import_fit` before it reaches the player — no exceptions for a "quick
+suggestion". And if the eve-fitting tools are absent from the session, say the
+engine is missing and stop, rather than hand-deriving. The evidence is in the
+rule itself: three nonexistent module names, a seventh turret hardpoint left
+empty and explained as a launcher slot, and a fit that changed materially
+between two messages because half of it was invented.
+
+**Cross-layer routing, owner's suggestion.** The asymmetry was real and
+one-directional: eve-fitting's description already said "Pairs with the eve-sde
+skill", while eve-sde's description named no successor at all — which is
+exactly the direction the Machariel session failed in (loaded eve-sde, needed
+eve-fitting, never loaded it).
+
+The refinement worth recording: the cross-reference belongs primarily in the
+**description**, not at the top of the body. Descriptions sit in the system
+prompt and are what the model reads while *deciding* which skill to load; a
+body is read only after that decision is already made. A pointer in eve-sde's
+body would never have been seen by a session that never opened eve-sde — and
+worse, a pointer in eve-fitting's body is useless to the failure mode where
+eve-fitting is never loaded. So: description carries the routing decision, body
+carries the mid-task correction for a model that loaded one layer and then
+discovers it needs the other. Both now have both.
+
+Honest expectation: this is a **fact**, not a discipline. Every guidance
+intervention that failed in gens 8-11 asked for behaviour ("batch your
+queries", "verify before asserting"); this one supplies information the model
+did not have (another layer exists and answers a different class of question).
+Those are different asks, and the second is the kind prose is actually good at.
+It should still be measured rather than assumed — the routing claim is testable
+by asking a pure fitting question in a session and seeing which skills load.
