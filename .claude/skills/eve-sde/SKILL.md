@@ -298,6 +298,13 @@ not rows.
 
 There is no `sqlite3` CLI on many systems; Python's built-in module needs none.
 
+**Prefer the `eve-sde` MCP server when it is registered.** `query` runs many
+statements in one call (every part pre-attached, `-- comment` labels, row caps,
+one bad statement never kills the batch); `attrs` returns **unit-corrected**
+values, which is the only way to read resonances and millisecond attributes
+without the inversions below biting. Raw SQL stays available for anything they
+do not cover.
+
 ## Coordinates
 
 `x`, `y`, `z` on systems, planets, moons, belts and stargates are in **metres**;

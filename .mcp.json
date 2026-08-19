@@ -2,7 +2,19 @@
   "mcpServers": {
     "eve-fitting": {
       "command": "fitting/work/eosenv/bin/python",
-      "args": ["fitting/mcp/server.py", "--pyfa", "fitting/work/pyfa"]
+      "args": [
+        "fitting/mcp/server.py",
+        "--pyfa",
+        "fitting/work/pyfa"
+      ]
+    },
+    "eve-sde": {
+      "command": "python3",
+      "args": [
+        "sde/mcp/server.py",
+        "--sde",
+        "."
+      ]
     }
   }
 }

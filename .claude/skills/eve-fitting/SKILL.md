@@ -53,6 +53,13 @@ confidently wrong. The engine computes; you interpret.
   alpha preset plus `required_skills`' `alpha_blocked` are the answer
   ("can an alpha fly this" is data, not folklore).
 
+**Layer-1 lookups go through the `eve-sde` MCP server when it is registered**
+(`attrs` for unit-corrected attribute values — resonances come back as resist
+%, millisecond attributes as seconds; `query` for many SQL statements in one
+round). Hand-written SQL against the sqlite parts still works, but it returns
+raw `type_dogma.value`, which inverts for 58 resistance attributes and lies
+about units for 92 more — measured runs got exactly that wrong.
+
 **No engine registered?** Setup is `fitting/mcp/README.md` (a local process +
 `.mcp.json` entry). Without it you may quote layer-1 base-hull values marked
 as pre-skill, pre-stacking — but do not hand-compute a stat panel, and do not
