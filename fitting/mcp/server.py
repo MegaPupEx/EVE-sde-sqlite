@@ -29,23 +29,49 @@ _parser = argparse.ArgumentParser()
 _parser.add_argument('--pyfa', default=os.environ.get('PYFA_PATH'),
                      required='PYFA_PATH' not in os.environ)
 ARGS = _parser.parse_args()
-bootstrap(ARGS.pyfa)
 
-# Saveddata must be a file, not :memory:: MCP tools run on worker threads and
-# sqlite :memory: is per-connection, so each thread would see an empty schema.
-import tempfile  # noqa: E402
-import eos.config as _eos_config  # noqa: E402
-_eos_config.saveddata_connectionstring = \
-    'sqlite:///' + os.path.join(tempfile.mkdtemp(prefix='eve-fitting-mcp-'), 'saveddata.db')
+# The engine lives in a gitignored working tree, so a fresh clone has no `eos`
+# to import. Crashing here takes the whole server down as CONNECTION_CLOSED,
+# the tools never appear, and the model answers fit questions by hand instead
+# — measured on 2026-08-19: a max-cargo question got a confidently wrong
+# answer (it assumed cargo was stacking-penalised) purely because the engine
+# was absent. Start anyway and make every tool say what is wrong.
+ENGINE_ERROR = None
+try:
+    bootstrap(ARGS.pyfa)
 
-import eos.db  # noqa: E402,F401 — must precede eos.saveddata imports
-eos.db.saveddata_meta.create_all()  # what pyfa.py does at startup
-from eos.const import CalcType, FittingModuleState  # noqa: E402
-import eft as eftlib  # noqa: E402
-import graph as graphlib  # noqa: E402
-from panel import stat_panel  # noqa: E402
+    # Saveddata must be a file, not :memory:: MCP tools run on worker threads
+    # and sqlite :memory: is per-connection, so each thread would see an empty
+    # schema.
+    import tempfile  # noqa: E402
+    import eos.config as _eos_config  # noqa: E402
+    _eos_config.saveddata_connectionstring = \
+        'sqlite:///' + os.path.join(tempfile.mkdtemp(prefix='eve-fitting-mcp-'), 'saveddata.db')
 
-graphlib._install_shims(ARGS.pyfa)
+    import eos.db  # noqa: E402,F401 — must precede eos.saveddata imports
+    eos.db.saveddata_meta.create_all()  # what pyfa.py does at startup
+    from eos.const import CalcType, FittingModuleState  # noqa: E402
+    import eft as eftlib  # noqa: E402
+    import graph as graphlib  # noqa: E402
+    from panel import stat_panel  # noqa: E402
+
+    graphlib._install_shims(ARGS.pyfa)
+except Exception as _exc:                     # noqa: BLE001 — any import failure
+    ENGINE_ERROR = (
+        f'the fitting engine is not built ({type(_exc).__name__}: {_exc}). Run '
+        '`./setup.sh` at the repo root (~2 min), then restart the session. Until '
+        'then this server cannot compute anything — say so rather than deriving '
+        'fit numbers by hand; stacking, calibration and slot legality are exactly '
+        'what hand-derivation gets wrong.')
+
+    class _Absent:
+        """Stands in for engine symbols so module-level tables still build."""
+        def __getattr__(self, _name):
+            return None
+
+    CalcType = FittingModuleState = _Absent()
+    eftlib = graphlib = _Absent()
+    stat_panel = None
 
 mcp = MCPServer('eve-fitting')
 
@@ -69,6 +95,8 @@ def _engine_thread(fn):
     # submit from the pool's own single thread would deadlock forever.
     @functools.wraps(fn)
     def pinned(*args, **kwargs):
+        if ENGINE_ERROR:
+            raise RuntimeError(ENGINE_ERROR)   # every tool, one honest message
         if threading.current_thread().name.startswith('eos-engine'):
             return fn(*args, **kwargs)
         return _ENGINE_THREAD.submit(fn, *args, **kwargs).result()
@@ -91,7 +119,10 @@ ENV_GROUPS = ('Effect Beacon', 'MassiveEnvironments', 'Abyssal Hazards',
 STATES = {'offline': FittingModuleState.OFFLINE, 'online': FittingModuleState.ONLINE,
           'active': FittingModuleState.ACTIVE, 'overheated': FittingModuleState.OVERHEATED}
 
-from eos.const import FittingSlot as _FS  # noqa: E402
+if ENGINE_ERROR:
+    _FS = _Absent()
+else:
+    from eos.const import FittingSlot as _FS  # noqa: E402
 RACKS = ((_FS.HIGH, 'high', 'hiSlots'), (_FS.MED, 'med', 'medSlots'),
          (_FS.LOW, 'low', 'lowSlots'), (_FS.RIG, 'rig', 'rigSlots'),
          (_FS.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
