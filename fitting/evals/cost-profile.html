@@ -112,9 +112,10 @@ footer b{color:var(--ink2); font-weight:600}
 <header>
   <div class="eyebrow">EVE fitting stack · eval generations 5–8 · engine build 3470007</div>
   <h1>What an answer costs</h1>
-  <p class="lede">Every question the fitting stack answers bills roughly <b>half a million tokens</b> — and
-  <b>99.7% of that is input the model re-reads</b>, not words it writes. Accuracy holds where the engine is
-  consulted; latency is a distant third. Three factors, measured across 140 graded answers.</p>
+  <p class="lede">Two numbers describe cost and they differ by 10×. <b>Context</b> is how big the
+  conversation gets — 48.7k for a layer-2 question. <b>Billed</b> is what you pay, because every tool
+  round re-reads that whole context — 511k. Confusing them is the single easiest way to misread this
+  project. Both are charted below, across 140 graded answers.</p>
 </header>
 
 <section class="tiles">
@@ -137,6 +138,19 @@ footer b{color:var(--ink2); font-weight:600}
     <div class="d">Median. First turn is the slow one; follow-ups land in ~45s.</div>
     <div class="rank">SECONDARY FACTOR</div>
   </div>
+</section>
+
+<section class="card">
+  <div>
+    <h2>The two numbers, and why one looks alarming</h2>
+    <p class="sub">Layer-1-era questions were reported as <em>context</em>; the layer-2 chart below reports
+      <em>billed</em>. Measured the same way, the gap is far smaller than the headline suggests — and the
+      growth is tool rounds, not documentation.</p>
+  </div>
+  <div class="plot"><svg id="c-metrics" viewBox="0 0 760 200" role="img"
+    aria-label="Layer 1 era 40.7k context and 149k billed; layer 2 gen 8 48.7k context and 511k billed"></svg></div>
+  <p class="note"><b>Context grew 20%. Billed grew 3.4×.</b> The difference is entirely tool rounds —
+    ~4 per question in the layer-1 era against ~10 now. Every extra round re-reads ~45k of context.</p>
 </section>
 
 <section class="card">
@@ -175,6 +189,20 @@ footer b{color:var(--ink2); font-weight:600}
       One round saved is roughly <b>50k tokens</b> saved.</p>
   </section>
 </div>
+
+<section class="card">
+  <div>
+    <h2>What is actually in the 48.7k</h2>
+    <p class="sub">Measured on a gen-8 subject, request by request. The base arrives before any project
+      content loads at all.</p>
+  </div>
+  <div class="plot"><svg id="c-comp" viewBox="0 0 760 178" role="img"
+    aria-label="Context composition: 37.8k harness base, 6.2k project skill docs, 4.7k the work itself"></svg></div>
+  <p class="note"><b>Every markdown file this project wrote is 6.2k of it — 13%.</b> Deleting the lot would
+    save an eighth of the context and cost the accuracy the docs bought. The 37.8k base is the subagent
+    system prompt, tool definitions, a 25-skill listing and 100+ deferred tool names — mostly harness,
+    and smaller in a real user session than in this eval rig.</p>
+</section>
 
 <section class="card">
   <div>
@@ -264,8 +292,8 @@ footer b{color:var(--ink2); font-weight:600}
   orchestration gaps and the gen-5 session-limit outage. Verdicts are the K/M/D/P/C grading in
   <span style="font-family:var(--mono)">fitting/evals/README.md</span>; PASS+ counts as pass.
   <b>Raw volume is not price</b> — Sonnet bills ~1.6× Fable's tokens here at a small fraction of the per-token
-  rate, which is why gen 6 cost far less than gen 5 despite the taller bars. Older generations are omitted:
-  they measured transcript size rather than billed tokens and are not comparable.
+  rate, which is why gen 6 cost far less than gen 5 despite the taller bars. Older generations reported <b>context</b>, not billed tokens — the layer-1 figure of ~42.5k that circulated
+  is a context number and must not be read against 511k billed. Both metrics now appear together above.
 </footer>
 </div>
 
@@ -405,6 +433,73 @@ function vBar(x, y, w, h, r, fill){
     bindTip(c, p.l, p.x + ' rounds · ' + F(p.y * 1000) + ' tokens');
     svg.appendChild(Object.assign(el('text', { x: xs(p.x) + 11, y: ys(p.y) + 4, fill: css('--ink2'),
       'font-size': 11 }), { textContent: p.l }));
+  });
+})();
+
+/* 3b — two metrics */
+(function(){
+  const svg = document.getElementById('c-metrics');
+  const rows = [
+    { l: 'Layer-1 era · simple lookups', s: '~4 tool rounds', ctx: 40.7, bill: 149 },
+    { l: 'Gen 8 · layer 2, folklore', s: '~10 tool rounds', ctx: 48.7, bill: 511 }
+  ];
+  const W = 760, padL = 210, padR = 66, top = 30, rowH = 66, barH = 20;
+  const max = 560, sx = (v) => padL + (v / max) * (W - padL - padR);
+  [0, 250, 500].forEach(g => {
+    svg.appendChild(el('line', { x1: sx(g), x2: sx(g), y1: top - 12, y2: top + rows.length * rowH - 4,
+      stroke: css('--grid'), 'stroke-width': 1 }));
+    svg.appendChild(Object.assign(el('text', { x: sx(g), y: top + rows.length * rowH + 14, fill: css('--muted'),
+      'font-size': 11, 'font-family': 'var(--mono)', 'text-anchor': 'middle' }), { textContent: g === 0 ? '0' : F(g * 1000) }));
+  });
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    svg.appendChild(Object.assign(el('text', { x: padL - 14, y: y + 12, fill: css('--ink'), 'font-size': 13,
+      'text-anchor': 'end' }), { textContent: r.l }));
+    svg.appendChild(Object.assign(el('text', { x: padL - 14, y: y + 27, fill: css('--muted'), 'font-size': 10.5,
+      'font-family': 'var(--mono)', 'text-anchor': 'end' }), { textContent: r.s }));
+    const b1 = hBar(padL, y, sx(r.ctx) - padL, barH, 4, css('--s1'));
+    svg.appendChild(b1); bindTip(b1, r.l + ' · context', F(r.ctx * 1000));
+    svg.appendChild(Object.assign(el('text', { x: sx(r.ctx) + 9, y: y + barH - 5, fill: css('--ink'),
+      'font-size': 11.5, 'font-family': 'var(--mono)' }), { textContent: F(r.ctx * 1000) + ' context' }));
+    const b2 = hBar(padL, y + barH + 4, sx(r.bill) - padL, barH, 4, css('--s2'));
+    svg.appendChild(b2); bindTip(b2, r.l + ' · billed', F(r.bill * 1000));
+    svg.appendChild(Object.assign(el('text', { x: sx(r.bill) + 9, y: y + 2 * barH - 1, fill: css('--ink'),
+      'font-size': 11.5, 'font-family': 'var(--mono)' }), { textContent: F(r.bill * 1000) + ' billed' }));
+  });
+})();
+
+/* 3c — context composition */
+(function(){
+  const svg = document.getElementById('c-comp');
+  const parts = [
+    { l: 'Harness base', d: 'system prompt, tool defs, skill listing', v: 37.8, c: css('--muted') },
+    { l: 'Project skill docs', d: 'eve-fitting SKILL.md on load', v: 6.2, c: css('--s1') },
+    { l: 'The work itself', d: 'queries, panels, answer', v: 4.7, c: css('--s2') }
+  ];
+  const W = 760, padL = 16, padR = 16, y = 18, h = 40, gap = 2;
+  const total = 48.7, span = W - padL - padR;
+  let x = padL;
+  parts.forEach((p, i) => {
+    const w = (p.v / total) * span - (i < parts.length - 1 ? gap : 0);
+    const r = el('rect', { x, y, width: w, height: h, rx: (i === 0 || i === parts.length - 1) ? 4 : 0, fill: p.c });
+    svg.appendChild(r);
+    bindTip(r, p.l, F(p.v * 1000) + ' · ' + Math.round(p.v / total * 100) + '%');
+    if (w > 80) svg.appendChild(Object.assign(el('text', { x: x + w / 2, y: y + h / 2 + 5,
+      fill: i === 0 ? '#ffffff' : '#ffffff', 'font-size': 12.5, 'font-family': 'var(--mono)',
+      'font-weight': 600, 'text-anchor': 'middle' }), { textContent: F(p.v * 1000) }));
+    x += w + gap;
+  });
+  parts.forEach((p, i) => {
+    const ry = 92 + i * 26;
+    svg.appendChild(el('rect', { x: 16, y: ry - 9, width: 11, height: 11, rx: 3, fill: p.c }));
+    svg.appendChild(Object.assign(el('text', { x: 36, y: ry, fill: css('--ink'), 'font-size': 12.5 }),
+      { textContent: p.l }));
+    svg.appendChild(Object.assign(el('text', { x: 166, y: ry, fill: css('--muted'), 'font-size': 11.5 }),
+      { textContent: p.d }));
+    svg.appendChild(Object.assign(el('text', { x: 470, y: ry, fill: css('--ink'), 'font-size': 12,
+      'font-family': 'var(--mono)', 'text-anchor': 'end' }), { textContent: F(p.v * 1000) }));
+    svg.appendChild(Object.assign(el('text', { x: 530, y: ry, fill: css('--muted'), 'font-size': 12,
+      'font-family': 'var(--mono)', 'text-anchor': 'end' }), { textContent: Math.round(p.v / total * 100) + '%' }));
   });
 })();
 
