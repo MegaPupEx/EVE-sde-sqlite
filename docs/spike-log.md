@@ -825,3 +825,32 @@ Findings that change how we optimise:
   ways, so neither number alone is the cost story.
 - Latency confirmed third: 53–73s median per question, worst case ~2 min
   on a cold first turn.
+
+## 2026-08-18 — cost work: fold the mutate→stats pair, teach rounds-not-calls
+
+Measured the call corpus (2,062 tool-bearing requests across every eval
+generation) before changing anything:
+- `edit_fit -> get_stats` is the single most common consecutive pair (75),
+  with `import_fit -> get_stats` (17) behind it — a whole round spent
+  re-reading ~45k of context to fetch numbers the mutation already knew.
+- **90% of requests carried exactly one tool call.** Only 10% batched two
+  or more. That is the headroom: billing is per request, not per call.
+
+Changes: `import_fit`, `create_fit`, `clone_fit` and `edit_fit` now return
+the full stat panel inline (`stats=True` default, `stats=False` for the id
+alone; multi-fit imports stay lean unless asked). Cost: +268 tokens on an
+import response. Saves: one round, ~45k. SKILL.md's "Driving the engine"
+section lost its stale `edit_fit -> get_stats` iteration-loop advice —
+which taught the exact anti-pattern — and gained a rounds-are-the-cost
+block: put independent calls in one reply, never follow a mutation with
+get_stats.
+
+Also corrected the file-size budgeting table (traps 4.2k, router 3.6k) —
+it had drifted as docs grew.
+
+Context accounting, for the record: of a subject's 37.8k base, ~2.75k is
+the eval rig's 23 bundled skills and ~1.3k its github/google tool names —
+about 4k that a fresh product session would not pay. The remaining ~34k is
+the client's own floor (system prompt + built-in tool defs), which this
+project does not control. Project footprint on top: ~1.1k of MCP schemas,
++6.2k when the skill loads.

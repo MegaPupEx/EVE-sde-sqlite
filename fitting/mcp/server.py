@@ -282,32 +282,45 @@ def _summary(fit_id):
     return out
 
 
+def _summary_stats(fit_id, stats=True):
+    """Summary plus the full stat panel — folding the near-universal
+    mutate-then-get_stats pair into one round. Measured over the eval
+    corpus, edit_fit->get_stats was the single most common call pair (75
+    occurrences) and 90% of requests carried exactly one call, so the
+    extra ~290 tokens of panel buys back a whole ~45k context re-read.
+    Pass stats=False when the id alone is wanted."""
+    out = _summary(fit_id)
+    if stats:
+        out['stats'] = get_stats(fit_id)
+    return out
+
+
 @mcp.tool()
 @_engine_thread
-def import_fit(eft: str) -> dict:
-    """Import an EFT-format fit; returns fit_id + fitting summary. Multi-fit text imports all."""
+def import_fit(eft: str, stats: bool = True) -> dict:
+    """Import an EFT-format fit; returns fit_id + fitting summary + the full stat panel (no separate get_stats round needed). Multi-fit text imports all, panels only on stats=True. stats=False for the id alone."""
     specs = eftlib.parse_eft(eft)
     out = []
     for spec in specs:
         fit_id = _new_id()
         FITS[fit_id] = eftlib.build_fit(spec)
-        out.append(_summary(fit_id))
+        out.append(_summary_stats(fit_id, stats and len(specs) == 1))
     return out[0] if len(out) == 1 else {'fits': out}
 
 
 @mcp.tool()
 @_engine_thread
-def create_fit(ship: str, name: str = 'unnamed') -> dict:
+def create_fit(ship: str, name: str = 'unnamed', stats: bool = True) -> dict:
     """Create an empty fit for a ship type; returns fit_id + fitting summary."""
     spec = eftlib.FitSpec(ship, name)
     fit_id = _new_id()
     FITS[fit_id] = eftlib.build_fit(spec)
-    return _summary(fit_id)
+    return _summary_stats(fit_id, stats)
 
 
 @mcp.tool()
 @_engine_thread
-def clone_fit(fit_id: str, name: str = '') -> dict:
+def clone_fit(fit_id: str, name: str = '', stats: bool = True) -> dict:
     """Copy an existing fit; returns the new fit_id."""
     fit = _fit(fit_id)
     spec = eftlib.parse_eft(eftlib.render_eft(fit))[0]
@@ -315,7 +328,7 @@ def clone_fit(fit_id: str, name: str = '') -> dict:
         spec.name = name
     new_id = _new_id()
     FITS[new_id] = eftlib.build_fit(spec)
-    return _summary(new_id)
+    return _summary_stats(new_id, stats)
 
 
 @mcp.tool()
@@ -344,8 +357,8 @@ def export_fit(fit_id: str) -> str:
 
 @mcp.tool()
 @_engine_thread
-def edit_fit(fit_id: str, ops: list) -> dict:
-    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode'|'ability', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones), keep_slot?:bool (remove: leave an [Empty] gap), ability?:name-substring+enabled?:bool (fighter ability toggle)}. 'charge'/'state' apply to every matching module; 'add' fills the first gap in the rack; 'mode' sets a tactical-destroyer mode item. Returns summary + problems."""
+def edit_fit(fit_id: str, ops: list, stats: bool = True) -> dict:
+    """Apply ops to a fit. Each op: {op:'add'|'remove'|'charge'|'state'|'mode'|'ability', item:name, charge?:name, state?:'offline'|'online'|'active'|'overheated', quantity?:int(drones), keep_slot?:bool (remove: leave an [Empty] gap), ability?:name-substring+enabled?:bool (fighter ability toggle)}. 'charge'/'state' apply to every matching module; 'add' fills the first gap in the rack; 'mode' sets a tactical-destroyer mode item. Returns summary + problems + the full stat panel, so an edit and its numbers are ONE round — do not follow this with get_stats. stats=False to skip the panel."""
     from eos.saveddata.drone import Drone
     from eos.saveddata.module import Module
     fit = _fit(fit_id)
@@ -462,7 +475,7 @@ def edit_fit(fit_id: str, ops: list) -> dict:
                 raise ValueError(f'{item_name!r} not fitted')
         else:
             raise ValueError(f'bad op {kind!r}; use add/remove/charge/state/mode/ability')
-    return _summary(fit_id)
+    return _summary_stats(fit_id, stats)
 
 
 _alpha_char = None

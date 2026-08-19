@@ -63,10 +63,10 @@ present remembered fit numbers as computed.
 | File | ~tokens | Read it when |
 | --- | --- | --- |
 | `references/reading-stats.md` | 2.1k | interpreting any stat panel or graph — DPS/volley/sustained, EHP and damage profiles (incl. NPC profile table), cap stability, align, targeting, graph summaries, fitting headroom |
-| `references/tradeoffs.md` | 1.7k | choosing between things — buffer vs active, shield vs armor, another damage mod vs a different slot, speed vs resists, and "what should I fit" questions (incl. the sweep-driven authoring loop) |
-| `references/traps.md` | 3.5k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones, abyssal rolls, siege-class states |
+| `references/tradeoffs.md` | 1.9k | choosing between things — buffer vs active, shield vs armor, another damage mod vs a different slot, speed vs resists, and "what should I fit" questions (incl. the sweep-driven authoring loop) |
+| `references/traps.md` | 4.2k | before asserting any mechanic: the numbered trap catalogue — stacking exemptions, wormhole/burst effects, hull resists, reload, tick rounding, drones, abyssal rolls, siege-class states |
 
-Sizes are bytes/4, for budgeting; this router is ~2.4k.
+Sizes are bytes/4, for budgeting; this router is ~3.6k.
 
 ## If you read nothing else
 
@@ -124,8 +124,25 @@ Fits are server-side objects addressed by short IDs — never re-send EFT
 mid-conversation; it is the import/export currency only. Ids live only as
 long as the server process: every fit-scoped response echoes the ship, and
 an unknown-id error after a restart means re-import from your own context
-and continue (never reason past a ship echo that doesn't match). The iteration loop
-is `edit_fit` → `get_stats` (~290 tokens a step); A/B questions are one
+and continue (never reason past a ship echo that doesn't match).
+
+**Rounds are the cost, not calls.** Every reply you send re-reads the whole
+conversation, so a turn costs roughly *rounds × context* (~45k a round) no
+matter how many tool calls ride in each one. Two habits follow, and measured
+runs show both are usually missed — 90% of recorded requests carried exactly
+one call:
+
+- **Put independent calls in one reply.** Importing two fits, reading three
+  modules, pulling a panel and a graph — none of these wait on each other,
+  so issue them together. Only a call that *needs the previous result*
+  (a fit_id, a measured value) belongs in its own round.
+- **`import_fit`, `create_fit`, `clone_fit` and `edit_fit` already return the
+  full stat panel.** Do not follow them with `get_stats` — that was the most
+  common wasted round in the corpus. Call `get_stats` only to re-read a
+  resident fit with a different `profile`/`spool`, and pass `stats=False`
+  when you genuinely want just the id.
+
+A/B questions are one
 `clone_fit` + edits + `compare_fits` (returns only what differs).
 `validate_fit` names the violated constraint; run it after edits, not
 before — CPU/PG needs are themselves dogma-modified. `set_skills` switches

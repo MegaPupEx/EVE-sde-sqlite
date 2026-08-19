@@ -63,10 +63,17 @@ async def main(pyfa):
             assert imp['problems'] == [], imp['problems']
             assert imp['slots']['low'][1] == 4 and imp['slots']['high'][1] == 3, imp['slots']
             assert imp['hardpoints']['turret'] == [3, 3], imp.get('hardpoints')
+            # the mutate-then-stats pair is folded: import/create/clone/edit
+            # return the panel inline, so a round is not spent on get_stats
+            assert 'stats' in imp and imp['stats']['offense']['dps'] > 0, list(imp)
+            lean = await call('import_fit', eft=rifter_eft, stats=False)
+            assert 'stats' not in lean, 'stats=False must return the id alone'
+            await call('delete_fit', fit_id=lean['fit_id'])
             stats = await call('get_stats', fit_id=fid)
             # every fit-scoped response echoes the ship, so a wrong/stale id
             # is visible at a glance
             assert stats['ship'] == 'Rifter', stats.get('ship')
+            assert imp['stats']['offense']['dps'] == stats['offense']['dps'], 'folded panel must match'
             assert stats['offense']['dps'] == round(ref['stats']['offense']['dps_burst'], 1), stats['offense']
             assert stats['defense']['ehp']['total'] == round(ref['stats']['defense']['ehp_total_uniform']), stats['defense']['ehp']
             assert 'reps_hps' in stats['defense'], 'AAR rep rate missing'
