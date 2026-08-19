@@ -1011,3 +1011,46 @@ in-session server held a stale schema and did not respawn after `pkill`, so
 cross-generation cost comparison carries a harness confound. The batching and
 tool-choice numbers are within-generation and clean. Layer 1 is now fully on
 the server: zero Bash calls across all five sessions, against 49 in gen-9.
+
+## 2026-08-19 — first real mobile session: two outages, one confirmed win
+
+Owner ran the stack from a phone. Three questions, and the transcript is worth
+more than gens 9-11 put together.
+
+**The `attrs` front door works.** "How much cargo does an Iteron Mark V hold
+compared to a Bestower?" — the question that took **13 rounds** in gen-11 —
+was answered by a **single `attrs` call**. Hull columns and dogma in one
+response, which is exactly the collapse the change was for. Most of that turn's
+remaining tool use was acquiring the database, not answering.
+
+**Outage 1: the fitting server was absent, and it produced a confident wrong
+answer.** Asked whether a max-cargo fit changes which hauler wins, the model
+had no engine (pyfa unbuilt -> `import eos` raised -> CONNECTION_CLOSED -> tools
+never appeared). It hand-derived the stacking math and got it **backwards**,
+asserting cargo capacity is stacking-penalised. It is not. With the engine
+later built by hand, the answer flipped: **Bestower 37,117 m3 beats Iteron
+35,176 m3**, because the sixth expander applies in full. This is the exact
+failure class the project exists to prevent, caused by a silently missing
+server. Fixed: the engine import is wrapped, the server starts regardless,
+every tool reports the real reason, and `_load_engine()` retries on the next
+call (with `importlib.invalidate_caches()` — the first failure otherwise
+poisons the import cache) so a late bootstrap needs no restart.
+
+**Outage 2: the SessionStart hook did not run**, so the session had no
+databases and fetched the items part from a GitHub release itself. Most likely
+because the hook only exists on this branch and main is untouched.
+
+**Incidental: the SDE server self-heals and I had said otherwise.** `_conn()`
+globs lazily on first call, so when the databases appeared mid-session it just
+worked. My earlier claim that both servers read their data at startup was
+wrong for layer 1; it was right for layer 2, which is what needed fixing.
+
+**Build skew showed up live within one session**, as flagged after gen-9:
+engine 3424810 against SDE 3473160, noticed only because the model said so in
+passing. Nothing compares them. Still unimplemented, now with a real sighting.
+
+**The floor is bigger on the real surface.** Their `/context`: system tools
+29.2k + system prompt 11.9k + MCP tools 10.6k + skills 4.1k = **~56k per
+round**, against the 41k measured here. Cost is rounds x floor, so the product
+number is ~37% worse than this container suggests: a 2-round answer is ~112k,
+not ~85k. Item 5 of the cost model should be decided against 56k.

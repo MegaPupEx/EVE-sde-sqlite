@@ -11,6 +11,7 @@ Design rules (docs/roadmap-fitting-mcp.md, token budget):
 - Anything unmodeled is named, never silently ignored.
 """
 import argparse
+import importlib
 import json
 import os
 import random as _random
@@ -37,41 +38,72 @@ ARGS = _parser.parse_args()
 # answer (it assumed cargo was stacking-penalised) purely because the engine
 # was absent. Start anyway and make every tool say what is wrong.
 ENGINE_ERROR = None
-try:
-    bootstrap(ARGS.pyfa)
 
-    # Saveddata must be a file, not :memory:: MCP tools run on worker threads
-    # and sqlite :memory: is per-connection, so each thread would see an empty
-    # schema.
-    import tempfile  # noqa: E402
-    import eos.config as _eos_config  # noqa: E402
-    _eos_config.saveddata_connectionstring = \
-        'sqlite:///' + os.path.join(tempfile.mkdtemp(prefix='eve-fitting-mcp-'), 'saveddata.db')
 
-    import eos.db  # noqa: E402,F401 — must precede eos.saveddata imports
-    eos.db.saveddata_meta.create_all()  # what pyfa.py does at startup
-    from eos.const import CalcType, FittingModuleState  # noqa: E402
-    import eft as eftlib  # noqa: E402
-    import graph as graphlib  # noqa: E402
-    from panel import stat_panel  # noqa: E402
+def _load_engine():
+    """Import the engine and build the tables that depend on it.
 
-    graphlib._install_shims(ARGS.pyfa)
-except Exception as _exc:                     # noqa: BLE001 — any import failure
-    ENGINE_ERROR = (
-        f'the fitting engine is not built ({type(_exc).__name__}: {_exc}). Run '
-        '`./setup.sh` at the repo root (~2 min), then restart the session. Until '
-        'then this server cannot compute anything — say so rather than deriving '
-        'fit numbers by hand; stacking, calibration and slot legality are exactly '
-        'what hand-derivation gets wrong.')
+    Retryable: a session whose bootstrap is still running (or which was
+    started before `./setup.sh` ran) can pick the engine up on a later call
+    instead of making the user restart.
+    """
+    global ENGINE_ERROR, CalcType, FittingModuleState, eftlib, graphlib
+    global stat_panel, _FS, STATES, RACKS
+    try:
+        # A failed first attempt leaves the missing directory in the import
+        # system's negative cache, so a later retry would keep "failing" after
+        # the bootstrap finished. Drop that cache before every attempt.
+        importlib.invalidate_caches()
+        bootstrap(ARGS.pyfa)
 
-    class _Absent:
-        """Stands in for engine symbols so module-level tables still build."""
-        def __getattr__(self, _name):
-            return None
+        # Saveddata must be a file, not :memory:: MCP tools run on worker threads
+        # and sqlite :memory: is per-connection, so each thread would see an empty
+        # schema.
+        import tempfile  # noqa: E402
+        import eos.config as _eos_config  # noqa: E402
+        _eos_config.saveddata_connectionstring = \
+            'sqlite:///' + os.path.join(tempfile.mkdtemp(prefix='eve-fitting-mcp-'), 'saveddata.db')
 
-    CalcType = FittingModuleState = _Absent()
-    eftlib = graphlib = _Absent()
-    stat_panel = None
+        import eos.db  # noqa: E402,F401 — must precede eos.saveddata imports
+        eos.db.saveddata_meta.create_all()  # what pyfa.py does at startup
+        from eos.const import CalcType, FittingModuleState  # noqa: E402
+        import eft as eftlib  # noqa: E402
+        import graph as graphlib  # noqa: E402
+        from panel import stat_panel  # noqa: E402
+
+        graphlib._install_shims(ARGS.pyfa)
+    except Exception as _exc:                 # noqa: BLE001 — any import failure
+        ENGINE_ERROR = (
+            f'the fitting engine is not built ({type(_exc).__name__}: {_exc}). Run '
+            '`./setup.sh` at the repo root (~2 min); the next call picks it up, no '
+            'restart needed. Until then this server cannot compute anything — say '
+            'so rather than deriving fit numbers by hand. Stacking, calibration and '
+            'slot legality are exactly what hand-derivation gets wrong.')
+
+        CalcType = FittingModuleState = _Absent()
+        eftlib = graphlib = _Absent()
+        stat_panel = None
+        _FS = _Absent()
+    else:
+        ENGINE_ERROR = None
+        from eos.const import FittingSlot as _FS
+    STATES = {'offline': FittingModuleState.OFFLINE,
+              'online': FittingModuleState.ONLINE,
+              'active': FittingModuleState.ACTIVE,
+              'overheated': FittingModuleState.OVERHEATED}
+    RACKS = ((_FS.HIGH, 'high', 'hiSlots'), (_FS.MED, 'med', 'medSlots'),
+             (_FS.LOW, 'low', 'lowSlots'), (_FS.RIG, 'rig', 'rigSlots'),
+             (_FS.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
+             (_FS.SERVICE, 'service', 'serviceSlots'))
+
+
+class _Absent:
+    """Stands in for engine symbols so the module-level tables still build."""
+    def __getattr__(self, _name):
+        return None
+
+
+_load_engine()
 
 mcp = MCPServer('eve-fitting')
 
@@ -96,6 +128,8 @@ def _engine_thread(fn):
     @functools.wraps(fn)
     def pinned(*args, **kwargs):
         if ENGINE_ERROR:
+            _load_engine()                     # bootstrap may have finished since
+        if ENGINE_ERROR:
             raise RuntimeError(ENGINE_ERROR)   # every tool, one honest message
         if threading.current_thread().name.startswith('eos-engine'):
             return fn(*args, **kwargs)
@@ -116,17 +150,6 @@ _BOOT = ''.join(_random.choices('cdfghjkmnpqrtvwxyz', k=2))
 ENV_GROUPS = ('Effect Beacon', 'MassiveEnvironments', 'Abyssal Hazards',
               'Destructible Effect Beacon')
 
-STATES = {'offline': FittingModuleState.OFFLINE, 'online': FittingModuleState.ONLINE,
-          'active': FittingModuleState.ACTIVE, 'overheated': FittingModuleState.OVERHEATED}
-
-if ENGINE_ERROR:
-    _FS = _Absent()
-else:
-    from eos.const import FittingSlot as _FS  # noqa: E402
-RACKS = ((_FS.HIGH, 'high', 'hiSlots'), (_FS.MED, 'med', 'medSlots'),
-         (_FS.LOW, 'low', 'lowSlots'), (_FS.RIG, 'rig', 'rigSlots'),
-         (_FS.SUBSYSTEM, 'subsystem', 'maxSubSystems'),
-         (_FS.SERVICE, 'service', 'serviceSlots'))
 
 
 def _new_id():
