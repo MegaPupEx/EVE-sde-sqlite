@@ -105,10 +105,10 @@ def parse_eft(text):
         if entry['name'].endswith('/offline'):
             entry['offline'] = True
             entry['name'] = entry['name'][:-len('/offline')].strip()
-        head, sep, tail = entry['name'].rpartition(' x')
-        if sep and tail.isdigit():
-            entry['name'] = head.strip()
-            entry['quantity'] = int(tail)
+        qty = re.match(r'^(?P<name>.+?) x(?P<qty>\d+)(?P<rest>\s*,.*)?$', entry['name'])
+        if qty:
+            entry['name'] = qty.group('name').strip() + (qty.group('rest') or '')
+            entry['quantity'] = int(qty.group('qty'))
         fit.entries.append(entry)
     if not fits:
         raise EftError('no [Ship, name] header found')
@@ -230,6 +230,15 @@ def build_fit(spec):
             fit.fighters.append(fighter)
             fighter.owner = fit
         elif entry['quantity'] is not None:
+            # ` xN` means drones, fighters or cargo. On a module it is the
+            # commonest paste error, and pyfa's own importer dies on it with an
+            # opaque TypeError from constructing a Drone out of a module.
+            if category in ('Module', 'Subsystem'):
+                raise EftError(
+                    f'{item.typeName!r} is a module, and EFT has no quantity form '
+                    'for fitted modules — repeat the line once per module. " xN" '
+                    'is drone/fighter/cargo syntax; on a module it silently '
+                    'misfiles the line instead of filling slots.')
             fit.cargo.append(Cargo(item, entry['quantity']))
         elif category == 'Implant':
             if item.group.name == 'Booster':
