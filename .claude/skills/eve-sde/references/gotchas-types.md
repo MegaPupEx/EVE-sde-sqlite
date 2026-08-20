@@ -7,7 +7,7 @@ names, hull-size group lists, ore variant names. For what a dogma *value means*,
 **"Best/fastest X hull" questions need both files.** Picking the hulls is here;
 what the stat means is there. The worked example below is one of them.
 
-Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+Counts verified against build `3475087`; re-derive if `meta.sdeBuildNumber`
 differs. **Every count here is population-sensitive** -- `published = 1` vs all
 types, k-space vs all systems, ships vs all categories. Where the population is
 not stated it is the whole table; if your query filters differently, re-derive
@@ -21,7 +21,7 @@ rather than quoting.
   -- across the 685 published types where the two differ it runs 2.0x to 47.7x
   for ships (Capsule 2.0, Rifter 10.9, a Revenant 47.7), only 2.0-4.0x for the
   242 modules, and up to 200x for celestials. Compute it per item; do not carry
-  the Rifter's 10.9 to anything else. `capacity` is NULL for 25,265
+  the Rifter's 10.9 to anything else. `capacity` is NULL for 25,254
   published types (anything with no hold), so `ORDER BY capacity DESC` is fine
   but `WHERE capacity > x` silently drops them.
 
@@ -48,12 +48,12 @@ rather than quoting.
   value distribution; the SDE states no semantics, so say so rather than
   asserting the mechanic. (`attackMinSec` and the zero-penalty Elite Slaves row
   are in "Rare" below.)
-- **`basePrice` is not a market price** and is 0 or NULL for 17,652 of 26,992
+- **`basePrice` is not a market price** and is 0 or NULL for 17,642 of 26,981
   published types. It is an internal seed value. For real prices use ESI; the
   SDE has none.
 
 - **`published = 1` applies to market items, not everything.** It is right for
-  ships, modules, charges and ore -- 26,992 of 52,863 types are published, the
+  ships, modules, charges and ore -- 26,981 of 52,863 types are published, the
   rest being test and unreleased content. But **every type the map actually references is
   `published = 0`** -- all 10 planet typeIDs, the 1 belt type, 29 stargate types,
   44 station types and 38 star types, without exception (the `Celestial`

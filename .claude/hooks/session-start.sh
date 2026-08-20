@@ -17,6 +17,18 @@ cd "${CLAUDE_PROJECT_DIR:-$(dirname "$0")/../..}"
 if ls eve-sde-*.sqlite >/dev/null 2>&1 \
    && [ -x fitting/work/eosenv/bin/python ] && [ -f fitting/work/pyfa/eve.db ]; then
   echo "eve-sde-sqlite: already bootstrapped"
+  # Bootstrapped is not the same as current. Both guards here used to test only
+  # that the files EXIST, so a long-lived container never refreshed and never
+  # noticed when its parts disagreed with each other -- one checkout served
+  # three parts from CCP build 3466501 beside a fourth from 3470007 for days.
+  # The check itself is one ~80-byte fetch; the rebuild only runs on a real
+  # mismatch. `|| true` because a stale database still answers questions and
+  # must never take the session down with it.
+  if [ "${EVE_SDE_NO_REFRESH:-}" = "1" ]; then
+    echo "layer 1: freshness check skipped (EVE_SDE_NO_REFRESH=1)"
+  else
+    python3 sde/freshness.py --fix || true
+  fi
   exit 0
 fi
 

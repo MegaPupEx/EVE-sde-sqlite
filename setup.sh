@@ -26,6 +26,9 @@ SDE_ONLY=0
 # --- layer 1: the SDE databases (stdlib only, ~1 min, downloads ~99 MB) ---
 if ls eve-sde-*.sqlite >/dev/null 2>&1; then
     echo "layer 1: databases already present"
+    # ...which says nothing about whether they are CURRENT, or whether the
+    # parts agree with one another. Rebuilds only on a real mismatch.
+    python3 sde/freshness.py --fix || true
 else
     echo "layer 1: building SDE databases from CCP (~1 min)..."
     # --db sets the stem the split parts inherit. It must be `eve-sde` because

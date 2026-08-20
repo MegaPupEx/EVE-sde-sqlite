@@ -5,7 +5,7 @@ form "how many systems...", "which system is the most/least...", "how do I get
 from A to B", or any question about planets, moons, stars, security or wormhole
 system effects.
 
-Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+Counts verified against build `3475087`; re-derive if `meta.sdeBuildNumber`
 differs. **Every count here is population-sensitive** -- `published = 1` vs all
 types, k-space vs all systems, ships vs all categories. Where the population is
 not stated it is the whole table; if your query filters differently, re-derive

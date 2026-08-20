@@ -8,7 +8,7 @@ For the `items` part. Read before answering **what a ship or module stat means**
 **"Best/fastest X hull" questions need both files** -- this one for the formula
 and the unit trap, `gotchas-types.md` for which hulls are eligible.
 
-Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+Counts verified against build `3475087`; re-derive if `meta.sdeBuildNumber`
 differs. **Every count here is population-sensitive** -- `published = 1` vs all
 types, k-space vs all systems, ships vs all categories. Where the population is
 not stated it is the whole table; if your query filters differently, re-derive
@@ -30,7 +30,7 @@ do with each other. Read the table below as unit numbers, not attribute numbers.
 
 | unitID | Meaning | Trap |
 | --- | --- | --- |
-| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **58 attributes, 69,032 rows.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
+| **108** | Inverse absolute percent: `0.0` = 100%, `1.0` = 0% | **59 attributes, 69,050 rows.** Only 24 are named `*DamageResonance`; the rest -- `stasisWebifierResistance`, `ECMResistance`, `sensorDampenerResistance`, `energyWarfareResistance`, `remoteRepairImpedance` -- read as if higher were better |
 | **101** | **Milliseconds**, but `displayName` says "s" | **92 attributes, 40,522 rows.** `rechargeRate` on a Rifter is `125000` = 125 s, not 125,000 |
 | 3, 123 | Actual seconds | Sits beside unitID 101 with nothing in the schema to distinguish them |
 | 109 | Modifier percent: `1.1` = +10%, `0.9` = -10% | `0.75` means **-25%**, not 75% |

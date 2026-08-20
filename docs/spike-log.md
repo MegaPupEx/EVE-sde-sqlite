@@ -1640,3 +1640,59 @@ better than tech 2 while losing in the engine — rows now carry
 cut to adjacent size classes: a small-turret question was returning Dual Giga
 Pulse Laser II at 137,500 MW, which cannot be fitted to anything the caller was
 asking about.
+
+## 2026-08-20 (fifth) — how layer 1 desynced, and the guard that lets it
+
+Owner asked how layer 1 got out of sync when it was supposed to rebuild on
+every release. **It did rebuild.** The publish pipeline was healthy the whole
+time — 54 scheduled runs, all green, marker commits `SDE build 3470007`
+(run #37, 08-17 13:11) and `SDE build 3473160` (run #94, 08-19 13:15), with
+every later run exiting in ~7 s on "already published; nothing to do".
+
+What desynced was **this checkout's working copy**, and the `builtAt` stamps
+prove the parts were never built here at all:
+
+    industry / items / universe   builtAt 2026-08-14T02:51:05Z   build 3466501
+    misc                          builtAt 2026-08-17T13:11:44Z   build 3470007
+
+`02:51:05` is a minute before `sde-build.json`'s `publishedAt`, and
+`13:11:44` matches workflow run #37 to the second — both are release
+artifacts, fetched piecemeal at different times. `misc` is the only part
+carrying `fighterAbilities`, which is very likely why it alone was pulled
+during the fighter-support work. That last step is inference; the timestamps
+are not.
+
+**The actual defect was the guard.** `setup.sh` and the session-start hook both
+tested that the files EXIST:
+
+    if ls eve-sde-*.sqlite >/dev/null 2>&1; then echo "already bootstrapped"; exit 0; fi
+
+Existence is not currency and it is not coherence, so a long-lived container
+never refreshed and never noticed its parts disagreed. `split_db` compounds it:
+it `continue`s past a group whose tables are absent, and the `os.remove(out)`
+that would clear a stale part sits *inside* the loop, after the `continue` —
+so a partial build leaves older parts standing rather than replacing them.
+
+`sde/freshness.py` now closes it. One ~80-byte manifest fetch says what CCP is
+at; every part's `sdeBuildNumber` says what we have. Mixed or behind, `--fix`
+rebuilds into a temporary directory and moves the parts into place only once
+they all exist, so a failed rebuild leaves the old data untouched instead of
+deleting it and dying. Offline, it warns and returns — a set that disagrees
+with *itself* is wrong whether or not the network is there. Wired into the hook
+and into `setup.sh`'s already-present branch, with `EVE_SDE_NO_REFRESH=1` as
+the escape hatch.
+
+Run here it did the whole job in 47 s: 4 mixed parts became 7 coherent ones at
+build **3475087** — newer than anything the pipeline had published, because CCP
+released again at 11:08 that morning — and it recovered `moons`, `world` and
+`cosmetic`, which had been missing entirely.
+
+Two builds of drift then had to be paid off: `verify_claims.py` reported 131 of
+138 claims still true and 7 counts moved (published types 26,992 -> 26,981,
+unitID 108 gaining an attribute at 58 -> 59, and five others). All updated,
+`DOC_BUILD` re-pinned, 138/138. Both smoke suites pass at the new build.
+
+Deliberately out of scope: layer 2's `eve.db` stays at 3470007, so
+`engine_info.parity` now reports the skew as UNVERIFIED, which is exactly what
+it is for. Refreshing the engine is a pyfa rebuild plus a battery re-pin, and
+CI already does that per release; a session-start hook is the wrong place.

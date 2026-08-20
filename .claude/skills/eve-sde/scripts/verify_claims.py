@@ -25,7 +25,7 @@ import os
 import sqlite3
 import sys
 
-DOC_BUILD = "3466501"
+DOC_BUILD = "3475087"
 
 LN4 = math.log(4)
 
@@ -507,8 +507,8 @@ def C(doc, claim, needs, expect, sql=None, fn=None):
 
 CHECKS = [
     # ---------------- gotchas-dogma.md
-    C("gotchas-dogma.md", "unitID 108: 58 attributes, 69,032 rows", "items",
-      (58, 69032), sql="""
+    C("gotchas-dogma.md", "unitID 108: 59 attributes, 69,050 rows", "items",
+      (59, 69050), sql="""
       SELECT (SELECT COUNT(*) FROM dogma_attributes WHERE unitID = 108),
              (SELECT COUNT(*) FROM type_dogma d JOIN dogma_attributes a
               ON a.attributeID = d.attributeID WHERE a.unitID = 108)"""),
@@ -645,8 +645,8 @@ CHECKS = [
               WHERE t.name = 'Miner I' AND d.attributeID = 73)"""),
 
     # ---------------- gotchas-types.md
-    C("gotchas-types.md", "26,992 of 52,863 types published", "items",
-      (26992, 52863), sql="SELECT SUM(published), COUNT(*) FROM types"),
+    C("gotchas-types.md", "26,981 of 52,863 types published", "items",
+      (26981, 52863), sql="SELECT SUM(published), COUNT(*) FROM types"),
     C("gotchas-types.md", "Rifter 27,289 m3 assembled, 2,500 packaged", "items",
       (27289.0, 2500.0),
       sql="SELECT volume, packagedVolume FROM types WHERE name = 'Rifter'"),
@@ -654,16 +654,16 @@ CHECKS = [
       "items", (685, 242), sql="""
       SELECT COUNT(*), SUM(categoryID = 7) FROM types
       WHERE published = 1 AND volume != packagedVolume"""),
-    C("gotchas-types.md", "capacity NULL for 25,265 published types", "items",
-      25265, sql="SELECT COUNT(*) FROM types WHERE published = 1 AND capacity IS NULL"),
+    C("gotchas-types.md", "capacity NULL for 25,254 published types", "items",
+      25254, sql="SELECT COUNT(*) FROM types WHERE published = 1 AND capacity IS NULL"),
     C("gotchas-types.md", "8 contraband cargoes", "items", 8,
       sql="SELECT COUNT(*) FROM contrabandTypes"),
     C("gotchas-types.md",
       "contraband: 50 entries; attackMinSec 1.1 on all; -1.0 on 21; "
       "Elite Slaves 8x(1.0, 0.0, 0.0); Slaves x Minmatar = 7500 ISK/unit",
       "items", (50, 50, 21, 8, 1, [(1.0, 0.0, 0.0)], 7500.0), fn=fn_contraband),
-    C("gotchas-types.md", "basePrice dead for 17,652 of 26,992 published", "items",
-      17652, sql="""
+    C("gotchas-types.md", "basePrice dead for 17,642 of 26,981 published", "items",
+      17642, sql="""
       SELECT COUNT(*) FROM types WHERE published = 1
       AND (basePrice IS NULL OR basePrice = 0)"""),
     C("gotchas-types.md", "map furniture types: 10+1+29+44+38, all unpublished",
@@ -979,8 +979,8 @@ CHECKS = [
       FROM bp_skills s JOIN bp_products p ON p.blueprintTypeID = s.blueprintTypeID
         AND p.activity = 'manufacturing'
       JOIN types t ON t.typeID = p.typeID WHERE t.name = 'Dominix'"""),
-    C("gotchas-industry.md", "probability NULL: 4,848 mfg / 120 reaction / 8 invention",
-      "industry", (4848, 120, 8), sql="""
+    C("gotchas-industry.md", "probability NULL: 4,849 mfg / 120 reaction / 8 invention",
+      "industry", (4849, 120, 8), sql="""
       SELECT SUM(activity = 'manufacturing'), SUM(activity = 'reaction'),
              SUM(activity = 'invention')
       FROM bp_products WHERE probability IS NULL"""),
@@ -1023,8 +1023,8 @@ CHECKS = [
              (SELECT COUNT(*) FROM multi WHERE activity = 'reaction'),
              (SELECT n FROM multi JOIN types t ON t.typeID = multi.typeID
               WHERE t.name = '''Firewall'' Signal Amplifier')"""),
-    C("gotchas-industry.md", "18,915 published types have no type_materials row",
-      "items", 18915, sql="""
+    C("gotchas-industry.md", "18,904 published types have no type_materials row",
+      "items", 18904, sql="""
       SELECT COUNT(*) FROM types t WHERE t.published = 1 AND NOT EXISTS
       (SELECT 1 FROM type_materials m WHERE m.typeID = t.typeID)"""),
     C("gotchas-industry.md", "Batch Compressed Arkonor: 1,000 in, 1 out, reprocesses as 100 Arkonor",
@@ -1189,8 +1189,8 @@ CHECKS = [
       "world cosmetic items universe", [], fn=fn_lowercase_generics),
     C("SKILL.md", "stargate rows: 13,978", "universe", 13978,
       sql="SELECT COUNT(*) FROM stargates"),
-    C("SKILL.md", "volume equals packagedVolume for 25,347 published types",
-      "items", 25347, sql="""
+    C("SKILL.md", "volume equals packagedVolume for 25,336 published types",
+      "items", 25336, sql="""
       SELECT COUNT(*) FROM types WHERE published = 1
       AND volume = packagedVolume"""),
     C("gotchas-types.md",

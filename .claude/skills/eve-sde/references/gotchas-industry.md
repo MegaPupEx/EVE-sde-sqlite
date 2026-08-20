@@ -4,7 +4,7 @@ For the `industry` part and `items.type_materials`. Read before answering
 anything about build costs, blueprints, invention, ore yields, planetary
 industry chains or ore compression.
 
-Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+Counts verified against build `3475087`; re-derive if `meta.sdeBuildNumber`
 differs. **Every count here is population-sensitive** -- `published = 1` vs all
 types, k-space vs all systems, ships vs all categories. Where the population is
 not stated it is the whole table; if your query filters differently, re-derive
@@ -78,7 +78,7 @@ rather than quoting.
   **T1** blueprint, and the product is the **T2 blueprint**, not the T2 item.
   Starting from the T2 blueprint finds no invention rows at all.
   `bp_products.probability` is the *base* chance before decryptors and skills.
-  It is NULL for all 4,848 manufacturing rows, all 120 reaction rows, **and 8
+  It is NULL for all 4,849 manufacturing rows, all 120 reaction rows, **and 8
   invention rows** -- so `WHERE probability IS NOT NULL` silently drops eight
   inventable blueprints.
 
@@ -138,7 +138,7 @@ rather than quoting.
 - **Blueprint lookups start from the product**, not the blueprint name. Join
   `bp_products` to find which blueprint makes a thing.
 
-- 18,915 published types have **no** `type_materials` row: not reprocessable,
+- 18,904 published types have **no** `type_materials` row: not reprocessable,
   rather than reprocessing to nothing.
 
 - **21 blueprint rows reference typeIDs that do not exist** (20 products, 1

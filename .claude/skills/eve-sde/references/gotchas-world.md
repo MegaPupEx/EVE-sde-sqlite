@@ -6,7 +6,7 @@ mission agents, combat sites and DED ratings, what an Alpha clone can train, or
 ship mastery levels. Column names and the cross-part table finder stay in
 `schema.md`; this file is the traps.
 
-Counts verified against build `3466501`; re-derive if `meta.sdeBuildNumber`
+Counts verified against build `3475087`; re-derive if `meta.sdeBuildNumber`
 differs. **Every count here is population-sensitive** -- `published = 1` vs all
 types, k-space vs all systems, ships vs all categories. Where the population is
 not stated it is the whole table; if your query filters differently, re-derive

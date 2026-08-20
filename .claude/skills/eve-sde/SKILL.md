@@ -115,7 +115,7 @@ treatment in the `gotchas-*` files.
 - Join gates on `stargates.destSystemID`, never `destStargateID` (the peer
   *gate*). Note `destStargateID` comes **first** in the table, so `SELECT *` with
   positional unpacking builds the graph on the wrong column.
-- Hauling uses `packagedVolume`, not `volume`. They are **equal for 25,347
+- Hauling uses `packagedVolume`, not `volume`. They are **equal for 25,336
   published types** and differ for 685, by anything from 2x to 200x — never
   assume a ratio, read both columns.
 - Manufacturing cost per unit is `bp_materials.quantity / bp_products.quantity` —
@@ -191,7 +191,7 @@ Tech level has three disagreeing sources and is a filtering question — see
 
 ## Check the build first
 
-Every count in this skill was verified against build **3466501**. Before quoting
+Every count in this skill was verified against build **3475087**. Before quoting
 any figure from the reference files, check what you actually have:
 
 ```sql
@@ -207,7 +207,7 @@ CCP's `latest.jsonl` endpoint, in "Get a database" step 1. A long-lived
 session can pass the first check and still be answering from a build CCP has
 since replaced.
 
-If `sdeBuildNumber` differs from 3466501, **run
+If `sdeBuildNumber` differs from 3475087, **run
 `scripts/verify_claims.py --parts <dir>`** (or `--db <file>`): every hard number
 in these docs is encoded there as a query, and it prints exactly which
 documented figures moved on the newer build, so you re-derive three numbers
