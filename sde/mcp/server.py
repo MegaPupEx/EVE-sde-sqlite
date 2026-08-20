@@ -360,6 +360,35 @@ SIZE_LADDER_CAP = 24
 
 RIG_SIZES = {1: 'small', 2: 'medium', 3: 'large', 4: 'capital'}
 
+# Ordering of the size words that lead a size_class label, so the ladder can be
+# cut to the neighbouring classes instead of running to capital.
+SIZE_RANK = {'small': 1, 'Small': 1, 'medium': 2, 'Medium': 2,
+             'large': 3, 'Large': 3, 'capital': 4, 'Capital': 4, 'XL': 4}
+
+
+def _specialization(db, type_id):
+    """The "* Specialization" skill this item requires, or None.
+
+    Tech 2 turrets and launchers require one (+2% damage per level, +10% at V);
+    faction and meta ones do not. That bonus is NOT in `damageMultiplier`, so
+    the printed attribute says faction beats tech 2 when the engine says the
+    reverse — measured 2026-08-20, Small Focused Pulse Laser II (3.6) does
+    291.5 dps where Imperial Navy (3.75) does 276.0, exactly the 10% the
+    specialization adds. A ladder that shows the multiplier without the skill
+    is actively misleading, so name the skill on the rows that get it.
+    """
+    rows = db.execute(
+        'SELECT d.value FROM type_dogma d JOIN dogma_attributes a '
+        'ON a.attributeID = d.attributeID WHERE d.typeID = ? '
+        "AND a.name IN ('requiredSkill1', 'requiredSkill2', 'requiredSkill3')",
+        (type_id,)).fetchall()
+    for (skill_id,) in rows:
+        got = db.execute('SELECT name FROM types WHERE typeID = ?',
+                         (int(skill_id),)).fetchone()
+        if got and got[0].endswith('Specialization'):
+            return got[0]
+    return None
+
 
 def _size_class(db, type_id):
     """How this item's size is expressed in the data, or None.
@@ -441,6 +470,10 @@ def _size_ladder(db, type_id, group_id, meta_group, want):
             # they would head the list on a null sort key and say nothing
             continue
         entry = {'name': tname, 'metaLevel': meta}
+        spec = _specialization(db, tid)
+        if spec:
+            entry['specialization_skill'] = spec
+            entry['damage_not_in_multiplier'] = '+2%/level, +10% at V'
         size = _size_class(db, tid)
         if size:
             entry['size_class'] = size
@@ -457,9 +490,29 @@ def _size_ladder(db, type_id, group_id, meta_group, want):
             return 0.0
     if not rows:
         return None
+    # Keep only the neighbouring size classes. A small-turret question does not
+    # need Dual Giga Pulse Laser II at 137,500 MW — measured 2026-08-20, those
+    # rows were most of a ~2k-token response and could not be fitted to
+    # anything the caller was asking about. One step either way covers the real
+    # decision (can I go up a class, should I come down one); two steps never
+    # fits the same hull.
+    def rank(label):
+        # a missing or unlabelled size class must not index an empty split
+        words = (label or '').split()
+        return SIZE_RANK.get(words[0], None) if words else None
+
+    here_rank = rank(here)
+    if here_rank is not None:
+        near = [r for r in rows
+                if abs((rank(r.get('size_class')) or 99) - here_rank) <= 1]
+        dropped = len(rows) - len(near)
+        rows = near
+    else:
+        dropped = 0
     rows.sort(key=lambda r: (not r.get('same_size_as_yours', False), pg(r), r['name']))
     return {'your_size_class': here, 'families': rows[:SIZE_LADDER_CAP],
             'truncated': max(0, len(rows) - SIZE_LADDER_CAP),
+            **({'size_classes_omitted': dropped} if dropped else {}),
             'note': 'one representative per family, matched to the tier you asked '
                     'about. Rows flagged same_size_as_yours use the same hardpoints '
                     'and the same hull bonus as what you have — those are the '
@@ -503,9 +556,21 @@ def variants(items: list[str], attributes: list = None) -> dict:
                              (mgroup,)).fetchone() if mgroup else None
             if grp:
                 entry['tier'] = grp[0]
+            spec = _specialization(db, tid)
+            if spec:
+                entry['specialization_skill'] = spec
+                entry['damage_not_in_multiplier'] = '+2%/level, +10% at V'
             entry.update(vals)
             rows.append(entry)
         entry = {'item': name, 'variants': rows}
+        if any('specialization_skill' in r for r in rows) and \
+                any('specialization_skill' not in r for r in rows):
+            entry['damageMultiplier_warning'] = (
+                'damageMultiplier is the BASE attribute and does not include the '
+                'specialization skill. Rows carrying `specialization_skill` get a '
+                'further +2%/level (+10% at all V) that is not printed here, so a '
+                'faction row can show a higher multiplier and still lose to the '
+                'tech 2 in the engine. Compare with get_stats, not by eye.')
         ladder = _size_ladder(db, type_id, group_id, meta_group, want)
         if ladder:
             entry['size_ladder'] = ladder

@@ -212,6 +212,86 @@ async def main(pyfa):
                 raise AssertionError('no advisory named the sweep on the rifter fit')
             await call('delete_fit', fit_id=big['fit_id'])
 
+            # ---- charge selection, the thing raw dps hides ----------------
+            # Measured 2026-08-20: an answer shipped Multifrequency S tested at
+            # one range. Scorch S beats it at EVERY range on this hull while
+            # showing LESS paper dps, so only a swept applied number finds it.
+            laser = await call('import_fit', stats=False, eft=(
+                '[Confessor, crystals]\nHeat Sink II\nHeat Sink II\n\n'
+                '5MN Microwarpdrive II\n\n'
+                + 'Small Focused Pulse Laser II, Multifrequency S\n' * 4))
+            lid = laser['fit_id']
+            far = await call('applied_dps', fit_id=lid, distance_km=9,
+                             target={'sig_m': 62, 'speed_ms': 100})
+            tab = far['charges']['Small Focused Pulse Laser II']
+            assert tab['evaluated'] > 20, tab['evaluated']
+            assert not tab.get('not_evaluated'), 'silent truncation'
+            names = [r['charge'] for r in tab['ranked']]
+            assert names[0] == 'Scorch S', names
+            assert any(r.get('loaded') for r in
+                       (await call('applied_dps', fit_id=lid, distance_km=1,
+                                   target={'sig_m': 62, 'speed_ms': 100})
+                        )['charges']['Small Focused Pulse Laser II']['ranked']), 'loaded unmarked'
+            assert 'better_than_loaded' in tab, tab
+            # the swept number must equal an independently built fit, or the
+            # sweep is measuring something other than what it claims
+            direct = await call('import_fit', stats=False, eft=(
+                '[Confessor, crystals]\nHeat Sink II\nHeat Sink II\n\n'
+                '5MN Microwarpdrive II\n\n'
+                + 'Small Focused Pulse Laser II, Scorch S\n' * 4))
+            solo = await call('applied_dps', fit_id=direct['fit_id'], distance_km=9,
+                              charges=False, target={'sig_m': 62, 'speed_ms': 100})
+            swept = next(r['dps_applied'] for r in tab['ranked'] if r['charge'] == 'Scorch S')
+            assert abs(solo['dps_applied'] - swept) < 0.05, (solo['dps_applied'], swept)
+            await call('delete_fit', fit_id=direct['fit_id'])
+
+            # ---- implants and boosters, measured not guessed ---------------
+            # A missile hardwiring was recommended for an all-turret fit. The
+            # only defence is fitting the thing and looking at the panel.
+            dead = await call('pilot_effects', fit_id=lid, kind='implants',
+                              search='Target Navigation Prediction')
+            assert dead['considered'] > 0 and dead['moved_a_number'] == 0, dead
+            # a fit with an actual tank, so repair and capacitor boosters have
+            # something to move — the bare gun fit above cannot show them
+            tanked = await call('import_fit', stats=False, eft=(
+                '[Confessor, tanked]\nHeat Sink II\nSmall Armor Repairer II\n'
+                'Multispectrum Energized Membrane II\n\n5MN Microwarpdrive II\n\n'
+                + 'Small Focused Pulse Laser II, Multifrequency S\n' * 4))
+            drugs = await call('pilot_effects', fit_id=tanked['fit_id'],
+                               kind='boosters', limit=5)
+            assert drugs['moved_a_number'] > 3, drugs
+            assert all(r['deltas'] for r in drugs['results']), 'zero-delta row listed'
+            assert any(r.get('may_roll_side_effects') for r in drugs['results']), drugs
+            assert drugs['results'] == sorted(
+                drugs['results'], key=lambda r: -r['best_relative_gain_pct']), 'unranked'
+            await call('delete_fit', fit_id=tanked['fit_id'])
+
+            # ---- the sweep must be able to change the weapon system ---------
+            # Without this it asks "which hull carries THIS loadout", which is
+            # biased to the hull the fit was built on: a laser fit scored the
+            # Jackdaw at "turret hardpoints over by 4" and every off-race hull
+            # at 55% of the Confessor, saying nothing about the hulls.
+            plain = await call('sweep_hulls', fit_id=lid, group='Tactical Destroyer')
+            jack = next(h for h in plain['hulls'] if h['hull'] == 'Jackdaw')
+            assert any('turret hardpoints' in p for p in jack['problems']), jack
+            armed = await call('sweep_hulls', fit_id=lid, group='Tactical Destroyer',
+                               adapt=True)
+            jack2 = next(h for h in armed['hulls'] if h['hull'] == 'Jackdaw')
+            assert 'Rocket Launcher' in jack2['adapted']['weapons'], jack2
+            assert not any('turret hardpoints' in p
+                           for p in jack2.get('problems', [])), jack2
+            # the source hull is already armed the way it wants: left alone, so
+            # it stays an honest baseline in its own sweep
+            conf = next(h for h in armed['hulls'] if h['hull'] == 'Confessor')
+            assert 'adapted' not in conf, conf
+            # tier follows the fit, not the price list — a caller who excluded
+            # officer modules must not be handed Makra's Modified anything
+            for h in armed['hulls']:
+                if 'adapted' in h:
+                    assert 'Modified' not in h['adapted']['weapons'], h['adapted']
+                    assert h['adapted']['rungs_tried'] >= 1, h['adapted']
+            await call('delete_fit', fit_id=lid)
+
             # aliases: the names callers reach for must not cost a round
             clone_id = (await call('clone_fit', fit_id=fid, stats=False))['fit_id']
             cmp_aliased = await call('compare_fits', fit_a=fid, fit_b=clone_id)

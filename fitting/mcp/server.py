@@ -919,6 +919,122 @@ def set_projected(fit_id: str, projector_fit_ids: list) -> dict:
         for pid, rng in entries]}
 
 
+def _pilot_candidates(kind, slot, search):
+    """(typeName, slot) for implants or combat boosters, from the engine's db.
+
+    Raw SQL over the engine connection for the same reason `_suggest` uses it:
+    importing eos.gamedata lazily re-enters a partially initialised module.
+    """
+    import eos.db
+    if kind == 'boosters':
+        where, params = ("g.name = 'Booster' AND a.attributeName = 'boosterness' "
+                         'AND ta.value <= 3'), []
+    elif kind == 'implants':
+        where = ("c.name = 'Implant' AND g.name != 'Booster' "
+                 "AND a.attributeName = 'implantness' AND ta.value BETWEEN 6 AND 10")
+        params = []
+        if slot is not None:
+            where += ' AND ta.value = ?'
+            params.append(float(slot))
+    else:
+        raise ValueError("kind must be 'boosters' or 'implants'")
+    if search:
+        where += ' AND t.typeName LIKE ?'
+        params.append(f'%{search}%')
+    conn = eos.db.gamedata_engine.raw_connection()
+    try:
+        rows = conn.cursor().execute(
+            'SELECT t.typeName, ta.value FROM invtypes t '
+            'JOIN invgroups g ON g.groupID = t.groupID '
+            'JOIN invcategories c ON c.categoryID = g.categoryID '
+            'JOIN dgmtypeattribs ta ON ta.typeID = t.typeID '
+            'JOIN dgmattribs a ON a.attributeID = ta.attributeID '
+            f'WHERE t.published = 1 AND {where} ORDER BY t.typeName', params).fetchall()
+    finally:
+        conn.close()
+    return [(n, int(v)) for n, v in rows]
+
+
+def _headline(fit):
+    """The few numbers a pilot effect could plausibly move."""
+    panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload))
+    cap = panel['capacitor']
+    return {
+        'dps': panel['offense']['dps'],
+        'ehp': panel['defense']['ehp']['total'],
+        'reps_hps': round(sum(panel['defense'].get('reps_hps', {}).values()), 1),
+        'speed_ms': panel['navigation']['max_velocity_ms'],
+        'align_s': panel['navigation'].get('align_time_prop_off_s',
+                                           panel['navigation']['align_time_s']),
+        # Two keys, not one: a cap-stable fit has no `lasts_s` to improve, so a
+        # single field would report "no change" for a booster that took the fit
+        # from 60% to 90% stable. Both are 0 when they do not apply, so both
+        # diff cleanly.
+        'cap_lasts_s': 0 if cap.get('stable') else cap.get('lasts_s', 0),
+        'cap_stable_pct': cap.get('stable_pct', 0) if cap.get('stable') else 0,
+    }
+
+
+def _side_effects(item):
+    """Penalty attributes a combat booster MAY roll. Not applied, not certain."""
+    return sorted(k[7:] for k in item.attributes
+                  if k.startswith('booster') and k.endswith('Penalty'))
+
+
+@mcp.tool()
+@_engine_thread
+def pilot_effects(fit_id: str, kind: str = 'boosters', slot: int = None,
+                  search: str = None, limit: int = 12) -> dict:
+    """Which implants or combat boosters actually do anything FOR THIS FIT, measured by fitting each one and re-running the panel. kind: 'boosters' (combat drugs, slots 1-3) | 'implants' (hardwirings, slots 6-10; narrow with `slot` or `search` to cut the run short). Anything that moves no number is dropped, so a missile hardwiring never gets recommended to a turret boat. Ranked by the largest relative gain; `deltas` are against the fit as it stands. Booster side effects roll per dose, are NOT in these numbers, and are listed per row."""
+    fit = _fit(fit_id)
+    base = _headline(fit)
+    cands = _pilot_candidates(kind, slot, search)
+    bucket = fit.boosters if kind == 'boosters' else fit.implants
+    if kind == 'boosters':
+        from eos.saveddata.booster import Booster as Wrap
+    else:
+        from eos.saveddata.implant import Implant as Wrap
+    rows, failed = [], 0
+    for name, islot in cands:
+        item = eftlib._lookup(name)
+        if item is None:
+            continue
+        try:
+            obj = Wrap(item)
+            bucket.append(obj)
+            after = _headline(fit)
+        except Exception:                  # noqa: BLE001 — a candidate that will
+            failed += 1                    # not construct is simply not offered
+            after = base
+        finally:
+            if obj in bucket:
+                bucket.remove(obj)
+        delta = {k: round(after[k] - base[k], 2) for k in base
+                 if abs(after[k] - base[k]) > 0.005}
+        if not delta:
+            continue                       # does nothing here: never offer it
+        gain = max(abs(after[k] - base[k]) / abs(base[k] or 1) for k in delta)
+        row = {'item': name, 'slot': islot, 'deltas': delta,
+               'best_relative_gain_pct': round(gain * 100, 1)}
+        if kind == 'boosters':
+            se = _side_effects(item)
+            if se:
+                row['may_roll_side_effects'] = se
+        rows.append(row)
+    _recalc(fit)
+    rows.sort(key=lambda r: -r['best_relative_gain_pct'])
+    return {'fit_id': fit_id, 'ship': _ship_name(fit), 'kind': kind,
+            'baseline': base, 'considered': len(cands),
+            'moved_a_number': len(rows), 'results': rows[:limit],
+            'note': 'measured by fitting each candidate to THIS fit and re-running '
+                    'the panel — nothing here is inferred from a name. Candidates '
+                    'that changed nothing are not listed at all. '
+                    + ('Side effects are possible per dose, not guaranteed, and are '
+                       'excluded from `deltas`.' if kind == 'boosters'
+                       else 'Slots 1-5 are attribute implants (training speed) and '
+                            'are excluded — they do not touch a fit.')}
+
+
 @mcp.tool()
 @_engine_thread
 def set_booster(fit_id: str, booster_fit_ids: list) -> dict:
@@ -959,10 +1075,89 @@ def graph(fit_id: str, kind: str, target: dict = None, distance_km: float = 5.0,
     return {'ship': _ship_name(fit), **out}
 
 
+# Small pulse lasers alone offer 54 valid crystals. A cap below that silently
+# drops the answer: Scorch S sits at index 10 and is the best charge past
+# optimal, so a truncated sweep can read as "the loaded one is fine".
+CHARGE_CANDIDATE_CAP = 80
+
+
+def _charge_options(fit, totals, baseline):
+    """Rank every charge the weapons can load, at the range just asked about.
+
+    Measured 2026-08-20: an answer shipped Multifrequency S and tested it
+    against one target at one range. Across the brief it was written for,
+    Scorch S beat it at EVERY range — 266 vs 261 applied at 5 km, 271 vs 34 at
+    9 km — while showing 24 LESS paper dps. Reading `dps` picks Multifrequency;
+    only `dps_applied`, swept, finds Scorch. Lasers change crystals with no
+    reload at all, so this is a free choice made wrongly by default.
+
+    Weapons are swept in groups of identical modules: sweeping each gun
+    independently would be combinatorial and nobody flies mixed crystals.
+    Charges are restored before returning, whatever happens.
+    """
+    groups = {}
+    for mod in fit.modules:
+        if mod.isEmpty or mod.charge is None:
+            continue
+        groups.setdefault(mod.item.typeName, []).append(mod)
+    out = {}
+    for weapon, mods in groups.items():
+        loaded = mods[0].charge
+        try:
+            cands = list(mods[0].getValidCharges())
+        except Exception:                  # noqa: BLE001 — advisory only
+            continue
+        seen, ranked = set(), []
+        skipped = max(0, len(cands) - CHARGE_CANDIDATE_CAP)
+        for cand in cands[:CHARGE_CANDIDATE_CAP]:
+            if cand.typeName in seen:
+                continue
+            seen.add(cand.typeName)
+            try:
+                for mod in mods:
+                    mod.charge = cand
+                _recalc(fit)
+                _, applied, _ = totals()
+            except Exception:              # noqa: BLE001 — a charge that breaks
+                continue                   # the calc is simply not a candidate
+            ranked.append({'charge': cand.typeName, 'dps_applied': round(applied, 1),
+                           **({'loaded': True} if cand.typeName == loaded.typeName else {})})
+        for mod in mods:
+            mod.charge = loaded
+        _recalc(fit)
+        if len(ranked) < 2:
+            continue
+        ranked.sort(key=lambda r: -r['dps_applied'])
+        best = ranked[0]
+        # The loaded charge always shows, whatever it ranks: the caller needs to
+        # see where their current choice sits, and "not in the top 8" is the
+        # case where that matters most.
+        top = ranked[:8]
+        if not any(r.get('loaded') for r in top):
+            here = next((r for r in ranked if r.get('loaded')), None)
+            if here is not None:
+                top = top[:7] + [{**here, 'rank': ranked.index(here) + 1}]
+        entry = {'ranked': top, 'evaluated': len(ranked)}
+        if skipped:
+            entry['not_evaluated'] = skipped
+        if not best.get('loaded'):
+            now = next((r['dps_applied'] for r in ranked if r.get('loaded')), baseline)
+            gain = best['dps_applied'] - now
+            if gain > 0.5:
+                entry['better_than_loaded'] = (
+                    f"{best['charge']} applies {best['dps_applied']} here against "
+                    f"{now} for the loaded {loaded.typeName} (+{gain:.1f}). Check the "
+                    'other ranges you expect to fight at before switching — this is '
+                    'one distance, and the ranking moves with it.')
+        out[weapon] = entry
+    return out or None
+
+
 @mcp.tool()
 @_engine_thread
-def applied_dps(fit_id: str, distance_km: float, target: dict) -> dict:
-    """Applied (not paper) dps vs a real target: target {sig_m required, speed_ms?, atk_speed_ms?}. pyfa's full application model — turret tracking/sig, missile explosion radius+velocity, drone mobility — at full spool; raw vs applied split per source class."""
+def applied_dps(fit_id: str, distance_km: float, target: dict,
+                charges: bool = True) -> dict:
+    """Applied (not paper) dps vs a real target: target {sig_m required, speed_ms?, atk_speed_ms?}. pyfa's full application model — turret tracking/sig, missile explosion radius+velocity, drone mobility — at full spool; raw vs applied split per source class. Also ranks EVERY charge the weapons can load at this range (`charges`, set false to skip): the loaded one is rarely the best, and the best one usually has LOWER paper dps — measured, Scorch S beats Multifrequency S at every range including point blank while showing 24 less raw."""
     from eos.saveddata.drone import Drone
     from eos.saveddata.fighter import Fighter
     from eos.saveddata.module import Module
@@ -991,21 +1186,35 @@ def applied_dps(fit_id: str, distance_km: float, target: dict) -> dict:
             return 'turrets'
         return 'other'
 
-    raw_total = applied_total = 0.0
-    by = {}
-    for key, d in dmg.items():
-        raw = d.total
-        applied = (d * amap.get(key, 0)).total
-        b = by.setdefault(bucket(key), [0.0, 0.0])
-        b[0] += raw
-        b[1] += applied
-        raw_total += raw
-        applied_total += applied
-    return {'fit_id': fit_id, 'ship': _ship_name(fit), 'distance_km': distance_km,
-            'target': {'sig_m': target['sig_m'], 'speed_ms': tgt_speed},
-            'dps_raw': round(raw_total, 1), 'dps_applied': round(applied_total, 1),
-            'application_pct': round(100 * applied_total / raw_total, 1) if raw_total else 0,
-            'by_source': {k: [round(r, 1), round(a, 1)] for k, (r, a) in sorted(by.items())}}
+    def totals():
+        """(raw, applied, per-bucket) for the fit exactly as it stands."""
+        local_dmg = graphlib._dmg_map(fit)
+        local_amap = graphlib._application_map(
+            fit, dist, tgt_speed, float(target['sig_m']),
+            float(target.get('atk_speed_ms', 0)))
+        raw_t = app_t = 0.0
+        buckets = {}
+        for key, d in local_dmg.items():
+            raw = d.total
+            applied = (d * local_amap.get(key, 0)).total
+            b = buckets.setdefault(bucket(key), [0.0, 0.0])
+            b[0] += raw
+            b[1] += applied
+            raw_t += raw
+            app_t += applied
+        return raw_t, app_t, buckets
+
+    raw_total, applied_total, by = totals()
+    out = {'fit_id': fit_id, 'ship': _ship_name(fit), 'distance_km': distance_km,
+           'target': {'sig_m': target['sig_m'], 'speed_ms': tgt_speed},
+           'dps_raw': round(raw_total, 1), 'dps_applied': round(applied_total, 1),
+           'application_pct': round(100 * applied_total / raw_total, 1) if raw_total else 0,
+           'by_source': {k: [round(r, 1), round(a, 1)] for k, (r, a) in sorted(by.items())}}
+    if charges:
+        alt = _charge_options(fit, totals, applied_total)
+        if alt:
+            out['charges'] = alt
+    return out
 
 
 @mcp.tool()
@@ -1218,11 +1427,148 @@ def _trait_text(item, cap=170):
     return txt[:cap] + ('…' if len(txt) > cap else '')
 
 
+ADAPT_CANDIDATE_CAP = 8
+TURRET_GROUPS = ('Energy Weapon', 'Hybrid Weapon', 'Projectile Weapon')
+_WEAPONS = None
+
+
+def _weapon_catalogue():
+    """Every published weapon, tagged with the phrase a hull's traits would use.
+
+    Turret size lives in the required skill ("Small Energy Turret") and appears
+    verbatim in trait text. Launchers all require "Missile Launcher Operation",
+    so their size lives in the group instead ("Missile Launcher Light" ->
+    "Light Missile"). Between the two, a hull's own traits name both the weapon
+    system and its size, which is all the adaptation needs.
+    """
+    global _WEAPONS
+    if _WEAPONS is not None:
+        return _WEAPONS
+    import eos.db
+    out = []
+    for gname in TURRET_GROUPS:
+        grp = eos.db.getGroup(gname)
+        for item in (grp.items if grp else ()):
+            if not getattr(item, 'published', True):
+                continue
+            skill = item.attributes.get('requiredSkill1')
+            if skill is None:
+                continue
+            sk = eos.db.getItem(int(skill.value))
+            if sk is None or 'Turret' not in sk.typeName:
+                continue
+            out.append({'name': item.typeName, 'phrase': sk.typeName,
+                        'hardpoint': 'turret', 'meta': item.metaLevel or 0})
+    conn = eos.db.gamedata_engine.raw_connection()
+    try:
+        rows = conn.cursor().execute(
+            "SELECT DISTINCT g.name FROM invgroups g WHERE g.name LIKE 'Missile Launcher %'"
+        ).fetchall()
+    finally:
+        conn.close()
+    for (gname,) in rows:
+        grp = eos.db.getGroup(gname)
+        kind = gname[len('Missile Launcher '):]
+        for item in (grp.items if grp else ()):
+            if not getattr(item, 'published', True):
+                continue
+            out.append({'name': item.typeName, 'phrase': f'{kind} Missile',
+                        'alt_phrase': f'{kind} launcher', 'hardpoint': 'launcher',
+                        'meta': item.metaLevel or 0})
+    _WEAPONS = out
+    return out
+
+
+def _hull_weapons(hull_item):
+    """Weapon names this hull is actually bonused to fly, best tech first."""
+    traits = getattr(hull_item, 'traits', None)
+    raw = getattr(traits, 'traitText', None) if traits is not None else None
+    if not raw:
+        return []
+    txt = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', raw)).lower()
+    hits = [w for w in _weapon_catalogue()
+            if w['phrase'].lower() in txt or w.get('alt_phrase', '~').lower() in txt]
+    hits.sort(key=lambda w: -w['meta'])
+    return hits
+
+
+def _best_charge(mod):
+    """The valid charge with the most raw damage, or None.
+
+    A default, not an answer: which charge is actually best depends on the
+    range being fought at, which a hull sweep does not know. `applied_dps`
+    ranks them properly once a hull has been chosen.
+    """
+    try:
+        cands = list(mod.getValidCharges())
+    except Exception:                      # noqa: BLE001
+        return None
+    def dmg(item):
+        return sum(item.attributes[a].value for a in
+                   ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage')
+                   if a in item.attributes)
+    cands = [c for c in cands if dmg(c)]
+    return max(cands, key=dmg) if cands else None
+
+
+def _adapt_to_hull(body, hull_item, src_weapons, src_meta=5):
+    """Rewrite the EFT body so the guns are the ones this hull is bonused for.
+
+    Without this a sweep only ever answers "which hull carries THIS loadout",
+    which is a different and much less useful question than "which hull is best
+    for this job" — and it is biased to the hull the fit was built on by
+    construction. A laser fit swept across tactical destroyers scored the
+    Jackdaw at "turret hardpoints over by 4" and every non-Amarr hull at 55% of
+    the Confessor's dps, which says nothing about the hulls and everything
+    about the guns being Amarr.
+    """
+    picks = _hull_weapons(hull_item)
+    if not picks or not src_weapons:
+        return []
+    attr = hull_item.attributes
+    slots = {'turret': int(attr['turretSlotsLeft'].value) if 'turretSlotsLeft' in attr else 0,
+             'launcher': int(attr['launcherSlotsLeft'].value) if 'launcherSlotsLeft' in attr else 0}
+    picks = [p for p in picks if slots.get(p['hardpoint'], 0) > 0]
+    if not picks:
+        return []
+    # Already flying this hull's weapon system: leave the loadout exactly alone
+    # so the source hull stays an honest baseline in its own sweep. Matching on
+    # the trait PHRASE, not the module name — a Confessor carrying any small
+    # energy turret is already armed the way the hull wants.
+    src_phrases = {w['phrase'] for w in _weapon_catalogue() if w['name'] in src_weapons}
+    if any(p['phrase'] in src_phrases for p in picks):
+        return []
+    # Match the tier the fit already flies. Sorting by meta alone reaches for
+    # officer modules, which are not what "the same fit on another hull" means
+    # and are exactly what a caller excluding officer/abyssal does not want.
+    # Same tier as the fit already flies, then EVERY rung at that tier: which
+    # rung wins is the same question the size ladder exists for, and picking
+    # whichever sorted first put a 125mm Gatling on a Svipul.
+    picks.sort(key=lambda w: (abs(w['meta'] - src_meta), -w['meta']))
+    tier = abs(picks[0]['meta'] - src_meta)
+    picks = [p for p in picks if abs(p['meta'] - src_meta) == tier][:ADAPT_CANDIDATE_CAP]
+    from eos.saveddata.module import Module
+    kept = [ln for ln in body.split('\n')
+            if ln.strip().split(',')[0].strip() not in src_weapons]
+    out = []
+    for cand in picks:
+        count = slots[cand['hardpoint']]
+        charge = _best_charge(Module(eftlib._lookup(cand['name'])))
+        line = cand['name'] + (f', {charge.typeName}' if charge is not None else '')
+        out.append(('\n'.join([line] * count + kept), {
+            'weapons': f"{count}x {cand['name']}",
+            'replaced': f"{len(src_weapons)} {'/'.join(sorted(src_weapons))}",
+            'charge': charge.typeName if charge is not None else None,
+            'rungs_tried': len(picks)}))
+    return out
+
+
 @mcp.tool()
 @_engine_thread
 def sweep_hulls(fit_id: str, hulls: list = None, group: str = None,
-                metrics: list = None, limit: int = _SWEEP_LIMIT) -> dict:
-    """Rebuild this fit's modules on OTHER hulls and rank them. Name a `group` ("Destroyer", "Assault Frigate", "Combat Battlecruiser") to enumerate every published hull in it server-side, or pass explicit `hulls`. Use this instead of picking a hull from remembered candidates: a hull chosen on static attributes and then made to work is the commonest way a fit answer goes wrong. Rows carry the named panel metrics (default dps/ehp/speed), cpu_free/pg_free, any legality problems, and the hull's per-skill and role bonuses — those are already applied in the numbers, and are shown so a low rank reads as "wrong weapons for this hull" when that is what it is. A class contains hulls that cannot be bought (tournament prizes, event hulls) and they rank like any other, so rows in the Special Edition branch carry an `availability` note — check it before recommending the winner."""
+                metrics: list = None, limit: int = _SWEEP_LIMIT,
+                adapt: bool = False) -> dict:
+    """Rebuild this fit's modules on OTHER hulls and rank them. Name a `group` ("Destroyer", "Assault Frigate", "Combat Battlecruiser") to enumerate every published hull in it server-side, or pass explicit `hulls`. Use this instead of picking a hull from remembered candidates: a hull chosen on static attributes and then made to work is the commonest way a fit answer goes wrong. Rows carry the named panel metrics (default dps/ehp/speed), cpu_free/pg_free, any legality problems, and the hull's per-skill and role bonuses — those are already applied in the numbers, and are shown so a low rank reads as "wrong weapons for this hull" when that is what it is. A class contains hulls that cannot be bought (tournament prizes, event hulls) and they rank like any other, so rows in the Special Edition branch carry an `availability` note — check it before recommending the winner. `adapt=True` re-arms each hull with the weapon system its OWN traits are bonused for, filling its hardpoints — without it this asks "which hull carries THIS loadout", which is biased to the hull the fit was built on and scores every off-race hull as bad guns rather than a bad hull. Run it BOTH ways when the question is "what should I fly": adapt=False says how portable your loadout is, adapt=True says which hull does the job best."""
     if not hulls and not group:
         raise ValueError('name `group` to enumerate a class, or pass `hulls`')
     src = _fit(fit_id)
@@ -1230,6 +1576,13 @@ def sweep_hulls(fit_id: str, hulls: list = None, group: str = None,
                           'navigation.max_velocity_ms']
     eft = eftlib.render_eft(src)
     body = eft.split('\n', 1)[1] if '\n' in eft else ''
+    from eos.const import FittingHardpoint
+    src_weapons = {m.item.typeName for m in src.modules
+                   if not m.isEmpty and m.hardpoint in (FittingHardpoint.TURRET,
+                                                        FittingHardpoint.MISSILE)}
+    src_meta = max((m.item.metaLevel or 0) for m in src.modules
+                   if not m.isEmpty and m.item.typeName in src_weapons) \
+        if src_weapons else 5
 
     names = list(hulls or [])
     if group:
@@ -1258,28 +1611,42 @@ def sweep_hulls(fit_id: str, hulls: list = None, group: str = None,
         if item is None:
             rows.append({'hull': name, 'error': 'unknown hull'})
             continue
-        try:
-            spec = eftlib.parse_eft(f'[{name}, sweep]\n{body}')[0]
-            fit = eftlib.build_fit(spec)
-        except Exception as exc:          # noqa: BLE001 — a hull that cannot take
-            rows.append({'hull': name, 'error': str(exc)[:120]})
+        options = (_adapt_to_hull(body, item, src_weapons, src_meta)
+                   if adapt else []) or [(body, None)]
+        best_row, best_score, last_err = None, None, None
+        for hull_body, swap in options:
+            try:
+                spec = eftlib.parse_eft(f'[{name}, sweep]\n{hull_body}')[0]
+                fit = eftlib.build_fit(spec)
+            except Exception as exc:      # noqa: BLE001 — a hull that cannot take
+                last_err = str(exc)[:120]
+                continue
+            panel = stat_panel(fit,
+                               recalc=lambda f, factor_reload: _recalc(f, factor_reload))
+            attr = fit.ship.getModifiedItemAttr
+            row = {'hull': name}
+            row.update({m: pick(panel, m) for m in metrics})
+            row['cpu_free'] = round((attr('cpuOutput') or 0) - fit.cpuUsed, 2)
+            row['pg_free'] = round((attr('powerOutput') or 0) - fit.pgUsed, 2)
+            probs = _problems(fit)
+            if probs:
+                row['problems'] = probs
+            if swap:
+                row['adapted'] = swap
+            # a legal build always beats an illegal one, then the ranking metric
+            score = (not probs, row.get(metrics[0]) or 0)
+            if best_score is None or score > best_score:
+                best_row, best_score = row, score
+        if best_row is None:
+            rows.append({'hull': name, 'error': last_err or 'could not build'})
             continue
-        panel = stat_panel(fit, recalc=lambda f, factor_reload: _recalc(f, factor_reload))
-        attr = fit.ship.getModifiedItemAttr
-        row = {'hull': name}
-        row.update({m: pick(panel, m) for m in metrics})
-        row['cpu_free'] = round((attr('cpuOutput') or 0) - fit.cpuUsed, 2)
-        row['pg_free'] = round((attr('powerOutput') or 0) - fit.pgUsed, 2)
-        probs = _problems(fit)
-        if probs:
-            row['problems'] = probs
         bonus = _trait_text(item)
         if bonus:
-            row['bonuses'] = bonus
+            best_row['bonuses'] = bonus
         avail = _availability_note(item)
         if avail:
-            row['availability'] = avail
-        rows.append(row)
+            best_row['availability'] = avail
+        rows.append(best_row)
 
     key = metrics[0]
     rows.sort(key=lambda r: (r.get('problems') is not None, -(r.get(key) or 0)))

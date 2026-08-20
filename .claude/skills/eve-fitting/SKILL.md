@@ -299,6 +299,22 @@ checkable in the engine and none of them was checked.
   spare spent two rig slots on *powergrid* rigs — the exact slots that would
   have solved CPU — and shipped three guns on a four-turret hull as a result.
   Read which resource is tight before choosing a rig or a meta level.
+- **Sweep the ammunition before you ship the fit.** `applied_dps` ranks every
+  charge the weapons can load at that range and marks the loaded one. The best
+  charge routinely has LOWER paper dps: measured 2026-08-20 on a Confessor,
+  Scorch S applied 271 at 9 km where the shipped Multifrequency S applied 34,
+  while showing 24 less raw. Lasers change crystals with no reload at all, so
+  that was a free choice made wrongly by default. Check the ranges the fit will
+  actually fight at, not one — the ranking moves with distance.
+- **Ask the hull question two ways.** `sweep_hulls(fit_id, group=…)` rebuilds
+  your exact loadout on every hull in the class: that answers *how portable is
+  this loadout*, and it is biased toward the hull you built on — an Amarr laser
+  fit scores every off-race hull as bad guns, not a bad hull. Add `adapt=True`
+  and each hull is re-armed with the weapon system its own traits are bonused
+  for, at the tier you are already flying, filling its hardpoints. That answers
+  *which hull does this job best*. On a graded laser Confessor the two rankings
+  disagreed completely: plain, every other T3D scored 159 dps and illegal;
+  adapted, the Hecate came out top with blasters.
 - **Quote `align_time_prop_off_s`, not `align_time_s`.** A running prop mod
   adds mass, and mass is what align time is made of — a 5MN MWD is +500,000 kg
   on a destroyer, worth over a second. You cut the prop and *then* warp,
@@ -315,12 +331,23 @@ checkable in the engine and none of them was checked.
   numbers. Every measured run so far has made the player ask a second time.
 - **Fill the slots or justify the gaps.** An empty high on a brawler is DPS or
   utility you declined to take; say which.
-- **Take the free stats when the player offers them.** If they say "any
-  module/rig/implant/whatever", that includes boosters and implants — most
-  combat boosters are a straight buff with a side effect worth naming, and
-  hardwirings cost only ISK. `set_booster` applies boosters; implants ride in
-  the EFT text. Leaving them out of a "best fit I can train for" answer is
-  leaving the question unanswered.
+- **Take the free stats when the player offers them — and MEASURE them.** If
+  they say "any module/rig/implant/whatever", that includes hardwirings and
+  combat drugs. `pilot_effects(fit_id, kind='implants'|'boosters')` fits every
+  candidate to THIS fit and returns only the ones that moved a number, ranked.
+  Never name an implant from memory: measured 2026-08-20, a run recommended
+  `Zainou 'Deadeye' Target Navigation Prediction` — a **missile** hardwiring —
+  to an all-turret Confessor, and described it as a tracking bonus. Run
+  through the tool it reports 0 of 6 moved a number. Boosters carry side
+  effects that roll per dose and are NOT in the numbers; the tool lists them
+  per row, so name them.
+  Three different things get called "boosters", keep them apart:
+  `pilot_effects(kind='boosters')` is combat drugs (Exile, Mindflood, Drop);
+  `set_booster(fit_id, [other_fit_ids])` attaches **command-burst fits** — the
+  dedicated links alt sitting in the fleet, whose own hull, skills and mindlink
+  scale the bursts; and `set_env` is the environment. If the player might have
+  a booster alt, build the burst ship as its own fit and attach it, rather than
+  guessing at a percentage.
 - **Say what the engine cannot see.** Its capacitor simulation assumes NO
   incoming neutralisation, so a triple-rep panel reads beautifully and tells
   you nothing about a fight with neut pressure — that is the case for resist

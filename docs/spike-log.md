@@ -1570,3 +1570,73 @@ Navy, because tech 2 turrets take the specialization skill (+2%/level, +10% at
 V) and faction ones do not. 3.6/3.75 x 1.10 = 1.056, matching the measured
 ratio exactly. I nearly repeated the very error I had graded. The ladder needs
 to say that tech 2 carries a skill bonus its printed multiplier omits.
+
+## 2026-08-20 (fourth) — charges, pilot effects, and the sweep's structural bias
+
+Five changes, four of them owner-requested and one owner-diagnosed.
+
+**The sweep was asking the wrong question.** The owner spotted it: *"is it just
+checking with the same guns it currently has or is it better than trying to
+check lasers on a jackdaw"*. It re-parsed the identical EFT body onto every
+hull, so a laser fit scored the Jackdaw at `turret hardpoints over by 4` and
+every off-race hull at 55% of the Confessor. That is not a fact about the
+hulls, it is a fact about the guns being Amarr — and it is biased toward the
+hull the fit was built on **by construction**, which finally explains why three
+consecutive runs called the sweep and it never once changed an answer. It
+literally could not.
+
+`adapt=True` now re-arms each hull with the weapon system its own traits name,
+at the tier the fit already flies, filling that hull's hardpoints. Both
+readings are legitimate and they answer different questions, so both ship:
+
+| hull | plain | adapted |
+|---|---|---|
+| Confessor | 291.5 | 291.5 (left alone — already armed as its traits want) |
+| Hecate | 159.4, illegal | **385.4** with 5x Light Neutron Blaster II |
+| Svipul | 159.4, illegal | 262.7 with 4x 200mm AutoCannon II |
+| Skua | 159.4, illegal | 243.3 with 5x Rocket Launcher II |
+| Jackdaw | 159.4, no hardpoints | 200.4 with 5x Rocket Launcher II |
+
+Hull traits turn out to name both the weapon system and its size — turret size
+lives in the required skill ("Small Energy Turret", verbatim in trait text),
+launcher size lives in the group ("Missile Launcher Light" -> "Light Missile").
+Two traps found while building it: sorting candidates by meta level reached
+straight for **officer modules** (Makra's Modified, Panola's Modified) which is
+precisely what a caller excluding officer/abyssal does not want — it now
+matches the source fit's tier; and picking the first candidate at that tier put
+a *125mm Gatling* on a Svipul, the same wrong-rung error the size ladder
+exists to prevent, so it now builds every rung and keeps the best.
+
+**Ammunition was never being swept.** `applied_dps` now ranks every valid
+charge at the requested range and always shows the loaded one, whatever it
+ranks. On the graded Confessor at 9 km: Scorch S 271.0 applied against the
+shipped Multifrequency S at 34.3 — while Scorch shows 24 *less* paper dps.
+Reading `dps` picks Multifrequency; only a swept applied number finds Scorch,
+and lasers change crystals with no reload, so it was a free choice made wrongly
+by default. Cross-validated: the swept Scorch figure equals an independently
+built Scorch fit to the decimal, and the smoke test asserts that equality so
+the sweep cannot drift from what it claims to measure. Cap raised past the 54
+crystals a small pulse laser accepts, with `not_evaluated` reported rather than
+truncating in silence.
+
+**`pilot_effects`: implants and combat drugs, measured rather than named.** The
+graded answer recommended `Zainou 'Deadeye' Target Navigation Prediction` — a
+**missile** hardwiring — to an all-turret fit, calling it a tracking bonus. The
+tool fits each candidate to the actual fit and re-runs the panel, listing only
+what moved a number: that implant reports **0 of 6 moved a number**. 48 combat
+boosters in 2.0 s, 74 slot-10 implants in 2.9 s, 171 slot-6 in 6.8 s. Side
+effects roll per dose, are excluded from the deltas, and are listed per row.
+Two details worth keeping: the capacitor metric had to split into
+`cap_lasts_s` and `cap_stable_pct`, because a cap-stable fit has no `lasts_s`
+to improve and a single field reported "no change" for a booster taking it from
+60% to 90%; and the skill doc had been *wrong* — it said "`set_booster` applies
+boosters", when `set_booster` attaches command-burst fits. Three different
+things are called boosters here (combat drugs, command bursts, environment) and
+the doc now separates them.
+
+**Two smaller ones.** `damageMultiplier` is a base attribute, so faction reads
+better than tech 2 while losing in the engine — rows now carry
+`specialization_skill` and the family carries a warning. And the size ladder is
+cut to adjacent size classes: a small-turret question was returning Dual Giga
+Pulse Laser II at 137,500 MW, which cannot be fitted to anything the caller was
+asking about.
