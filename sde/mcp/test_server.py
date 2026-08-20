@@ -113,6 +113,45 @@ async def main(sde):
             assert any(v.get('tier') == 'Faction' for v in fam), fam
             assert all('cpu' in v for v in fam), fam
 
+            # The SIZE ladder, which the meta ladder cannot show: `variants` walks
+            # one family and never crosses to the next, so a caller holding a
+            # 125mm autocannon has no way to learn 150/200/280 exist. Measured
+            # 2026-08-20: a graded run found mediums would not fit its hull and
+            # dropped to the SMALLEST small gun, shipping 40% less applied damage
+            # than the same fit with guns costing 3 MW more.
+            gun = (await call('variants', items=['Republic Fleet 125mm Autocannon']))
+            sl = gun['families'][0]['size_ladder']
+            assert sl['your_size_class'] == 'Small Projectile Turret', sl
+            by_name = {f['name']: f for f in sl['families']}
+            same = [f for f in sl['families'] if f.get('same_size_as_yours')]
+            assert any('200mm' in n for n in by_name), list(by_name)
+            assert len(same) >= 3, same
+            # ...and the size class must be read from the data, not the millimetres
+            # in the name: 220mm is MEDIUM and 280mm is small.
+            assert not by_name['Domination 220mm Autocannon']['same_size_as_yours']
+            assert by_name['Domination 280mm Howitzer Artillery']['same_size_as_yours']
+            # every row carries what decides the swap
+            assert all('power' in f for f in sl['families']), sl['families'][0]
+
+            # Rigs get no size ladder — you cannot fit a medium rig to a frigate
+            # and their sibling families are different EFFECTS, not rungs. What a
+            # rig caller needs is count-vs-tier, so calibration and the stacking
+            # curve ride along instead.
+            rig = (await call('variants', items=['Small Low Friction Nozzle Joints II']))
+            fam = rig['families'][0]
+            assert 'size_ladder' not in fam, fam.keys()
+            assert fam['stacking'][:2] == [1.0, 0.8691], fam['stacking']
+            costs = {v['name']: v['upgradeCost'] for v in fam['variants']}
+            assert costs['Small Low Friction Nozzle Joints I'] == 50, costs
+            assert costs['Small Low Friction Nozzle Joints II'] == 75, costs
+            # two tech 1 beat one tech 2 here, and the data must make that
+            # arithmetic possible: -11.7 twice (stacked) vs -14.0 once
+            bonus = {v['name']: v['agilityBonus'] for v in fam['variants']}
+            t1, t2 = (bonus['Small Low Friction Nozzle Joints I'],
+                      bonus['Small Low Friction Nozzle Joints II'])
+            two_t1 = (1 + t1 / 100) * (1 + t1 / 100 * fam['stacking'][1])
+            assert two_t1 < (1 + t2 / 100), (two_t1, t2)
+
             # `sql` is the name callers reach for; taking it saves a round
             aliased = await call('query', sql="SELECT name FROM types WHERE typeID = 587")
             assert aliased['results'][0]['data'] == [['Rifter']], aliased
@@ -138,6 +177,13 @@ async def main(sde):
 
             info = await call('sde_info')
             assert '108' in info['unit_corrections'], info
+            # the parts are separate files from separate build runs; a set that
+            # disagrees with itself must say so rather than report one part's
+            # number as though it were the database's
+            if info.get('MIXED_BUILDS'):
+                assert 'DIFFERENT builds' in info['warning'], info
+                assert info['sde_build'] == max(info['MIXED_BUILDS'].values()), info
+                print(f"  NOTE: mixed SDE build {info['MIXED_BUILDS']}")
             print(f"\nsde_build: {info['sde_build']} | parts: {','.join(info['parts'])}"
                   f" | all assertions passed")
 

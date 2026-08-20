@@ -1420,3 +1420,82 @@ sitting at Tech II. Market-group ancestry is a hard fact and is all the note
 asserts; it also covers Praxis, Gnosis and Sunesis, which are cheap and
 common, so the note names them and tells the reader to check price rather
 than pretending the data can tell prize from freebie.
+
+## 2026-08-20 (later) — the size ladder, and five other things a graded Svipul run exposed
+
+Owner ran the "solo lowsec frigate killer, must be able to disengage" brief.
+The answer was *procedurally* the best yet — legality verified, applied DPS
+computed, cap instability disclosed, EFT delivered unasked, empty rig slot
+explained rather than hidden — and the fit was still wrong, in a way the
+tooling had every number to prevent.
+
+**`sweep_hulls` went uncalled again.** The advisory fired four times carrying
+the ready-to-paste call. Zero conversions. Putting a literal call in advisory
+text is still prose, just prose shaped like code; I am counting the previous
+entry's fix as a negative result. Mitigating: running the sweep myself showed
+it would have *confirmed* the hull (Svipul 232.8 dps vs 127.3 for Hecate,
+Confessor, Jackdaw and Skua, which lack the small-projectile bonus).
+
+**The real miss was the gun size ladder.** It correctly found medium
+autocannons will not fit a Svipul, then jumped to the *bottom* rung of the
+small line — Republic Fleet 125mm, damage multiplier 2.579, falloff 4,300 m —
+skipping 150mm, 200mm, 250mm and 280mm, all of which are small turrets and all
+of which take the hull bonus. `Republic Fleet 200mm` is 3.610 and 5,160 m for
++3 MW a gun. Measured, same skills, same engine:
+
+| | delivered (125mm) | 200mm, neuts dropped |
+|---|---|---|
+| dps (Sharpshooter) | 310.4 | **347.6** |
+| applied, webbed frigate @5km | 267.7 | **322.5** |
+| applied, webbed destroyer @8km | 177.1 | **248.5** |
+| capacitor | 81 s | **stable** |
+| ehp / align / speed | 8,322 / 4.98 s / 2,008 | identical |
+
+Head to head at 5 km the corrected fit kills the delivered one in 26 s and
+survives 32 s. `variants` could not have shown this: it walks ONE family and
+never crosses to the next, so a caller holding a 125mm autocannon has no way
+to learn 200mm exists. That is now `size_ladder` — sibling families in the
+group, one representative each matched to the tier asked about, tagged
+`same_size_as_yours` from the required skill (turrets) or rigSize (rigs).
+It generalises the Vindicator prop-mod error: same shape, right family, wrong
+rung. Suppressed for rigs, where sibling families are different *effects* and
+cross-size rows are unfittable noise.
+
+**Five more, all owner-caught or owner-confirmed:**
+
+1. **Two tech 1 rigs usually beat one tech 2** and nothing in the stack could
+   show it. Small Low Friction Nozzle Joints: T1 -11.7% for 50 calibration,
+   T2 -14.0% for 75. Stacked, 2xT1 is **-20.7%** for 100 calibration and two
+   slots. `upgradeCost` is now in the ladder and rig families carry the
+   `stacking` multipliers, so the arithmetic is doable from one call.
+2. **Align time was reported with the prop mod running.** `fit.alignTime`
+   reflects module states, and a 5MN MWD is +500,000 kg on a 1.4 Mkg hull —
+   the graded answer quoted 4.98 s for an align that is really **3.67 s**. You
+   align with the prop off, which is the entire reason the mass penalty
+   matters. `align_time_prop_off_s` plus a note now ships in every panel; the
+   correction is exact because align is linear in mass at fixed agility.
+3. **Six rounds of `module_attrs`, one module at a time**, to find which module
+   blew the powergrid. The server had every number when it declared the
+   overrun. `fitting_breakdown` now rides along with the problem: per-module
+   cost of the over resource, largest first.
+4. **The binding-constraint advisory named a resource, and a resource is not an
+   action.** Told "rig effort should target powergrid", the run restated the
+   sentence, reasoned about a *damage* rig, left the rig slot empty. It now
+   names the module: *"the rig for it is Small Ancillary Current Router II:
+   +15% powergrid for 150 calibration, and you have 1 rig slot free but only
+   25 calibration, 125 short — so a cheaper rig has to come out first. A damage
+   or speed rig here solves nothing."*
+5. **"No fit-relevant module changed between these builds"** — asserted, never
+   checked. `engine_info` now reports both builds and a `parity` field that
+   states in words that no attribute-level comparison has been run.
+
+**Found while building #5: this checkout's SDE is MIXED** — `misc` at 3470007,
+`industry`/`items`/`universe` at 3466501. The build number was being read from
+one part as though it were the database's. Both servers now scan every part and
+say so when they disagree.
+
+Unknown-name errors also carry `did_you_mean` now (the run invented
+`Rage Light Missile` and had to go back to layer 1 with a LIKE query to
+recover). eos's own `searchItems` raises under this SQLAlchemy, so it is raw
+SQL over the engine's connection, with a difflib fallback for transpositions
+that match no LIKE pattern at all.

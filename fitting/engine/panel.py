@@ -43,6 +43,32 @@ def spool_ramp(fit):
     return mods, ramp
 
 
+def align_prop_off(fit):
+    """(align seconds with the prop mod shut off, kg the prop adds), or None.
+
+    `fit.alignTime` reflects the module states as they stand, so an ACTIVE
+    microwarpdrive inflates it by the mass it adds — a 5MN MWD is +500,000 kg
+    on a 1,400,000 kg destroyer, which is most of a second of align. Nobody
+    aligns like that: you cut the prop and then warp, precisely because the
+    mass penalty is what slows the align down. Reporting only the prop-on
+    figure hands the reader the pessimistic number for the one manoeuvre the
+    number exists to describe (measured 2026-08-20 on a graded Svipul answer,
+    which quoted 4.98 s for an align that is really 3.67 s).
+
+    Align time is linear in mass at fixed agility, and a prop mod changes only
+    mass, so the correction is exact rather than a re-simulation.
+    """
+    from eos.const import FittingModuleState
+    added = sum(m.getModifiedItemAttr('massAddition') or 0
+                for m in fit.modules
+                if not m.isEmpty and m.state >= FittingModuleState.ACTIVE
+                and (m.getModifiedItemAttr('massAddition') or 0) > 0)
+    mass = fit.ship.getModifiedItemAttr('mass') or 0
+    if not added or not mass or added >= mass:
+        return None
+    return fit.alignTime * (mass - added) / mass, added
+
+
 def stat_panel(fit, recalc=_recalc, spool=None):
     """Full stat panel. Caller sets fit.damagePattern first (default uniform).
 
@@ -82,6 +108,7 @@ def stat_panel(fit, recalc=_recalc, spool=None):
     cap_stable = fit.capStable
     cap_state = fit.capState
     reps = {k: round(v, 1) for k, v in fit.effectiveTank.items() if v}
+    _align_off = align_prop_off(fit)
 
     _recalc(fit, factor_reload=True)
     dps_sustained = fit.getTotalDps(spoolOptions=spool_opts).total
@@ -113,6 +140,8 @@ def stat_panel(fit, recalc=_recalc, spool=None):
         'navigation': {
             'max_velocity_ms': round(fit.maxSpeed, 1),
             'align_time_s': round(fit.alignTime, 2),
+            **({'align_time_prop_off_s': round(_align_off[0], 2)}
+               if _align_off else {}),
             'signature_m': round(attr('signatureRadius'), 1),
             'warp_speed_aus': round(fit.warpSpeed, 2),
             'mass_kg': round(attr('mass')),
@@ -126,6 +155,13 @@ def stat_panel(fit, recalc=_recalc, spool=None):
             'lock_time_battleship_s': round(40000 / scan_res / math.asinh(400) ** 2, 2),
         },
     }
+    if _align_off:
+        panel.setdefault('notes', []).append(
+            f'align_time_s ({panel["navigation"]["align_time_s"]} s) is with the prop '
+            f'mod RUNNING, which adds {_align_off[1]:,.0f} kg. You align with the prop '
+            f'OFF: {panel["navigation"]["align_time_prop_off_s"]} s. Quote the prop-off '
+            'figure for aligning, warping out and escaping; the prop-on figure only '
+            'applies if you keep it burning through the align.')
     if reps:
         panel['defense']['reps_hps'] = reps
     # Upwell structures cap incoming dps per layer (data: *DamageLimit attrs);

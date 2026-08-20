@@ -140,6 +140,14 @@ async def main(pyfa):
             binding = [a for a in adv if 'binding constraint' in a]
             assert binding and binding[0].startswith('cpu is'), adv
             assert 'sweep_hulls(fit_id, group="Tactical Destroyer")' in binding[0], binding
+            # ...and it must name the MODULE, not just the resource. Measured
+            # 2026-08-20: handed "rig effort should target powergrid", a graded
+            # run restated the sentence, reasoned about a DAMAGE rig, left the
+            # rig slot empty and shipped the weaker fit. A resource is not an
+            # action; a named rig with a price is.
+            assert 'Processor Overclocking Unit' in binding[0], binding
+            assert 'calibration' in binding[0], binding
+            assert 'solves nothing' in binding[0], binding
             assert any('not the binding constraint' in a for a in adv), adv
             await call('delete_fit', fit_id=conf['fit_id'])
 
@@ -152,6 +160,21 @@ async def main(pyfa):
                 '[Rifter, over]\nDamage Control II\n\n'
                 '1MN Afterburner II\n\n'
                 + '125mm Gatling AutoCannon II\n' * 4))
+            # the overrun answer must carry the per-module costs with it: a
+            # graded run spent SIX rounds on module_attrs, one module at a time,
+            # to learn which module was expensive
+            pgfat = await call('import_fit', eft=(
+                '[Svipul, over]\nDamage Control II\n\n'
+                '5MN Y-T8 Compact Microwarpdrive\n\n'
+                + 'Republic Fleet 220mm Autocannon\n' * 4))
+            bd = pgfat['fitting_breakdown']['powergrid']
+            assert bd['columns'] == ['item', 'count', 'each', 'total'], bd
+            assert bd['rows'][0][0] == 'Republic Fleet 220mm Autocannon', bd['rows']
+            assert bd['rows'][0][1] == 4 and bd['rows'][0][3] > 300, bd['rows'][0]
+            assert bd['rows'] == sorted(bd['rows'], key=lambda r: -r[3]), bd['rows']
+            assert 'cpu' not in pgfat['fitting_breakdown'], 'only the over resource'
+            await call('delete_fit', fit_id=pgfat['fit_id'])
+
             oadv = over['stats'].get('advisories', [])
             assert any('does not fit the Rifter as-is' in a and 'over by' in a
                        and 'sweep_hulls(' in a for a in oadv), oadv
@@ -189,6 +212,29 @@ async def main(pyfa):
             assert 'diffs' in cmp_aliased, cmp_aliased
             defaults = await call('module_attrs', fit_id=fid, item='150mm Light AutoCannon II')
             assert defaults['modules'][0]['attrs'], defaults
+
+            # Align time is quoted for the one manoeuvre it describes, and you
+            # do that manoeuvre with the prop OFF — the mass a running MWD adds
+            # is precisely why. Measured 2026-08-20: a graded answer quoted
+            # 4.98 s for an align that is really 3.67 s.
+            nav = (await call('get_stats', fit_id=fid))['navigation']
+            assert nav['align_time_prop_off_s'] < nav['align_time_s'], nav
+            note = [n for n in (await call('get_stats', fit_id=fid)).get('notes', [])
+                    if 'prop mod RUNNING' in n]
+            assert note and 'You align with the prop OFF' in note[0], note
+
+            # A bare "unknown item" costs a round and reveals nothing: the caller
+            # guesses again out of the same memory that produced the miss.
+            for eft_bad, want in (
+                    ('[Rifter, x]\nRapid Light Missile Launcher II, Rage Light Missile\n',
+                     'Light Missile'),
+                    ('[Rifetr, x]\n200mm AutoCannon II\n', 'Rifter')):
+                try:
+                    await call('import_fit', eft=eft_bad, stats=False)
+                    raise AssertionError('must reject: ' + eft_bad)
+                except RuntimeError as exc:
+                    assert 'did you mean' in str(exc), exc
+                    assert want in str(exc), exc
 
             lean = await call('import_fit', eft=rifter_eft, stats=False)
             assert 'stats' not in lean, 'stats=False must return the id alone'
@@ -780,6 +826,12 @@ async def main(pyfa):
                 await call('delete_fit', fit_id=f['fit_id'])
 
             info = await call('engine_info')
+            # Two build numbers side by side invite "nothing relevant changed",
+            # which a graded answer duly asserted without checking. The field
+            # carrying them carries the refusal to draw that inference.
+            assert 'parity' in info, info
+            if info.get('sde_build') and info['sde_build'] != info['engine_build']:
+                assert 'UNVERIFIED' in info['parity'], info['parity']
             assert info['engine_build'], info
             assert 'environment effects' not in info['unmodeled'], 'env is modeled now'
             assert 'mutated modules' not in info['unmodeled'], 'mutations are modeled now'

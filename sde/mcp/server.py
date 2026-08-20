@@ -28,7 +28,7 @@ ARGS = _parser.parse_args()
 
 mcp = MCPServer('eve-sde')
 
-PARTS, BUILD = [], None
+PARTS, BUILD, MIXED_BUILDS = [], None, None
 _db = None
 
 
@@ -50,8 +50,20 @@ def _conn():
         alias = f[len('eve-sde-'):-len('.sqlite')].replace('-', '_')
         _db.execute('ATTACH DATABASE ? AS ' + alias, (os.path.join(root, f),))
     alias0 = PARTS[0][len('eve-sde-'):-len('.sqlite')].replace('-', '_')
-    BUILD = _db.execute(
+    global MIXED_BUILDS
+    per_part = {}
+    for f in PARTS:
+        alias = f[len('eve-sde-'):-len('.sqlite')].replace('-', '_')
+        row = _db.execute(
+            f"SELECT value FROM {alias}.meta WHERE key='sdeBuildNumber'").fetchone()
+        if row:
+            per_part[alias] = str(row[0])
+    # Each part is a separate file from a separate build run. A half-rebuilt set
+    # answers "what exists" from one CCP release and "what it costs" from
+    # another; reading the build from one part alone hides that entirely.
+    BUILD = max(per_part.values()) if per_part else _db.execute(
         f"SELECT value FROM {alias0}.meta WHERE key='sdeBuildNumber'").fetchone()[0]
+    MIXED_BUILDS = per_part if len(set(per_part.values())) > 1 else None
     return _db
 
 
@@ -328,25 +340,149 @@ def _type_row(db, type_id):
 LADDER_ATTRS = ['cpu', 'power', 'capacitorNeed', 'duration', 'capacityBonus',
                 'damageMultiplier', 'speedFactor', 'maxRange', 'falloff',
                 'trackingSpeed', 'armorDamageAmount', 'shieldBonus',
-                'armorHPBonusAdd', 'signatureRadiusBonus', 'warpScrambleRange']
+                'armorHPBonusAdd', 'signatureRadiusBonus', 'warpScrambleRange',
+                # Rigs: the calibration price and the effect it buys. Without
+                # upgradeCost the "N x tech1 vs 1 x tech2" trade is invisible,
+                # and that trade usually favours COUNT: two Small Low Friction
+                # Nozzle Joints I are -20.7% inertia for 100 calibration and two
+                # rig slots, where the II alone is -14.0% for 75 and one slot.
+                # Tech 2 is stronger per slot, never 2x stronger.
+                'upgradeCost', 'agilityBonus', 'maxVelocityBonus',
+                'powerEngineeringOutputBonus', 'cpuOutputBonus2',
+                'shieldCapacityBonus', 'armorHpBonus', 'scanResolutionBonus']
+
+# Stacking multipliers applied to the 1st, 2nd, ... strongest of a set of
+# same-effect modules. Quoted so a caller can do the count-vs-tier arithmetic
+# instead of assuming two rigs are twice one.
+STACKING = [1.0, 0.8691, 0.5706, 0.2830, 0.1060]
+
+SIZE_LADDER_CAP = 24
+
+RIG_SIZES = {1: 'small', 2: 'medium', 3: 'large', 4: 'capital'}
+
+
+def _size_class(db, type_id):
+    """How this item's size is expressed in the data, or None.
+
+    Turrets and launchers carry it as the required skill ("Small Projectile
+    Turret"); rigs carry it as rigSize. Nothing else carries one, and inferring
+    size from the millimetres in the name is exactly how a 220mm autocannon
+    gets read as small.
+    """
+    rows = dict(db.execute(
+        'SELECT a.name, d.value FROM type_dogma d '
+        'JOIN dogma_attributes a ON a.attributeID = d.attributeID '
+        "WHERE d.typeID = ? AND a.name IN ('requiredSkill1', 'rigSize')", (type_id,)))
+    if 'rigSize' in rows:
+        n = int(rows['rigSize'])
+        return f'{RIG_SIZES.get(n, n)} rig'
+    skill = rows.get('requiredSkill1')
+    if skill:
+        got = db.execute('SELECT name FROM types WHERE typeID = ?',
+                         (int(skill),)).fetchone()
+        if got and any(w in got[0] for w in ('Turret', 'Launcher', 'Missile')):
+            return got[0]
+    return None
+
+
+def _size_ladder(db, type_id, group_id, meta_group, want):
+    """The OTHER families in this item's group — its size ladder.
+
+    `variants` walks one family (tech1, the metas, tech2, faction) and never
+    crosses to a neighbouring family, so a caller holding a 125mm autocannon
+    cannot see from it that 150mm, 200mm, 250mm and 280mm exist. Measured
+    2026-08-20: a graded run correctly found that MEDIUM turrets will not fit a
+    Svipul, then dropped to the SMALLEST small turret and shipped a fit doing
+    40% less applied damage than the same fit with 200mm guns costing 3 MW
+    more. Same shape as fitting a 5MN prop mod to a battleship: right family,
+    wrong rung. One representative per family, matched to the tier that was
+    asked about so the comparison is like for like.
+    """
+    fams = {}
+    for tid, tname, meta, mg, parent in db.execute(
+            'SELECT typeID, name, metaLevel, metaGroupID, variationParentTypeID '
+            'FROM types WHERE groupID = ? AND published = 1', (group_id,)):
+        fams.setdefault(parent or tid, []).append((tid, tname, meta or 0, mg))
+    mine = db.execute('SELECT variationParentTypeID FROM types WHERE typeID = ?',
+                      (type_id,)).fetchone()
+    mine = (mine and mine[0]) or type_id
+    reps = []
+    for parent, members in fams.items():
+        if parent == mine:
+            continue
+        same_tier = [m for m in members if m[3] == meta_group]
+        rep = max(same_tier or members, key=lambda m: m[2])
+        reps.append(rep)
+    if not reps:
+        return None
+    by_id = {r[0]: r for r in reps}
+    vals = {r[0]: {} for r in reps}
+    ph = ','.join('?' * len(reps))
+    aph = ','.join('?' * len(want))
+    for tid, aname, value, unit in db.execute(
+            'SELECT d.typeID, a.name, d.value, a.unitID FROM type_dogma d '
+            'JOIN dogma_attributes a ON a.attributeID = d.attributeID '
+            f'WHERE d.typeID IN ({ph}) AND a.name IN ({aph})',
+            [r[0] for r in reps] + list(want)):
+        human, _ = _interpret(value, unit, db)
+        vals[tid][aname] = human if human is not None else value
+    here = _size_class(db, type_id)
+    # Rigs have a size axis but no useful size LADDER: you cannot fit a medium
+    # rig to a frigate, and the sibling families in a rig group are different
+    # EFFECTS (cargo, fuel, thrusters), not different rungs of one. The trade a
+    # rig caller actually faces is count vs tier, which the meta ladder plus
+    # upgradeCost and the stacking curve already answer.
+    if here and here.endswith('rig'):
+        return None
+    rows = []
+    for tid, tname, meta, mg in reps:
+        if not vals[tid]:
+            # placeholder types (abyssal base items) carry no fitting attributes;
+            # they would head the list on a null sort key and say nothing
+            continue
+        entry = {'name': tname, 'metaLevel': meta}
+        size = _size_class(db, tid)
+        if size:
+            entry['size_class'] = size
+            entry['same_size_as_yours'] = (size == here)
+        entry.update(vals[tid])
+        rows.append(entry)
+    # same size class first (those are the swaps that keep the hull's bonus and
+    # its hardpoints), then cheapest to fit
+    def pg(r):
+        v = r.get('power')
+        try:
+            return float(str(v).split()[0])
+        except (TypeError, ValueError, IndexError):
+            return 0.0
+    if not rows:
+        return None
+    rows.sort(key=lambda r: (not r.get('same_size_as_yours', False), pg(r), r['name']))
+    return {'your_size_class': here, 'families': rows[:SIZE_LADDER_CAP],
+            'truncated': max(0, len(rows) - SIZE_LADDER_CAP),
+            'note': 'one representative per family, matched to the tier you asked '
+                    'about. Rows flagged same_size_as_yours use the same hardpoints '
+                    'and the same hull bonus as what you have — those are the '
+                    'straight swaps; the rest change size class and usually grid.'}
 
 
 @mcp.tool()
 def variants(items: list[str], attributes: list = None) -> dict:
-    """The meta ladder for a module: every published variant of the same item — tech 1, compact/enduring/restrained metas, tech 2, storyline, faction — with fitting cost and the attributes that decide between them. Use this BEFORE naming a module, not after one is rejected: guessing a name and waiting for "unknown item" costs a round per guess and only ever reveals one name, while the ladder shows that (say) a compact shield extender is 9 CPU cheaper than the tech 2 for 200 less HP. Rows are sorted by meta level."""
+    """Both ladders for a module. `variants` is the META ladder — every published variant of the same item (tech 1, compact/enduring/restrained metas, tech 2, storyline, faction) with fitting cost and the attributes that decide between them. `size_ladder` is the OTHER axis: the neighbouring families in the same group, so a 125mm autocannon shows you 150mm/200mm/250mm/280mm and a 5MN prop mod shows you 50MN/100MN/500MN, each tagged with whether it is the same size class as yours. Use this BEFORE naming a module: guessing a name and waiting for "unknown item" costs a round per guess and reveals exactly one name, and picking the wrong RUNG is the commonest fitting error there is — the meta ladder alone will not show it to you. Rig rows carry `upgradeCost` (calibration) so the "two tech 1 vs one tech 2" trade is visible; `stacking` gives the multipliers to do that arithmetic."""
     db = _conn()
     want = attributes or LADDER_ATTRS
     out = []
     for it in items:
-        row = db.execute('SELECT typeID, name, variationParentTypeID FROM types '
-                         'WHERE name = ? COLLATE NOCASE', (str(it),)).fetchone()
+        row = db.execute('SELECT typeID, name, variationParentTypeID, groupID, '
+                         'metaGroupID FROM types WHERE name = ? COLLATE NOCASE',
+                         (str(it),)).fetchone()
         if row is None:
             near = db.execute('SELECT name FROM types WHERE name LIKE ? AND published = 1 '
                               'ORDER BY length(name) LIMIT 5', (f'%{it}%',)).fetchall()
             out.append({'item': str(it), 'error': 'no such type',
                         'did_you_mean': [n for (n,) in near]})
             continue
-        type_id, name, parent = row
+        type_id, name, parent, group_id, meta_group = row
         parent = parent or type_id
         fam = db.execute(
             'SELECT typeID, name, metaLevel, metaGroupID FROM types '
@@ -369,7 +505,20 @@ def variants(items: list[str], attributes: list = None) -> dict:
                 entry['tier'] = grp[0]
             entry.update(vals)
             rows.append(entry)
-        out.append({'item': name, 'variants': rows})
+        entry = {'item': name, 'variants': rows}
+        ladder = _size_ladder(db, type_id, group_id, meta_group, want)
+        if ladder:
+            entry['size_ladder'] = ladder
+        # A rig's calibration price only means something next to the stacking
+        # curve: two tech 1 rigs are never twice one, but they are reliably
+        # MORE than a single tech 2, which is the call this data has to support.
+        if (_size_class(db, type_id) or '').endswith('rig'):
+            entry['stacking'] = STACKING
+            entry['stacking_note'] = (
+                'same-effect rigs stack penalised at these multipliers, strongest '
+                'first. Two tech 1 rigs usually beat one tech 2 if a rig slot and '
+                'the calibration are free — compare upgradeCost, not just tier.')
+        out.append(entry)
     return {'sde_build': BUILD, 'families': out}
 
 
@@ -476,6 +625,10 @@ def sde_info() -> dict:
         % ','.join(str(k) for k in UNITS)).fetchall()
     return {
         'sde_build': BUILD,
+        **({'MIXED_BUILDS': MIXED_BUILDS,
+            'warning': 'the parts are at DIFFERENT builds — this database was '
+                       'rebuilt in pieces. Cross-part answers may mix releases; '
+                       'rebuild before trusting them.'} if MIXED_BUILDS else {}),
         'parts': [p[8:-7] for p in PARTS],
         'unit_corrections': {str(k): v[1] for k, v in UNITS.items()},
         'units_without_a_rule': [{'unitID': u, 'attributes': n} for u, n in unknown],

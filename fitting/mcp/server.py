@@ -13,6 +13,7 @@ Design rules (docs/roadmap-fitting-mcp.md, token budget):
 import argparse
 import importlib
 import json
+import glob
 import os
 import random as _random
 import re
@@ -237,6 +238,62 @@ def _recalc(fit, factor_reload=False):
 _SWEEP_LIMIT = 20
 
 
+RIG_SIZE_NAMES = {1: 'Small', 2: 'Medium', 3: 'Large', 4: 'Capital'}
+
+# The rig that raises each fitting resource. Both lines exist at every rig size.
+FITTING_RIG = {'powergrid': ('Ancillary Current Router', 'powerEngineeringOutputBonus'),
+               'cpu': ('Processor Overclocking Unit', 'cpuOutputBonus2')}
+
+
+def _fitting_rig(fit, resource):
+    """The concrete rig that raises `resource` on THIS hull, priced.
+
+    Measured 2026-08-20: the advisory named the binding resource and told the
+    reader to aim rig effort at it. The reader restated that sentence, reasoned
+    about a DAMAGE rig, left the rig slot empty and shipped the weaker fit. A
+    resource is not an action. Name the module, its calibration price and what
+    is actually free, and there is nothing left to infer.
+
+    Every name is resolved through the engine before it is emitted, so a size
+    that does not exist produces silence rather than an invented module.
+    """
+    spec = FITTING_RIG.get(resource)
+    if spec is None:
+        return None
+    family, bonus_attr = spec
+    attr = fit.ship.getModifiedItemAttr
+    size = RIG_SIZE_NAMES.get(int(attr('rigSize') or 0))
+    if not size:
+        return None
+    free_calib = (attr('upgradeCapacity') or 0) - fit.calibrationUsed
+    used_rigs = sum(1 for m in fit.modules if not m.isEmpty and m.slot is not None
+                    and int(m.slot) == int(_FS.RIG))
+    free_slots = int(attr('rigSlots') or 0) - used_rigs
+    best = None
+    for tier in ('II', 'I'):
+        item = eftlib._lookup(f'{size} {family} {tier}')
+        if item is None:
+            continue
+        cost = item.attributes.get('upgradeCost')
+        bonus = item.attributes.get(bonus_attr)
+        if cost is None or bonus is None:
+            continue
+        cand = {'name': item.typeName, 'calibration': cost.value,
+                'bonus_pct': bonus.value, 'affordable': cost.value <= free_calib}
+        # prefer the strongest that actually fits the calibration left; fall
+        # back to naming the tech 2 so the reader sees the ceiling either way
+        if cand['affordable']:
+            best = cand
+            break
+        # nothing fits yet: keep walking down so the fallback is the CHEAPEST
+        # tier, which is the smallest calibration gap the reader has to close
+        best = cand
+    if best is None:
+        return None
+    best.update({'free_calibration': round(free_calib), 'free_rig_slots': free_slots})
+    return best
+
+
 def _sweep_call(fit):
     """The `sweep_hulls` call for this fit's hull class, pre-sized.
 
@@ -321,10 +378,30 @@ def _advisories(fit):
         tight_pct, slack_pct = max(cpu_pct, pg_pct), min(cpu_pct, pg_pct)
         if tight_pct >= 0.90 and slack_pct <= 0.85:
             free = (pg_max - fit.pgUsed) if slack == 'powergrid' else (cpu_max - fit.cpuUsed)
+            rig = _fitting_rig(fit, tight)
+            if rig is None:
+                aim = f'fitting effort, rigs included, should target {tight}. '
+            else:
+                if rig['free_rig_slots'] <= 0:
+                    where = ('no rig slot is free, so this is a rig SWAP, not an '
+                             'addition')
+                elif rig['affordable']:
+                    where = (f"you have {rig['free_rig_slots']} rig slot(s) and "
+                             f"{rig['free_calibration']} calibration free — it fits "
+                             'as things stand')
+                else:
+                    short = rig['calibration'] - rig['free_calibration']
+                    where = (f"you have {rig['free_rig_slots']} rig slot(s) free but "
+                             f"only {rig['free_calibration']} calibration, {short:.0f} "
+                             'short — so a cheaper rig has to come out first')
+                aim = (f"the rig for it is {rig['name']}: +{rig['bonus_pct']:g}% "
+                       f"{tight} for {rig['calibration']:g} calibration, and {where}. "
+                       'A damage or speed rig here solves nothing — it is '
+                       f'{tight} that is stopping the fit. ')
             out.append(
                 f'{tight} is the binding constraint ({tight_pct * 100:.0f}% used) while '
-                f'{slack} has {free:.0f} spare ({slack_pct * 100:.0f}% used) — fitting '
-                f'effort, rigs included, should target {tight}. If modules are being '
+                f'{slack} has {free:.0f} spare ({slack_pct * 100:.0f}% used) — {aim}'
+                f'If modules are being '
                 f'dropped to make this hull work, that is a hull question: '
                 f'{_sweep_call(fit)} rebuilds this exact loadout on '
                 f'every hull in the class and ranks them.')
@@ -493,6 +570,39 @@ def _problems(fit):
     return out
 
 
+def _fitting_breakdown(fit, problems):
+    """Per-module cost of whichever resource the fit is over, biggest first.
+
+    Measured 2026-08-20: a graded run chasing a powergrid overrun spent SIX
+    consecutive rounds on `module_attrs`, one module at a time, working out
+    which module was expensive. The server holds every one of those numbers at
+    the instant it declares the overrun — withholding them turns one answer
+    into six round trips, and the caller reaches the fix six rounds later with
+    no more information than this costs to send.
+    """
+    ATTR = {'cpu': 'cpu', 'powergrid': 'power'}
+    over = [r for r in ATTR if any(p.startswith(r + ' over') for p in problems)]
+    if not over:
+        return None
+    out = {}
+    for res in over:
+        tally = {}
+        for mod in fit.modules:
+            if mod.isEmpty:
+                continue
+            each = mod.getModifiedItemAttr(ATTR[res]) or 0
+            if not each:
+                continue
+            name = mod.item.typeName
+            count, _ = tally.get(name, (0, each))
+            tally[name] = (count + 1, each)
+        rows = sorted(([n, c, round(e, 2), round(c * e, 2)]
+                       for n, (c, e) in tally.items()),
+                      key=lambda r: -r[3])
+        out[res] = {'columns': ['item', 'count', 'each', 'total'], 'rows': rows}
+    return out
+
+
 def _summary(fit_id):
     from collections import Counter
     from eos.const import FittingHardpoint, FittingSlot
@@ -523,6 +633,9 @@ def _summary(fit_id):
         'slots': slots,
         'problems': _problems(fit),
     }
+    breakdown = _fitting_breakdown(fit, out['problems'])
+    if breakdown:
+        out['fitting_breakdown'] = breakdown
     if hardpoints:
         out['hardpoints'] = hardpoints
     return out
@@ -909,6 +1022,9 @@ def get_stats(fit_id: str, profile: dict = None, spool: float = None) -> dict:
                        spool=spool)
     panel = {'ship': _ship_name(fit), **panel}
     panel['problems'] = _problems(fit)
+    breakdown = _fitting_breakdown(fit, panel['problems'])
+    if breakdown:
+        panel['fitting_breakdown'] = breakdown
     advisories = _advisories(fit)
     if advisories:
         panel['advisories'] = advisories
@@ -1339,13 +1455,65 @@ def required_skills(fit_id: str, full: bool = False) -> dict:
 
 @mcp.tool()
 @_engine_thread
+def _sde_build():
+    """Layer 1's build number, if its databases are sitting next to this repo.
+
+    Best-effort: the fitting server does not own the SDE and must work without
+    it. Returns None rather than guessing.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    found = {}
+    for cand in sorted(glob.glob(os.path.join(root, 'eve-sde-*.sqlite'))):
+        try:
+            with sqlite3.connect(f'file:{cand}?mode=ro', uri=True) as db:
+                row = db.execute("SELECT value FROM meta WHERE key='sdeBuildNumber'").fetchone()
+            if row:
+                found[os.path.basename(cand)] = str(row[0])
+        except sqlite3.Error:
+            continue
+    if not found:
+        return None, None
+    builds = set(found.values())
+    # The parts are separate files built by separate runs. A half-rebuilt set
+    # answers "what exists" from one CCP release and "what it costs" from
+    # another, and reporting either number alone hides that completely.
+    return max(builds), (found if len(builds) > 1 else None)
+
+
+@mcp.tool()
 def engine_info() -> dict:
-    """Engine + data build. Compare engine_build to the SDE skill's build; any skew means numbers may disagree with layer 1."""
+    """Engine + data build, and whether it matches layer 1's SDE build. Any skew means the two layers may disagree; `parity` says plainly that no attribute-level comparison has been run, because none has."""
     meta = dict(sqlite3.connect(os.path.join(ARGS.pyfa, 'eve.db'))
                 .execute('SELECT field_name, field_value FROM metadata').fetchall())
+    engine_build = meta.get('client_build')
+    sde_build, mixed = _sde_build()
+    # Measured 2026-08-20: a graded answer closed with "SDE build 3473160 is
+    # newer -- no fit-relevant module changed between them", an attribute-level
+    # claim nothing in the stack had checked. Two build numbers side by side
+    # invite exactly that inference, so the field that carries them also carries
+    # the refusal to draw it.
+    if sde_build and engine_build and str(sde_build) != str(engine_build):
+        parity = (f'UNVERIFIED. The engine is at build {engine_build}, layer 1 at '
+                  f'{sde_build}. No attribute-level comparison between these builds '
+                  'has been run by anything in this stack, so you cannot state that '
+                  'nothing fit-relevant changed between them. Engine numbers are '
+                  'authoritative for fit output; layer 1 is authoritative for what '
+                  'exists and what it is called. Say the builds differ, or say '
+                  'nothing about it.')
+    elif sde_build:
+        parity = f'engine and layer 1 are both at build {engine_build}'
+    if mixed:
+        parity = ('layer 1 is MIXED — its parts are at different builds ('
+                  + ', '.join(f'{k}={v}' for k, v in sorted(mixed.items()))
+                  + '). Rebuild it before trusting cross-part answers. ') + parity
+    else:
+        parity = ('layer 1 databases not found from here — build skew is unknown, '
+                  'not zero')
     return {
         'engine': 'pyfa-eos (headless)',
-        'engine_build': meta.get('client_build'),
+        'engine_build': engine_build,
+        'sde_build': sde_build,
+        'parity': parity,
         'unmodeled': ['industrial core state',
                       'structure reinforcement/low-power cycles (fitting, combat and fuel ARE modeled)',
                       'custom skill sheets',

@@ -120,6 +120,61 @@ def _lookup(name):
     return eos.db.getItem(name)
 
 
+def _suggest(name, limit=5):
+    """Published type names close to `name`, best first.
+
+    A bare "unknown item" costs a round and reveals nothing: the caller guesses
+    again from the same memory that produced the miss. Measured 2026-08-20: a
+    graded run invented `Rage Light Missile` and had to go back to layer 1 with
+    a LIKE query to recover. eos's own searchItems is unusable here (it raises
+    under this SQLAlchemy), so match on the query's longest words and rank what
+    comes back by string similarity.
+    """
+    import difflib
+    import eos.db
+    # Raw SQL over the engine's own connection rather than the ORM: importing
+    # eos.gamedata lazily re-enters a partially initialised module and raises
+    # ImportError, which the best-effort guard would then swallow into silence.
+    try:
+        conn = eos.db.gamedata_engine.raw_connection()
+        cur = conn.cursor()
+    except Exception:                  # noqa: BLE001 — suggestions are best-effort
+        return []
+    words = sorted((w.strip(',') for w in str(name).split()), key=len, reverse=True)
+    seen = {}
+    try:
+        for word in words[:2]:
+            if len(word) < 3:
+                continue
+            cur.execute('SELECT typeName FROM invtypes WHERE typeName LIKE ? '
+                        'AND published = 1 LIMIT 400', (f'%{word}%',))
+            for (found,) in cur.fetchall():
+                seen.setdefault(found, difflib.SequenceMatcher(
+                    None, str(name).lower(), found.lower()).ratio())
+        if not seen and words:
+            # A transposition ('Rifetr') matches no LIKE pattern at all, which is
+            # exactly the case a suggestion is most useful for. Fall back to
+            # similarity over the names starting with the same letter — typos
+            # keep the first character far more often than any other.
+            cur.execute('SELECT typeName FROM invtypes WHERE published = 1 '
+                        'AND typeName LIKE ?', (str(name)[:1] + '%',))
+            pool = [row[0] for row in cur.fetchall()]
+            for found in difflib.get_close_matches(str(name), pool, limit, 0.6):
+                seen[found] = difflib.SequenceMatcher(
+                    None, str(name).lower(), found.lower()).ratio()
+    except Exception:                  # noqa: BLE001
+        return []
+    finally:
+        conn.close()
+    return [n for n, _ in sorted(seen.items(), key=lambda kv: -kv[1])[:limit]]
+
+
+def _unknown(kind, name, extra=''):
+    near = _suggest(name)
+    hint = f' — did you mean: {", ".join(near)}?' if near else ''
+    return EftError(f'unknown {kind}: {name!r}{extra}{hint}')
+
+
 def _resolve(entry):
     """Return (item, charge_item) for an entry, resolving 'Module, Charge'."""
     item = _lookup(entry['name'])
@@ -134,9 +189,9 @@ def _resolve(entry):
         if item is not None:
             charge = _lookup(charge_name)
             if charge is None:
-                raise EftError(f'unknown charge {charge_name!r} on {mod_name!r}')
+                raise _unknown('charge', charge_name, f' on {mod_name!r}')
             return item, charge
-    raise EftError(f'unknown item: {entry["name"]!r}')
+    raise _unknown('item', entry['name'])
 
 
 def _mutation_parts(entry, spec):
@@ -178,7 +233,7 @@ def build_fit(spec):
 
     ship_item = _lookup(spec.ship)
     if ship_item is None:
-        raise EftError(f'unknown ship: {spec.ship!r}')
+        raise _unknown('ship', spec.ship)
     if ship_item.category.name == 'Structure':
         from eos.saveddata.citadel import Citadel
         fit = Fit(Citadel(ship_item), name=spec.name)
