@@ -1453,8 +1453,42 @@ def required_skills(fit_id: str, full: bool = False) -> dict:
     return out
 
 
-@mcp.tool()
-@_engine_thread
+def _parity_text(engine_build, sde_build, mixed):
+    """What may and may not be said about the two builds.
+
+    Measured 2026-08-20: a graded answer closed with "SDE build 3473160 is
+    newer — no fit-relevant module changed between them", an attribute-level
+    claim nothing in the stack had checked. Two build numbers side by side
+    invite exactly that inference, so the field carrying them carries the
+    refusal to draw it.
+
+    Pulled out of `engine_info` because the branches are the whole point and
+    were unreachable from a test: the first version of this shipped with the
+    mixed-build clause wedged between the elif and the else, so `else` bound
+    to `if mixed` and every non-mixed run was overwritten with "not found"
+    while still reporting a build number beside it. A smoke test that only
+    ever ran against a mixed checkout passed it.
+    """
+    if sde_build and engine_build and str(sde_build) != str(engine_build):
+        parity = (f'UNVERIFIED. The engine is at build {engine_build}, layer 1 at '
+                  f'{sde_build}. No attribute-level comparison between these builds '
+                  'has been run by anything in this stack, so you cannot state that '
+                  'nothing fit-relevant changed between them. Engine numbers are '
+                  'authoritative for fit output; layer 1 is authoritative for what '
+                  'exists and what it is called. Say the builds differ, or say '
+                  'nothing about it.')
+    elif sde_build:
+        parity = f'engine and layer 1 are both at build {engine_build}'
+    else:
+        parity = ('layer 1 databases not found from here — build skew is unknown, '
+                  'not zero')
+    if mixed:
+        parity = ('layer 1 is MIXED — its parts are at different builds ('
+                  + ', '.join(f'{k}={v}' for k, v in sorted(mixed.items()))
+                  + '). Rebuild it before trusting cross-part answers. ') + parity
+    return parity
+
+
 def _sde_build():
     """Layer 1's build number, if its databases are sitting next to this repo.
 
@@ -1487,28 +1521,7 @@ def engine_info() -> dict:
                 .execute('SELECT field_name, field_value FROM metadata').fetchall())
     engine_build = meta.get('client_build')
     sde_build, mixed = _sde_build()
-    # Measured 2026-08-20: a graded answer closed with "SDE build 3473160 is
-    # newer -- no fit-relevant module changed between them", an attribute-level
-    # claim nothing in the stack had checked. Two build numbers side by side
-    # invite exactly that inference, so the field that carries them also carries
-    # the refusal to draw it.
-    if sde_build and engine_build and str(sde_build) != str(engine_build):
-        parity = (f'UNVERIFIED. The engine is at build {engine_build}, layer 1 at '
-                  f'{sde_build}. No attribute-level comparison between these builds '
-                  'has been run by anything in this stack, so you cannot state that '
-                  'nothing fit-relevant changed between them. Engine numbers are '
-                  'authoritative for fit output; layer 1 is authoritative for what '
-                  'exists and what it is called. Say the builds differ, or say '
-                  'nothing about it.')
-    elif sde_build:
-        parity = f'engine and layer 1 are both at build {engine_build}'
-    if mixed:
-        parity = ('layer 1 is MIXED — its parts are at different builds ('
-                  + ', '.join(f'{k}={v}' for k, v in sorted(mixed.items()))
-                  + '). Rebuild it before trusting cross-part answers. ') + parity
-    else:
-        parity = ('layer 1 databases not found from here — build skew is unknown, '
-                  'not zero')
+    parity = _parity_text(engine_build, sde_build, mixed)
     return {
         'engine': 'pyfa-eos (headless)',
         'engine_build': engine_build,

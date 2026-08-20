@@ -1499,3 +1499,74 @@ Unknown-name errors also carry `did_you_mean` now (the run invented
 recover). eos's own `searchItems` raises under this SQLAlchemy, so it is raw
 SQL over the engine's connection, with a difflib fallback for transpositions
 that match no LIKE pattern at all.
+
+## 2026-08-20 (third) — two regressions I shipped, and the ammo question nobody asked
+
+Owner re-ran the lowsec brief on the pushed stack. Three of the six fixes
+visibly worked; two of my own changes were broken in ways the smoke suite
+passed anyway.
+
+**Regression 1: `_sde_build` shipped as an MCP tool.** I inserted it directly
+above `engine_info`, so it inherited that function's `@mcp.tool()` and
+`@_engine_thread` decorators, and my cleanup pass matched only
+`@mcp.tool()\ndef _sde_build` — not the two-decorator stack that was actually
+there. A private helper became a callable tool paying standing schema on every
+round of every session. The suite now fails on any tool whose name starts with
+an underscore.
+
+**Regression 2: the parity chain.** I appended the mixed-build clause *between*
+the `elif` and the `else`, so `else` bound to `if mixed:` and parity was
+overwritten unconditionally on every non-mixed run. The owner's session showed
+the result: `sde_build: "3473160"` sitting next to *"layer 1 databases not
+found from here"*. It passed here only because **this checkout is mixed**, so
+the run never took the broken path — and the assertion I wrote (`'UNVERIFIED'
+in parity`) still held, because the mixed prefix is *prepended* to the
+UNVERIFIED text. A test that passes for the wrong reason. The branches are now
+`_parity_text(engine_build, sde_build, mixed)`, a pure function, with all four
+combinations asserted directly.
+
+Lesson worth keeping: both bugs were in code whose *only* observable behaviour
+was branch selection, tested through a tool that could only ever exercise one
+branch in a given checkout. Branch logic that matters gets pulled out and
+tested as a function.
+
+**What worked.** `align_time_prop_off_s` was quoted correctly and labelled
+("align (prop off) 4.76s", "3.17s in Propulsion") — the answer used the right
+number unprompted. `fitting_breakdown` appeared on an over-CPU fit and the
+reply went straight to a CPU-output module rather than querying modules one at
+a time. `did_you_mean` recovered two invented names (`Energized Adaptive Nano
+Membrane II`, `Light Pulse Laser II`) in one round each. The `size_ladder`
+moved the answer from `Dual Light Pulse Laser II` (2.4) to `Small Focused Pulse
+Laser II` (3.6) — the right rung, chosen from data. No fabricated build-parity
+claim this time.
+
+**`sweep_hulls` uncalled for the third consecutive run**, two more advisory
+impressions. Ran it myself: Confessor 291.5 dps against 159.4 for every other
+tactical destroyer, all of which are illegal with this loadout. Third time it
+would have confirmed rather than changed the answer, which is worth saying
+plainly — the tool has never once been the difference on a real question.
+
+**The real gap this run: ammunition.** The fit shipped Multifrequency S and was
+tested against exactly one target at exactly one range. Measured across the
+brief it was actually written for:
+
+| crystal | raw | frig@5km | dess@5km | dess@9km | dess@14km |
+|---|---|---|---|---|---|
+| Multifrequency S | 291.5 | 260.6 | 262.9 | **34.3** | 0.7 |
+| Scorch S | 267.2 | **266.3** | **270.4** | **271.0** | **114.5** |
+| Conflagration S | 432.4 | **382.5** | **389.2** | 50.8 | 1.0 |
+
+Scorch beats Multifrequency at *every* range including point blank, by 8x at
+9 km. Conflagration is +47% applied at brawl range. Lasers swap crystals
+instantly with no reload — it is the one thing the weapon system is best at,
+and an Amarr laser boat was recommended without it being mentioned. Lower raw
+dps, higher applied everywhere: exactly the trap that reading `dps` instead of
+`dps_applied` sets.
+
+**A trap in my own ladder, found while checking the guns.** `damageMultiplier`
+in `variants` is the base attribute, so faction (3.75) reads as better than
+tech 2 (3.6). The engine disagrees: 291.5 dps on T2 versus 276.0 on Imperial
+Navy, because tech 2 turrets take the specialization skill (+2%/level, +10% at
+V) and faction ones do not. 3.6/3.75 x 1.10 = 1.056, matching the measured
+ratio exactly. I nearly repeated the very error I had graded. The ladder needs
+to say that tech 2 carries a skill bonus its printed multiplier omits.

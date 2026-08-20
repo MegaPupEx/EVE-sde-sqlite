@@ -44,6 +44,12 @@ async def main(pyfa):
             await s.initialize()
 
             tools = await s.list_tools()
+            # Private helpers must not leak onto the tool surface: _sde_build
+            # shipped as a callable tool because it inherited the decorator
+            # stack of the function it was inserted above, and every leaked
+            # tool costs standing schema on every round of every session.
+            leaked = [t.name for t in tools.tools if t.name.startswith('_')]
+            assert not leaked, leaked
             schema_json = [{'name': t.name, 'description': t.description,
                             'inputSchema': t.input_schema} for t in tools.tools]
             print(f'{len(tools.tools)} tools; standing schema overhead ~{tokens(schema_json)} tokens')
@@ -824,6 +830,22 @@ async def main(pyfa):
             await call('delete_fit', fit_id=okrig['fit_id'])
             for f in (ast, bad_s, bad_r):
                 await call('delete_fit', fit_id=f['fit_id'])
+
+            # Parity has four branches and they are the entire point of the
+            # field. The first version wedged the mixed-build clause between
+            # the elif and the else, so `else` bound to `if mixed` and every
+            # non-mixed run was overwritten with "not found" while still
+            # printing a build number next to it — and the smoke test passed
+            # because this checkout happened to be mixed. Exercise all four.
+            sys.path.insert(0, HERE)
+            from server import _parity_text                     # noqa: E402
+            skew = _parity_text('340', '350', None)
+            assert skew.startswith('UNVERIFIED') and '350' in skew, skew
+            assert _parity_text('340', '340', None) == \
+                'engine and layer 1 are both at build 340'
+            assert 'not found' in _parity_text('340', None, None)
+            both = _parity_text('340', '350', {'a.sqlite': '340', 'b.sqlite': '350'})
+            assert both.startswith('layer 1 is MIXED') and 'UNVERIFIED' in both, both
 
             info = await call('engine_info')
             # Two build numbers side by side invite "nothing relevant changed",
