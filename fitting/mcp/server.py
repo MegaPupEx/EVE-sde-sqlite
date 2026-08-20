@@ -234,6 +234,28 @@ def _recalc(fit, factor_reload=False):
         projector.calculateModifiedAttributes(targetFit=fit, type=CalcType.PROJECTED)
 
 
+_SWEEP_LIMIT = 20
+
+
+def _sweep_call(fit):
+    """The `sweep_hulls` call for this fit's hull class, pre-sized.
+
+    Naming the call without a limit sends the reader straight into an error on
+    any large class — the Frigate group publishes 51 hulls against a default
+    limit of 20 — and a suggestion that fails on first use is worse than no
+    suggestion, because the round it costs is spent learning the tool is
+    fussy rather than learning the answer.
+    """
+    group = fit.ship.item.group.name
+    try:
+        grp = _group_by_name(group)
+        n = sum(1 for i in grp.items if getattr(i, 'published', True))
+    except Exception:                     # noqa: BLE001 — advisory text only
+        n = 0
+    over = f', limit={n}' if n > _SWEEP_LIMIT else ''
+    return f'sweep_hulls(fit_id, group="{group}"{over})'
+
+
 def _advisories(fit):
     """Choices that are legal but do nothing, or leave free value on the table.
 
@@ -291,6 +313,7 @@ def _advisories(fit):
     # with 24 MW of powergrid spare and spent TWO rig slots on powergrid rigs
     # — solving the constraint that was not binding, using the exact slots
     # that would have fixed the one that was.
+    named_sweep = False
     cpu_max, pg_max = attr('cpuOutput') or 0, attr('powerOutput') or 0
     if cpu_max and pg_max:
         cpu_pct, pg_pct = fit.cpuUsed / cpu_max, fit.pgUsed / pg_max
@@ -301,7 +324,11 @@ def _advisories(fit):
             out.append(
                 f'{tight} is the binding constraint ({tight_pct * 100:.0f}% used) while '
                 f'{slack} has {free:.0f} spare ({slack_pct * 100:.0f}% used) — fitting '
-                f'effort, rigs included, should target {tight}')
+                f'effort, rigs included, should target {tight}. If modules are being '
+                f'dropped to make this hull work, that is a hull question: '
+                f'{_sweep_call(fit)} rebuilds this exact loadout on '
+                f'every hull in the class and ranks them.')
+            named_sweep = True
             # a fitting rig pointed at the resource that is NOT binding
             RIG_FOR = {'powerEngineeringOutputBonus': 'powergrid',
                        'cpuOutputBonus2': 'cpu', 'cpuOutputBonus': 'cpu'}
@@ -321,6 +348,23 @@ def _advisories(fit):
                 out.append(
                     f'{names} adds {slack}, which is not the binding constraint here '
                     f'— {count} does nothing for the fit')
+
+    # The loadout does not physically fit this hull. Downgrading modules until
+    # it does is one answer; the other is that the hull is wrong — and that one
+    # never gets considered unless something names it, because the fit in hand
+    # is already anchored to the hull it was typed on. This generalises the
+    # binding-constraint case above: ANY capacity violation (grid, calibration,
+    # rack, hardpoints, drone bay) means the modules and the hull were chosen
+    # independently, which is the same mistake whichever resource ran out.
+    if not named_sweep:
+        blocking = [p for p in _problems(fit) if ' over' in p]
+        if blocking:
+            out.append(
+                f'this loadout does not fit the {_ship_name(fit)} as-is '
+                f'({blocking[0]}) — before downgrading modules to make it fit, '
+                f'check whether the HULL is what is wrong: {_sweep_call(fit)} '
+                f'rebuilds this exact loadout on every hull in the class and '
+                f'ranks them.')
 
     # Same capacitor, less cargo volume: more reloads carried per m3.
     for mod in fit.modules:
@@ -1018,6 +1062,28 @@ def _group_by_name(name):
         return None
 
 
+def _availability_note(item):
+    """Flag hulls that are not normally obtainable.
+
+    Market-group ancestry is a hard SDE fact; tournament provenance is not in
+    the data at all. metaGroup looked like a discriminator and is not — it
+    false-positives on Imperial Issue battleships and event corvettes, and
+    false-negatives on Hydra, Tiamat, Chameleon and Whiptail, which are all
+    tournament prizes sitting at Tech II. So flag the branch and let the
+    reader judge, rather than guessing a provenance the data cannot support.
+    """
+    node = getattr(item, 'marketGroup', None)
+    while node is not None:
+        if node.name == 'Special Edition Ships':
+            return ('special edition hull — not a normally obtainable ship; some of '
+                    'this branch are tournament prizes worth hundreds of billions, '
+                    'others (Praxis, Gnosis, Sunesis) are cheap and common. Check '
+                    'availability and price before recommending it.')
+        node = getattr(node, 'parent', None)
+    return None
+
+
+
 def _trait_text(item, cap=170):
     """Hull bonuses as plain text, compressed.
 
@@ -1039,8 +1105,8 @@ def _trait_text(item, cap=170):
 @mcp.tool()
 @_engine_thread
 def sweep_hulls(fit_id: str, hulls: list = None, group: str = None,
-                metrics: list = None, limit: int = 20) -> dict:
-    """Rebuild this fit's modules on OTHER hulls and rank them. Name a `group` ("Destroyer", "Assault Frigate", "Combat Battlecruiser") to enumerate every published hull in it server-side, or pass explicit `hulls`. Use this instead of picking a hull from remembered candidates: a hull chosen on static attributes and then made to work is the commonest way a fit answer goes wrong. Rows carry the named panel metrics (default dps/ehp/speed), cpu_free/pg_free, any legality problems, and the hull's per-skill and role bonuses — those are already applied in the numbers, and are shown so a low rank reads as "wrong weapons for this hull" when that is what it is."""
+                metrics: list = None, limit: int = _SWEEP_LIMIT) -> dict:
+    """Rebuild this fit's modules on OTHER hulls and rank them. Name a `group` ("Destroyer", "Assault Frigate", "Combat Battlecruiser") to enumerate every published hull in it server-side, or pass explicit `hulls`. Use this instead of picking a hull from remembered candidates: a hull chosen on static attributes and then made to work is the commonest way a fit answer goes wrong. Rows carry the named panel metrics (default dps/ehp/speed), cpu_free/pg_free, any legality problems, and the hull's per-skill and role bonuses — those are already applied in the numbers, and are shown so a low rank reads as "wrong weapons for this hull" when that is what it is. A class contains hulls that cannot be bought (tournament prizes, event hulls) and they rank like any other, so rows in the Special Edition branch carry an `availability` note — check it before recommending the winner."""
     if not hulls and not group:
         raise ValueError('name `group` to enumerate a class, or pass `hulls`')
     src = _fit(fit_id)
@@ -1094,6 +1160,9 @@ def sweep_hulls(fit_id: str, hulls: list = None, group: str = None,
         bonus = _trait_text(item)
         if bonus:
             row['bonuses'] = bonus
+        avail = _availability_note(item)
+        if avail:
+            row['availability'] = avail
         rows.append(row)
 
     key = metrics[0]

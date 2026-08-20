@@ -97,11 +97,91 @@ async def main(pyfa):
             # are shown so a low rank reads as "wrong weapons for this hull"
             assert any(h.get('bonuses') for h in sw['hulls']), sw['hulls'][0]
             assert sw['ranked_by'] == 'offense.dps', sw['ranked_by']
+            # a class sweep enumerates the whole group, tournament prizes and
+            # event hulls included — Geri and Malice rank fine and cannot be
+            # bought. Market-group ancestry is the only hard signal the data
+            # carries (metaGroup false-positives on Imperial Issue hulls and
+            # misses Hydra/Tiamat entirely), so flag the branch and let the
+            # reader judge rather than guessing provenance.
+            avail = {h['hull'] for h in sw['hulls'] if h.get('availability')}
+            assert {'Geri', 'Malice', 'Utu'} <= avail, avail
+            # ...and it must not smear onto the mainline hulls of the class
+            assert not ({'Enyo', 'Jaguar', 'Wolf', 'Harpy'} & avail), avail
             try:
                 await call('sweep_hulls', fit_id=fid, group='Not A Real Group')
                 raise AssertionError('unknown group must be rejected')
             except RuntimeError as exc:
                 assert 'group' in str(exc).lower(), exc
+
+            # the binding constraint, and the pointer out of it. Measured
+            # 2026-08-19: a Confessor sat at 98% CPU with powergrid to spare
+            # and spent two rig slots on POWERGRID rigs — solving the
+            # constraint that was not binding with the exact slots that would
+            # have fixed the one that was. And when a fit only fits by
+            # dropping modules, the real question is the hull, so the advisory
+            # names the sweep call verbatim: prose asking for the behaviour
+            # did not produce it, a ready-to-paste call is what gets used.
+            conf = await call('import_fit', eft=(
+                '[Confessor, cpu-bound]\n'
+                'Damage Control II\nHeat Sink II\nHeat Sink II\n'
+                'Small Armor Repairer II\nNanofiber Internal Structure II\n'
+                '\n'
+                '5MN Y-T8 Compact Microwarpdrive\nWarp Scrambler II\n'
+                'Fleeting Compact Stasis Webifier\n'
+                '\n'
+                'Small Focused Pulse Laser II, Imperial Navy Multifrequency S\n'
+                'Small Focused Pulse Laser II, Imperial Navy Multifrequency S\n'
+                'Small Focused Pulse Laser II, Imperial Navy Multifrequency S\n'
+                'Small Focused Pulse Laser II, Imperial Navy Multifrequency S\n'
+                '\n'
+                'Small Ancillary Current Router I\nSmall Ancillary Current Router I\n'
+                'Small Auxiliary Nano Pump I\n'))
+            adv = (await call('get_stats', fit_id=conf['fit_id'])).get('advisories', [])
+            binding = [a for a in adv if 'binding constraint' in a]
+            assert binding and binding[0].startswith('cpu is'), adv
+            assert 'sweep_hulls(fit_id, group="Tactical Destroyer")' in binding[0], binding
+            assert any('not the binding constraint' in a for a in adv), adv
+            await call('delete_fit', fit_id=conf['fit_id'])
+
+            # A loadout that does not physically fit reaches the same pointer by
+            # the other road: any capacity violation means the modules and the
+            # hull were picked independently, whichever resource ran out.
+            # a hardpoint violation with grid to spare: nothing is "binding",
+            # the hull simply cannot hold these guns
+            over = await call('import_fit', eft=(
+                '[Rifter, over]\nDamage Control II\n\n'
+                '1MN Afterburner II\n\n'
+                + '125mm Gatling AutoCannon II\n' * 4))
+            oadv = over['stats'].get('advisories', [])
+            assert any('does not fit the Rifter as-is' in a and 'over by' in a
+                       and 'sweep_hulls(' in a for a in oadv), oadv
+            # ...and never both roads at once
+            assert sum('sweep_hulls(' in a for a in oadv) == 1, oadv
+            await call('delete_fit', fit_id=over['fit_id'])
+
+            # The suggested call must RUN. `sweep_hulls` caps at 20 hulls by
+            # default and the Frigate group publishes 51, so an unsized
+            # suggestion spends its round discovering the tool is fussy
+            # instead of getting the answer — the advisory sizes it itself.
+            big = await call('import_fit', eft=(
+                '[Rifter, tight]\nDamage Control II\nGyrostabilizer II\n\n'
+                '1MN Afterburner II\nWarp Scrambler II\nStasis Webifier II\n\n'
+                + '200mm AutoCannon II, Republic Fleet EMP S\n' * 3))
+            for a in big['stats'].get('advisories', []):
+                m = _re.search(r'sweep_hulls\(fit_id, group="([^"]+)"(?:, limit=(\d+))?\)', a)
+                if not m:
+                    continue
+                kw = {'fit_id': big['fit_id'], 'group': m.group(1)}
+                if m.group(2):
+                    kw['limit'] = int(m.group(2))
+                verbatim = await call('sweep_hulls', **kw)
+                assert kw.get('limit') == 51, kw    # Frigate: over the default
+                assert len(verbatim['hulls']) == 51, len(verbatim['hulls'])
+                assert not [h for h in verbatim['hulls'] if h.get('error')], verbatim['hulls']
+                break
+            else:
+                raise AssertionError('no advisory named the sweep on the rifter fit')
+            await call('delete_fit', fit_id=big['fit_id'])
 
             # aliases: the names callers reach for must not cost a round
             clone_id = (await call('clone_fit', fit_id=fid, stats=False))['fit_id']

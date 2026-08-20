@@ -265,6 +265,15 @@ checkable in the engine and none of them was checked.
   every hull in a class with the fit actually built on each, `sweep` does the
   same for module candidates, and layer 1's `query` returns the whole group in
   one statement. Reach for one of those before you type a candidate list.
+  Build the fit on ONE hull first, then sweep it: `sweep_hulls` rebuilds the
+  loadout you already have on every hull in the class, so the comparison is
+  the real fit rather than static attributes. When a fit is over its grid,
+  slots or hardpoints, or one resource is binding while the other has slack,
+  the panel's `advisories` hand you that call ready to paste, sized for the
+  class — a large class needs the `limit` the advisory already filled in.
+  A class sweep enumerates hulls that cannot be bought: tournament prizes and
+  event ships rank like any other, so read each row's `availability` note
+  before recommending the winner.
 - **Pick modules off the ladder, not out of memory.** `variants(item)` returns
   every published variant of a module — tech 1, the compact/enduring/restrained
   metas, tech 2, storyline, faction — with fitting cost and the attributes that

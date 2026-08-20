@@ -1378,3 +1378,45 @@ Three fixes:
 
 Standing gap: `sweep_hulls` still went uncalled on a hull-choice question. The
 model named the four T3Ds (a complete set, by luck) and built none of them.
+
+## 2026-08-20 — making `sweep_hulls` reachable, and flagging hulls nobody can buy
+
+Closing the standing gap above. The tool existed and was described in the
+skill; both are prose-class interventions, and the measured hierarchy is
+**tool shape > skill description > router prose > reference file**. So the
+sweep now gets handed over as a *ready-to-paste call*, at the two moments a
+fit is about to be made worse to fit a hull:
+
+1. **When one resource binds and the other has slack** — the existing
+   advisory now ends with `sweep_hulls(fit_id, group="Tactical Destroyer")`.
+2. **When the loadout does not physically fit at all** — any capacity
+   violation (grid, calibration, rack, hardpoints, drone bay) gets
+   *"this loadout does not fit the Rifter as-is (high slots over by 1) —
+   before downgrading modules to make it fit, check whether the HULL is what
+   is wrong"* plus the same call. Deliberately general: it does not care
+   which resource ran out, because the mistake is the same one either way —
+   modules and hull chosen independently. Exactly one of the two roads fires,
+   never both.
+
+**The suggestion is pre-sized.** `sweep_hulls` caps at 20 hulls and the
+Frigate group publishes 51, so an unsized suggestion would spend its round
+learning the tool is fussy. `_sweep_call()` counts the class and emits
+`sweep_hulls(fit_id, group="Frigate", limit=51)`. Measured end to end: 51
+hulls, 1.7 s, ~5k tokens, no errored rows, Rifter first at 165.2 dps. The
+smoke test now parses the call out of the advisory and executes it verbatim
+— a suggestion that errors is a regression, not a wording nit.
+
+**Availability.** A class sweep enumerates hulls that cannot be bought, and
+they rank like everything else: the Frigate sweep returns Gold Magnate,
+Silver Magnate, Metamorphosis and Echelon; the Assault Frigate sweep returns
+Geri, Freki, Cambion, Malice, Shapash and Utu (6 of 15). Rows in the
+`Special Edition Ships` market branch now carry an `availability` note.
+
+What that note deliberately does **not** claim is tournament provenance —
+that is not in the SDE. `metaGroup` looked like a discriminator and is not:
+it false-positives on Imperial Issue battleships and event corvettes, and
+false-negatives on Hydra, Tiamat, Chameleon and Whiptail, all AT prizes
+sitting at Tech II. Market-group ancestry is a hard fact and is all the note
+asserts; it also covers Praxis, Gnosis and Sunesis, which are cheap and
+common, so the note names them and tells the reader to check price rather
+than pretending the data can tell prize from freebie.
