@@ -103,6 +103,13 @@ async def main(pyfa):
             except RuntimeError as exc:
                 assert 'group' in str(exc).lower(), exc
 
+            # aliases: the names callers reach for must not cost a round
+            clone_id = (await call('clone_fit', fit_id=fid, stats=False))['fit_id']
+            cmp_aliased = await call('compare_fits', fit_a=fid, fit_b=clone_id)
+            assert 'diffs' in cmp_aliased, cmp_aliased
+            defaults = await call('module_attrs', fit_id=fid, item='150mm Light AutoCannon II')
+            assert defaults['modules'][0]['attrs'], defaults
+
             lean = await call('import_fit', eft=rifter_eft, stats=False)
             assert 'stats' not in lean, 'stats=False must return the id alone'
             await call('delete_fit', fit_id=lean['fit_id'])

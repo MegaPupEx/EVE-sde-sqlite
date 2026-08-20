@@ -316,6 +316,10 @@ players ask about most — cargo `capacity`, `mass`, `volume` — are **columns 
 `types`, not dogma attributes at all**, so SQL aimed at `type_dogma` silently
 finds nothing and the search goes long.
 
+`variants` gives the meta ladder for a module — every published variant with
+its fitting cost side by side — so a module choice is made off a list rather
+than by guessing names until one resolves.
+
 Use `query` for the questions `attrs` cannot answer: sets, aggregates and
 rankings ("which ore", "how many jumps", "every hull that…"). It takes a list
 of statements in one call, with every part pre-attached, `-- comment` labels,

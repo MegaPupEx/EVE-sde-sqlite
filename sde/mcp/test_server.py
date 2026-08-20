@@ -102,6 +102,22 @@ async def main(sde):
                 assert one['hull']['category'] == cat, one['hull']
                 assert one['attributes'], name
 
+            # the meta ladder: pick a variant from a list instead of guessing a
+            # name and waiting for "unknown item" — that loop costs a round per
+            # guess and never reveals the cheaper compact sitting beside the II
+            lad = await call('variants', items=['Medium Shield Extender II'])
+            fam = lad['families'][0]['variants']
+            assert len(fam) > 4, fam
+            names = [v['name'] for v in fam]
+            assert 'Medium F-S9 Regolith Compact Shield Extender' in names, names
+            assert any(v.get('tier') == 'Faction' for v in fam), fam
+            assert all('cpu' in v for v in fam), fam
+
+            # `sql` is the name callers reach for; taking it saves a round
+            aliased = await call('query', sql="SELECT name FROM types WHERE typeID = 587")
+            assert aliased['results'][0]['data'] == [['Rifter']], aliased
+            assert 'note' in aliased, 'the string form must nudge toward the list'
+
             # unit corrections — the traps measured subjects actually got wrong
             a = await call('attrs', items=['Rifter'],
                            attributes=['shieldEmDamageResonance', 'shieldRechargeRate'])

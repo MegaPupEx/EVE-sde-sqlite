@@ -1331,3 +1331,50 @@ Freki all land at 68.1 dps in the table above for exactly that reason, and the
 Rows that do not fit are kept, flagged with their `problems`, and sorted below
 the legal ones — a hull that would win with a small adjustment is worth seeing,
 so long as nothing reads its numbers as achievable as-is.
+
+## 2026-08-20 — the first real branch test, and three fixes it earned
+
+First mobile session actually on the branch (the previous three ran on `main`,
+which carries only the eve-sde skill — web sessions cut from the default branch
+unless the source is picked explicitly). Process was the best yet: both servers
+used, fit imported before publication, `edit_fit` iterated against the panel,
+advisories read and answered, `applied_dps` against two real target profiles,
+`required_skills` with `alpha_blocked`, and **the EFT block delivered unasked**.
+
+Five tool calls failed. Two were the system working — the schema hint returned
+`columns_available` and the model corrected in one round (six rounds of
+`SELECT *` archaeology in the destroyer run), and `import_fit` rejected an
+invented `Faint Epsilon Warp Scrambler II`. Three were parameter-name misses
+costing a round each, one of them a regression I introduced in gen-11.
+
+**The fit's real error, found by the owner, not the tooling**: it was CPU-bound
+at 222.75/225 with 24 MW of powergrid spare, and spent **two rig slots on
+Ancillary Current Routers — which boost powergrid**. It solved the constraint
+that was not binding, using the exact slots that would have fixed the one that
+was, and dropped a gun for CPU as a result. Verified: 3 guns 229.5 dps, and
+the four-gun build with a compact MWD, a compact shield extender and ONE
+`Small Ancillary Current Router I` is legal at 224.00/225 CPU and 84.30/85.25
+PG for **306.1 dps and 10,106 EHP** — more damage AND more tank, with 150
+calibration still spare.
+
+Three fixes:
+
+1. **Parameter aliases.** `query` takes `sql`, `compare_fits` takes
+   `fit_a`/`fit_b`, `module_attrs` defaults to a useful attribute set instead
+   of raising. Charging a round to say "wrong keyword" helps nobody, and the
+   canonical name still leads in the schema.
+2. **`advisories` now name the binding constraint** and flag a fitting rig
+   aimed at the resource with slack. On the delivered Confessor:
+   *"cpu is the binding constraint (99% used) while powergrid has 24 spare
+   (77% used)"* and *"Small Ancillary Current Router II adds powergrid… 2 rig
+   slots does nothing for the fit"*.
+3. **`variants(item)` — the meta ladder**, on layer 1. Every published variant
+   of a module with fitting cost and the deciding attributes, from
+   `types.variationParentTypeID`. This is the general fix for the name-guessing
+   loop the owner spotted: guess-then-reject reveals one name per round, while
+   the ladder shows in one call that `Medium F-S9 Regolith Compact` is 26 CPU
+   for 900 HP next to the II's 35 CPU for 1,100 — exactly the trade a CPU-bound
+   fit needs and could not otherwise see.
+
+Standing gap: `sweep_hulls` still went uncalled on a hull-choice question. The
+model named the four T3Ds (a complete set, by luck) and built none of them.

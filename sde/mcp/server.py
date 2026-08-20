@@ -168,13 +168,20 @@ def _schema_hint(db, message, stmt):
 
 
 @mcp.tool()
-def query(statements: list[str], limit: int = 40) -> dict:
+def query(statements: list[str] = None, limit: int = 40, sql: str = None) -> dict:
     """SQL escape hatch for set and aggregate questions — "which ore", "how many jumps", "list every hull that…". For the stats of a type you can NAME, use `attrs` instead: it answers in one call where SQL takes several. `statements` is a LIST — put every query you already know you need in one call, because a second call re-reads the whole conversation. A '-- comment' line above a statement labels it. Every eve-sde part is pre-ATTACHed so table names need no prefix (except `meta`, in all of them); note the group table is `groups_`. Rows are capped with the true count reported; raw dogma values are linted for the unit traps."""
     # Measured over gen-10: 22 of 24 calls to the old `sql: str` form sent a
     # single statement. A string invites one statement no matter what the
     # docstring asks for, so the parameter is a list and the schema says so.
     # A bare string still works -- refusing it would cost the round the shape
     # change is meant to save -- but it is answered with a nudge.
+    # `sql` is the name callers reach for first — it was this tool's own
+    # parameter until gen-11. Charging a wasted round to say "wrong keyword"
+    # helps nobody; take it, and nudge toward the list form in the result.
+    if statements is None and sql is not None:
+        statements = sql
+    if statements is None:
+        raise ValueError('pass `statements`: a list of SQL statements')
     coerced = isinstance(statements, str)
     sql = statements if coerced else '\n'.join(
         s if s.rstrip().endswith(';') else s + ';' for s in statements)
@@ -314,6 +321,56 @@ def _type_row(db, type_id):
         except sqlite3.Error:
             pass                              # a renamed table must not break the lookup
     return hull, category_id
+
+
+# Attributes worth seeing when choosing between variants of one module. Any
+# that a given family does not carry are simply absent from its rows.
+LADDER_ATTRS = ['cpu', 'power', 'capacitorNeed', 'duration', 'capacityBonus',
+                'damageMultiplier', 'speedFactor', 'maxRange', 'falloff',
+                'trackingSpeed', 'armorDamageAmount', 'shieldBonus',
+                'armorHPBonusAdd', 'signatureRadiusBonus', 'warpScrambleRange']
+
+
+@mcp.tool()
+def variants(items: list[str], attributes: list = None) -> dict:
+    """The meta ladder for a module: every published variant of the same item — tech 1, compact/enduring/restrained metas, tech 2, storyline, faction — with fitting cost and the attributes that decide between them. Use this BEFORE naming a module, not after one is rejected: guessing a name and waiting for "unknown item" costs a round per guess and only ever reveals one name, while the ladder shows that (say) a compact shield extender is 9 CPU cheaper than the tech 2 for 200 less HP. Rows are sorted by meta level."""
+    db = _conn()
+    want = attributes or LADDER_ATTRS
+    out = []
+    for it in items:
+        row = db.execute('SELECT typeID, name, variationParentTypeID FROM types '
+                         'WHERE name = ? COLLATE NOCASE', (str(it),)).fetchone()
+        if row is None:
+            near = db.execute('SELECT name FROM types WHERE name LIKE ? AND published = 1 '
+                              'ORDER BY length(name) LIMIT 5', (f'%{it}%',)).fetchall()
+            out.append({'item': str(it), 'error': 'no such type',
+                        'did_you_mean': [n for (n,) in near]})
+            continue
+        type_id, name, parent = row
+        parent = parent or type_id
+        fam = db.execute(
+            'SELECT typeID, name, metaLevel, metaGroupID FROM types '
+            'WHERE (variationParentTypeID = ? OR typeID = ?) AND published = 1 '
+            'ORDER BY metaLevel, name', (parent, parent)).fetchall()
+        rows = []
+        for tid, tname, meta, mgroup in fam:
+            vals = {}
+            for aname, value, unit in db.execute(
+                    'SELECT a.name, d.value, a.unitID FROM type_dogma d '
+                    'JOIN dogma_attributes a ON a.attributeID = d.attributeID '
+                    'WHERE d.typeID = ? AND a.name IN (%s)' % ','.join('?' * len(want)),
+                    [tid] + list(want)):
+                human, _ = _interpret(value, unit, db)
+                vals[aname] = human if human is not None else value
+            entry = {'name': tname, 'metaLevel': meta}
+            grp = db.execute('SELECT name FROM meta_groups WHERE metaGroupID = ?',
+                             (mgroup,)).fetchone() if mgroup else None
+            if grp:
+                entry['tier'] = grp[0]
+            entry.update(vals)
+            rows.append(entry)
+        out.append({'item': name, 'variants': rows})
+    return {'sde_build': BUILD, 'families': out}
 
 
 @mcp.tool()

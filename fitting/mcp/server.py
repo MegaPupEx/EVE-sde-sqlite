@@ -286,6 +286,42 @@ def _advisories(fit):
             'NOT shrink with the module — an undersized prop mod pays the full '
             'signature cost for a fraction of the speed. Compare the size-matched one.')
 
+    # Which resource is actually binding, and whether any fitting rig is
+    # aimed at the other one. Measured 2026-08-19: a Confessor sat at 99% CPU
+    # with 24 MW of powergrid spare and spent TWO rig slots on powergrid rigs
+    # — solving the constraint that was not binding, using the exact slots
+    # that would have fixed the one that was.
+    cpu_max, pg_max = attr('cpuOutput') or 0, attr('powerOutput') or 0
+    if cpu_max and pg_max:
+        cpu_pct, pg_pct = fit.cpuUsed / cpu_max, fit.pgUsed / pg_max
+        tight, slack = ('cpu', 'powergrid') if cpu_pct > pg_pct else ('powergrid', 'cpu')
+        tight_pct, slack_pct = max(cpu_pct, pg_pct), min(cpu_pct, pg_pct)
+        if tight_pct >= 0.90 and slack_pct <= 0.85:
+            free = (pg_max - fit.pgUsed) if slack == 'powergrid' else (cpu_max - fit.cpuUsed)
+            out.append(
+                f'{tight} is the binding constraint ({tight_pct * 100:.0f}% used) while '
+                f'{slack} has {free:.0f} spare ({slack_pct * 100:.0f}% used) — fitting '
+                f'effort, rigs included, should target {tight}')
+            # a fitting rig pointed at the resource that is NOT binding
+            RIG_FOR = {'powerEngineeringOutputBonus': 'powergrid',
+                       'cpuOutputBonus2': 'cpu', 'cpuOutputBonus': 'cpu'}
+            misaimed = []
+            for mod in fit.modules:
+                # `slot` is None for anything not in a rack — guard as the
+                # slot counter above does, or int() raises on it.
+                if mod.isEmpty or mod.slot is None or int(mod.slot) != int(_FS.RIG):
+                    continue
+                for a, resource in RIG_FOR.items():
+                    if mod.getModifiedItemAttr(a) and resource == slack:
+                        misaimed.append(mod.item.typeName)
+                        break
+            if misaimed:
+                names = ', '.join(sorted(set(misaimed)))
+                count = f'{len(misaimed)} rig slots' if len(misaimed) > 1 else 'that rig slot'
+                out.append(
+                    f'{names} adds {slack}, which is not the binding constraint here '
+                    f'— {count} does nothing for the fit')
+
     # Same capacitor, less cargo volume: more reloads carried per m3.
     for mod in fit.modules:
         if mod.isEmpty or mod.charge is None:
@@ -852,9 +888,16 @@ def get_stats(fit_id: str, profile: dict = None, spool: float = None) -> dict:
 
 @mcp.tool()
 @_engine_thread
-def module_attrs(fit_id: str, item: str, attrs: list) -> dict:
+def module_attrs(fit_id: str, item: str, attrs: list = None) -> dict:
     """Modified per-module attribute values (skills/ship bonuses/heat/mutations applied) for every fitted module or drone named `item`. attrs: dogma attribute names, e.g. ['maxRange','speedFactor']; null = not on that module. Overheat first via edit_fit state op to read heated values."""
     from eos.db.gamedata.queries import getAttributeInfo
+    # Omitting `attrs` used to be a validation error and a wasted round. Answer
+    # with the attributes that usually decide a module instead; anything absent
+    # on this module simply comes back null.
+    attrs = attrs or ['cpu', 'power', 'capacitorNeed', 'duration', 'maxRange',
+                      'falloff', 'trackingSpeed', 'damageMultiplier',
+                      'speedFactor', 'capacityBonus', 'armorDamageAmount',
+                      'shieldBonus', 'massAddition']
     for name in attrs:
         if getAttributeInfo(name) is None:
             raise ValueError(f'unknown attribute {name!r} (dogma names, e.g. maxRange)')
@@ -1130,8 +1173,14 @@ def versus(fit_id_a: str, fit_id_b: str, distance_km: float) -> dict:
 
 @mcp.tool()
 @_engine_thread
-def compare_fits(fit_id_a: str, fit_id_b: str) -> dict:
+def compare_fits(fit_id_a: str = None, fit_id_b: str = None,
+                 fit_a: str = None, fit_b: str = None) -> dict:
     """Stat panels diffed: only figures differing >0.1%, as {stat: [a, b]}."""
+    # `fit_a`/`fit_b` are what callers reach for; taking them costs nothing and
+    # saves a round spent reading a validation error.
+    fit_id_a, fit_id_b = fit_id_a or fit_a, fit_id_b or fit_b
+    if not fit_id_a or not fit_id_b:
+        raise ValueError('pass two fit ids: fit_id_a and fit_id_b')
     diffs = {}
     panels = [get_stats(f) for f in (fit_id_a, fit_id_b)]
 

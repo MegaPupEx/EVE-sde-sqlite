@@ -265,6 +265,19 @@ checkable in the engine and none of them was checked.
   every hull in a class with the fit actually built on each, `sweep` does the
   same for module candidates, and layer 1's `query` returns the whole group in
   one statement. Reach for one of those before you type a candidate list.
+- **Pick modules off the ladder, not out of memory.** `variants(item)` returns
+  every published variant of a module — tech 1, the compact/enduring/restrained
+  metas, tech 2, storyline, faction — with fitting cost and the attributes that
+  decide between them. Naming a module and waiting for `import_fit` to reject
+  it costs a round per guess and reveals exactly one name; the ladder shows in
+  one call that a compact medium shield extender is **9 CPU cheaper than the
+  tech 2 for 200 less shield**, which is the trade a CPU-bound fit is looking
+  for and cannot see any other way.
+- **Fix the constraint that is actually binding.** The panel's `advisories`
+  name it. Measured 2026-08-19: a Confessor at 99% CPU with 24 MW of powergrid
+  spare spent two rig slots on *powergrid* rigs — the exact slots that would
+  have solved CPU — and shipped three guns on a four-turret hull as a result.
+  Read which resource is tight before choosing a rig or a meta level.
 - **Hull bonuses are already inside every number the engine returns**, so a
   ranking needs no adjustment for them — but read the `bonuses` line before
   concluding a hull is bad. A turret-bonused hull scored with a missile fit
