@@ -269,6 +269,11 @@ checkable in the engine and none of them was checked.
   ranking needs no adjustment for them — but read the `bonuses` line before
   concluding a hull is bad. A turret-bonused hull scored with a missile fit
   places low because the fit is wrong for it, not because the hull is.
+- **Give the EFT block by default — never wait to be asked.** A fit is not
+  delivered as prose; it is delivered as text the player can paste into the
+  game or pyfa. Produce it with `export_fit` so it comes from the built fit
+  rather than being retyped, and put it in the first answer alongside the
+  numbers. Every measured run so far has made the player ask a second time.
 - **Fill the slots or justify the gaps.** An empty high on a brawler is DPS or
   utility you declined to take; say which.
 - **Take the free stats when the player offers them.** If they say "any
